@@ -1,0 +1,239 @@
+@import 'tailwindcss';
+
+/*
+  Metropolix UI language: hard-edged pixel panels that match the sprites.
+  1px ink outline, light from the top-left, hard drop shadows (no blur).
+  --accent is swapped per race by <body data-arc="...">.
+*/
+:root {
+  --ink: #12151d;        /* outline, same as sprite OUT */
+  --night: #0c1018;      /* map backdrop */
+  --slab: #1d2432;       /* panel face */
+  --slab-hi: #2a3446;    /* raised face / hover */
+  --slab-lo: #141a26;    /* inset wells */
+  --rim: #3a465e;        /* bevel highlight */
+  --paper: #efe4c9;      /* primary text */
+  --paper-dim: #a79f8b;  /* secondary text */
+  --gold: #f2c14e;
+  --good: #7fcf6a;
+  --bad: #ea6a55;
+  --accent: #4fc3f7;
+  --accent-ink: #0b1a22;
+
+  /* legacy names still used by older components */
+  --bg: var(--night); --panel: var(--slab); --line: var(--ink); --fg: var(--paper); --mut: var(--paper-dim); --acc: var(--accent);
+}
+body[data-arc='elf']     { --accent: #5fc07a; --accent-ink: #0c1f12; }
+body[data-arc='lizard']  { --accent: #e8a13a; --accent-ink: #2a1a05; }
+body[data-arc='caveman'] { --accent: #d98a4e; --accent-ink: #2a1505; }
+body[data-arc='dragon']  { --accent: #e5594a; --accent-ink: #2a0b08; }
+body[data-arc='goblin']  { --accent: #a6cf3f; --accent-ink: #1a2205; }
+
+html, body { height: 100%; }
+body { background: var(--night); color: var(--paper); font-family: var(--font-body), system-ui, sans-serif; overflow: hidden; }
+.font-display { font-family: var(--font-display), var(--font-body), sans-serif; letter-spacing: .02em; }
+
+/* ---- panels ---- */
+.panel {
+  background: var(--slab);
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  box-shadow: inset 1px 1px 0 var(--rim), inset -1px -1px 0 #0d1119, 0 3px 0 var(--ink);
+}
+.well {
+  background: var(--slab-lo);
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  box-shadow: inset 0 2px 0 #0b0e15;
+}
+
+/* ---- windows (big modal panels) ----
+   The frame is the one bold move: every people builds its windows from its own material.
+   --frame is the outer band, --frame-hi its lit edge, --stud the corner rivets,
+   --title-bg/--title-pat the header strip (an 8px pixel pattern, drawn as inline SVG). */
+:root {
+  --frame: #3a465e; --frame-hi: #56647f; --stud: #8a96ae;
+  --title-bg: var(--slab-hi);
+  --title-pat: none;
+}
+body[data-arc='elf'] {
+  --frame: #5a3d22; --frame-hi: #8a6236; --stud: #c9e7a0; --title-bg: #2c3b26;
+  --title-pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%2346623a' d='M2 5h1v1H2zM3 4h1v1H3zM4 3h1v1H4zM10 2h1v1h-1zM11 3h1v1h-1zM12 4h1v1h-1z'/%3E%3C/svg%3E");
+}
+body[data-arc='lizard'] {
+  --frame: #a8743c; --frame-hi: #d6a35e; --stud: #4fb3a4; --title-bg: #3b2f1e;
+  --title-pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%23564227' d='M0 6h1v1H0zM1 5h1v1H1zM2 4h1v1H2zM3 3h1v1H3zM4 4h1v1H4zM5 5h1v1H5zM6 6h1v1H6zM7 7h1v1H7z'/%3E%3C/svg%3E");
+}
+body[data-arc='caveman'] {
+  --frame: #6b655c; --frame-hi: #948c80; --stud: #e9dfc8; --title-bg: #34302b;
+  --title-pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%23463f37' d='M1 1h2v1H1zM7 4h3v1H7zM3 6h1v1H3z'/%3E%3C/svg%3E");
+}
+body[data-arc='dragon'] {
+  --frame: #2a1517; --frame-hi: #4a2326; --stud: #ff8a3d; --title-bg: #1f1214;
+  --title-pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%235c1d16' d='M1 6h2v1H1zM3 5h1v1H3zM4 4h1v1H4zM10 1h1v1h-1zM11 2h2v1h-2z'/%3E%3C/svg%3E");
+}
+body[data-arc='goblin'] {
+  --frame: #4e463c; --frame-hi: #7a6a52; --stud: #a6cf3f; --title-bg: #2b2a24;
+  --title-pat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%233f3c33' d='M0 0h12v1H0z'/%3E%3Cpath fill='%23575143' d='M5 4h1v1H5z'/%3E%3C/svg%3E");
+}
+.window {
+  background: var(--slab);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--frame-hi), inset 0 0 0 4px var(--frame), inset 0 0 0 6px var(--ink), 0 6px 0 var(--ink);
+  padding: 6px;
+}
+/* layered so Tailwind's `absolute` (utilities layer) still wins on the shop tray */
+@layer components { .window { position: relative; } }
+/* rivets sit on top of the frame band, so they live in a pseudo-element (inset shadows cover backgrounds) */
+.window::before {
+  --rivet: linear-gradient(var(--stud), var(--stud));
+  content: ''; position: absolute; inset: 1px; pointer-events: none; z-index: 1;
+  background:
+    var(--rivet) left 0 top 0 / 3px 3px no-repeat,
+    var(--rivet) right 0 top 0 / 3px 3px no-repeat,
+    var(--rivet) left 0 bottom 0 / 3px 3px no-repeat,
+    var(--rivet) right 0 bottom 0 / 3px 3px no-repeat;
+}
+.window-title {
+  background-color: var(--title-bg);
+  background-image: var(--title-pat);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.08), inset 0 -3px 0 var(--accent);
+}
+.rail-tab {
+  display: flex; align-items: center; gap: .55rem; white-space: nowrap;
+  font-family: var(--font-display), sans-serif; font-weight: 700; font-size: .95rem;
+  padding: .45rem .65rem; border: 2px solid transparent; border-radius: 2px;
+  color: var(--paper-dim); text-align: left; cursor: pointer;
+}
+.rail-tab:hover { color: var(--paper); background: var(--slab); }
+.rail-tab[aria-selected='true'] { color: var(--paper); background: var(--slab); border-color: var(--ink); box-shadow: inset 3px 0 0 var(--accent); }
+/* ---- feedback motion ---- */
+@keyframes float-up { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.9); } 10% { opacity: 1; transform: translate(-50%, 0) scale(1.1); } 22% { transform: translate(-50%, -6px) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -40px); } }
+.float-up { animation: float-up 1.25s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes banner-in { 0% { opacity: 0; transform: translateY(-14px); } 60% { opacity: 1; transform: translateY(2px); } 100% { transform: none; } }
+.banner-in { animation: banner-in .28s ease-out both; }
+/* chip flash is a layer behind the numbers, so the chip itself never remounts (an open tooltip stays open) */
+@keyframes chip-flash { 0% { opacity: .65; } 100% { opacity: 0; } }
+.chip-up, .chip-down { animation: chip-flash .6s steps(4) both; pointer-events: none; }
+.chip-up { background: var(--good); }
+.chip-down { background: var(--bad); }
+@keyframes tip-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+.tip-in { animation: tip-in .12s ease-out both; }
+@keyframes level-glow { 0%,100% { box-shadow: 0 0 0 0 var(--gold); } 50% { box-shadow: 0 0 0 4px var(--gold); } }
+
+@keyframes win-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+.win-in { animation: win-in .14s ease-out both; }
+
+/* ---- buttons ---- */
+.btn {
+  --face: var(--slab-hi); --edge: #0d1119; --text: var(--paper);
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  background: var(--face); color: var(--text);
+  border: 2px solid var(--ink); border-radius: 3px;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.22), inset -1px -2px 0 rgba(0,0,0,.28), 0 3px 0 var(--ink);
+  font-family: var(--font-display), sans-serif; font-weight: 700; letter-spacing: .02em;
+  padding: .35rem .8rem; line-height: 1.1; cursor: pointer; transition: transform .06s, box-shadow .06s;
+}
+.btn:hover:not(:disabled) { filter: brightness(1.1); }
+.btn:active:not(:disabled) { transform: translateY(3px); box-shadow: inset 1px 1px 0 rgba(255,255,255,.18), 0 0 0 var(--ink); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-accent { --face: var(--accent); --text: var(--accent-ink); }
+.btn-gold { --face: var(--gold); --text: #2b1d04; }
+.btn-good { --face: #6fbf5a; --text: #0d2106; }
+.btn-bad { --face: var(--bad); --text: #2a0b08; }
+.btn-quiet { --face: var(--slab); }
+.btn[aria-pressed='true'] { --face: var(--accent); --text: var(--accent-ink); }
+
+/* ---- tabs ---- */
+.tab {
+  font-family: var(--font-display), sans-serif; font-weight: 700;
+  padding: .45rem .9rem; border: 2px solid var(--ink); border-bottom: 0; border-radius: 3px 3px 0 0;
+  background: var(--slab-lo); color: var(--paper-dim); cursor: pointer;
+}
+.tab:hover { color: var(--paper); }
+.tab[aria-pressed='true'], .tab[aria-selected='true'] { background: var(--slab); color: var(--paper); box-shadow: inset 0 3px 0 var(--accent); }
+
+/* ---- unit slots, hero cards, pickable rows ---- */
+.slot { background: var(--slab-lo); border: 2px solid var(--ink); border-radius: 3px; box-shadow: inset 0 2px 0 #0b0e15; }
+.slot-btn { cursor: pointer; box-shadow: inset 0 2px 0 #0b0e15, 0 3px 0 var(--ink); transition: transform .06s; }
+.slot-btn:hover { background: var(--slab); }
+.slot-btn:active { transform: translateY(3px); box-shadow: inset 0 2px 0 #0b0e15; }
+.hero, .target {
+  background: var(--slab); border: 2px solid var(--ink); border-radius: 3px; cursor: pointer;
+  box-shadow: inset 1px 1px 0 var(--rim), 0 3px 0 var(--ink);
+}
+.hero:hover:not(:disabled), .target:hover { background: var(--slab-hi); }
+.hero:disabled { opacity: .55; cursor: not-allowed; }
+.hero-on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold), 0 3px 0 var(--ink); }
+.target-on { background: var(--slab-hi); border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent), 0 3px 0 var(--ink); }
+
+/* shop cards */
+.card {
+  background: var(--slab); border: 2px solid var(--ink); border-radius: 3px; overflow: hidden; cursor: pointer;
+  box-shadow: inset 1px 1px 0 var(--rim), 0 3px 0 var(--ink); transition: transform .06s;
+}
+.card:hover:not(:disabled) { background: var(--slab-hi); }
+.card:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+.card:disabled { cursor: not-allowed; }
+.card:disabled > * { opacity: .7; }
+.card-on { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent), 0 3px 0 var(--ink); }
+
+/* segmented control: one joined row of options */
+.seg { display: inline-flex; border: 2px solid var(--ink); border-radius: 3px; box-shadow: 0 3px 0 var(--ink); overflow: hidden; }
+.seg > button { font-family: var(--font-display), sans-serif; font-weight: 700; font-size: .8rem; padding: .3rem .7rem; background: var(--slab); color: var(--paper-dim); cursor: pointer; }
+.seg > button + button { border-left: 2px solid var(--ink); }
+.seg > button:hover { color: var(--paper); }
+.seg > button[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); }
+
+/* ---- form fields ---- */
+.field {
+  background: var(--slab-lo); color: var(--paper); border: 2px solid var(--ink); border-radius: 3px;
+  box-shadow: inset 0 2px 0 #0b0e15; padding: .3rem .5rem; font: inherit;
+}
+.field:focus-visible { outline-offset: 0; border-color: var(--accent); }
+
+/* ---- bars ---- */
+.meter { height: .7rem; background: var(--slab-lo); border: 2px solid var(--ink); border-radius: 2px; overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--accent); box-shadow: inset 0 2px 0 rgba(255,255,255,.28); }
+
+/* ---- keyboard focus ---- */
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+input[type='range'] { accent-color: var(--accent); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--slab-lo); }
+::-webkit-scrollbar-thumb { background: var(--rim); border: 2px solid var(--slab-lo); }
+
+@keyframes arc-in { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+.arc-in { animation: arc-in .35s ease-out both; }
+@keyframes npc-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.npc-bob { animation: npc-bob 1.2s steps(1, end) infinite; }
+@keyframes nudge { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.nudge { animation: nudge 1s steps(2) infinite; }
+/* building level pips: the new pip pops once after an upgrade */
+.level-pop { animation: level-pop .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes level-pop { 0% { transform: rotate(45deg) scale(.2); } 100% { transform: rotate(45deg) scale(1); } }
+.tool-box > button:first-child:hover b { text-decoration: underline; text-underline-offset: 2px; }
+/* profile: the mayor card and player rows open a profile */
+.profile-card { cursor: pointer; }
+.profile-card:hover, .player-row:hover { border-color: var(--accent); }
+.profile-card:focus-visible, .player-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Vault: relics */
+.lore { background: color-mix(in srgb, var(--gold) 9%, var(--slab-lo)); border: 2px solid var(--ink); border-left: 6px solid var(--gold); }
+.relic-unknown { filter: brightness(0) opacity(.45); }
+.relic-mythic { animation: mythic-glint 2.4s steps(8) infinite; }
+@keyframes mythic-glint { 0%, 100% { box-shadow: inset 0 0 0 2px #ff5c8a; } 50% { box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #ff5c8a; } }
+.pedestal { min-height: 10.5rem; }
+/* find reveal: hard-edged rays that tick round like a pixel sprite, and the relic pops in once */
+.reveal-rays { background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--tier) 55%, transparent) 0 10deg, transparent 10deg 30deg);
+  -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%); mask: radial-gradient(circle, #000 30%, transparent 70%);
+  animation: rays-spin 12s steps(48) infinite; }
+.reveal-mythic .reveal-rays { animation-duration: 6s; }
+@keyframes rays-spin { to { transform: rotate(360deg); } }
+.reveal-pop { animation: reveal-pop .55s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes reveal-pop { 0% { opacity: 0; transform: scale(.3) rotate(-12deg); } 100% { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .arc-in, .nudge, .npc-bob, .win-in, .banner-in, .tip-in, .relic-mythic, .reveal-rays, .reveal-pop, .level-pop { animation: none; } .chip-up, .chip-down { display: none; } .float-up { animation: fade-only 1.2s both; } }
+@keyframes fade-only { 0%, 70% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
