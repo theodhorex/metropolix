@@ -1,0 +1,686 @@
+import {
+  Application,
+  Container,
+  Graphics,
+  Sprite,
+  type FederatedPointerEvent,
+  type Texture,
+  type Ticker,
+} from 'pixi.js';
+import { buildingLevel, GRID, type ArcId, type BuildingKind, type GameState } from '@metropolix/sim';
+import { BADGE_H, BADGE_W, buildSpriteBank, destroySpriteBank, SPRITE_H, SPRITE_W, TILE_H, tileHash, type SpriteBank } from './sprites';
+
+export const TW = 64; // tile width in world px
+export const TH = 32; // tile height
+const MARGIN_TOP = 110; // room for tall buildings above the grid
+
+type Tile = { x: number; y: number };
+
+/** 'high': sharp on HiDPI, 60 fps, full crowd. 'lite': 1x pixels, 30 fps, smaller crowd. */
+export type Quality = 'high' | 'lite';
+const QUALITY = {
+  high: { maxRes: 2, fps: 60, walkers: 36, soldiers: 12 },
+  lite: { maxRes: 1, fps: 30, walkers: 14, soldiers: 6 },
+} as const;
+
+interface AnimEntry {
+  sprite: Sprite;
+  frames: Texture[];
+  phase: number;
+}
+
+interface Walker {
+  sprite: Sprite;
+  x: number;
+  y: number;
+  tx: number;
+  ty: number;
+  v: number;
+  speed: number;
+  wait: number;
+  dist: number;
+  view: 0 | 1;
+  flip: number;
+  id: number;
+  ax?: number;
+  ay?: number;
+}
+
+export const tileToWorld = (x: number, y: number) => ({ x: ((x - y) * TW) / 2, y: ((x + y) * TH) / 2 });
+
+export class CityRenderer {
+  private app = new Application();
+  private world = new Container();
+  private ground = new Container();
+  private blocks = new Container();
+  private badges = new Container();
+  private cursor = new Graphics();
+  private ready = false;
+  private destroyed = false;
+  private state: GameState | null = null;
+  private hover: Tile | null = null;
+  private hoverBad = false;
+  /** Optional judge for the hover tile (set by the UI): true paints the cursor red. */
+  hoverCheck: ((t: Tile) => boolean) | null = null;
+  private placing = true;
+  private arc: ArcId | null = null;
+
+  private bank: SpriteBank | null = null;
+  private groundSprites: Sprite[][] = [];
+  private baseGroundTex: Texture[][] = [];
+  private spritePool: Sprite[] = [];
+  private badgePool: Sprite[] = [];
+  private animEntries: AnimEntry[] = [];
+  private animElapsedMs = 0;
+  private animTick = 0;
+  private walkers: Walker[] = [];
+  private soldiers: Walker[] = [];
+  private barracksAnchors: Tile[] = [];
+  private walkLayer = new Container();
+  private wantWalkers = 0;
+  private previews = new Map<string, string>();
+  private quality: Quality = 'high';
+  /** In auto mode the renderer drops to 'lite' by itself when frames stay slow. */
+  private autoQuality = true;
+  private slowMs = 0;
+  private sampleMs = 0;
+  private paused = false;
+  /** Called when auto mode switches quality, so the UI can show it. */
+  onQualityChange: (q: Quality) => void = () => {};
+
+  // camera: (cx, cy) is the world point at screen centre, k the zoom
+  private cx = 0;
+  private cy = 0;
+  private k = 1;
+  private minK = 0.2;
+  private drag: { sx: number; sy: number; px: number; py: number; moved: boolean } | null = null;
+  private wheelHandler: ((e: WheelEvent) => void) | null = null;
+
+  onTileClick: (t: Tile) => void = () => {};
+  onTileHover: (t: Tile | null) => void = () => {};
+  onNpcClick: (n: { id: number; variant: number; x: number; y: number }) => void = () => {};
+  private pausedNpc = -1;
+  private hoverNpc = -1;
+  private npcSeq = 0;
+
+  async init(host: HTMLElement) {
+    // PixiJS v8 Application initialization & stage setup
+    // Source: https://pixijs.download/v8.22.0/docs/app.Application.html#init
+    await this.app.init({
+      resizeTo: host,
+      background: 0x0e131d,
+      antialias: false,
+      roundPixels: true,
+      resolution: Math.min(window.devicePixelRatio || 1, QUALITY[this.quality].maxRes),
+      autoDensity: true,
+      // a flat pixel-art scene runs fine on the integrated GPU; this saves battery on dual-GPU laptops
+      powerPreference: 'low-power',
+    });
+    this.app.ticker.maxFPS = QUALITY[this.quality].fps;
+    if (this.destroyed) {
+      this.app.destroy(true);
+      return;
+    }
+    this.bank = buildSpriteBank(this.arc);
+    host.appendChild(this.app.canvas);
+    this.walkLayer.sortableChildren = true;
+    // the stage is interactive, so descendants inherit it: keep decor out of hit testing so citizens receive clicks
+    this.ground.eventMode = 'none';
+    this.blocks.eventMode = 'none';
+    this.badges.eventMode = 'none';
+    this.cursor.eventMode = 'none';
+    this.world.addChild(this.ground, this.blocks, this.badges, this.walkLayer, this.cursor);
+    this.app.stage.addChild(this.world);
+    this.app.stage.eventMode = 'static';
+    this.app.stage.hitArea = this.app.screen;
+    this.app.stage.on('pointerdown', (e: FederatedPointerEvent) => {
+      this.drag = { sx: e.global.x, sy: e.global.y, px: this.cx, py: this.cy, moved: false };
+    });
+    this.app.stage.on('pointermove', (e: FederatedPointerEvent) => {
+      const d = this.drag;
+      if (d) {
+        const dx = e.global.x - d.sx, dy = e.global.y - d.sy;
+        if (!d.moved && Math.hypot(dx, dy) > 5) d.moved = true;
+        if (d.moved) {
+          this.cx = d.px - dx / this.k;
+          this.cy = d.py - dy / this.k;
+          this.applyView();
+          this.setHover(null);
+          return;
+        }
+      }
+      this.setHover(this.pick(e));
+    });
+    const endDrag = (e: FederatedPointerEvent) => {
+      const d = this.drag;
+      this.drag = null;
+      if (d && !d.moved) {
+        const t = this.pick(e);
+        if (t) this.onTileClick(t);
+      }
+    };
+    this.app.stage.on('pointerup', endDrag);
+    this.app.stage.on('pointerupoutside', () => { this.drag = null; });
+    this.app.stage.on('pointerleave', () => this.setHover(null));
+    this.wheelHandler = (e: WheelEvent) => {
+      e.preventDefault();
+      this.zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.offsetX, e.offsetY);
+    };
+    this.app.canvas.addEventListener('wheel', this.wheelHandler, { passive: false });
+    this.app.renderer.on('resize', () => this.applyView());
+    // PixiJS v8 Ticker listener for lightweight sprite frame animation
+    // Source: https://pixijs.download/v8.22.0/docs/ticker.Ticker.html#add
+    this.app.ticker.add(this.onTick, this);
+    this.drawGround();
+    this.resetView();
+    this.ready = true;
+    this.applyQuality(this.quality);
+    if (this.paused) this.app.ticker.stop();
+    this.warmPreviews();
+    if (this.state) this.draw(this.state);
+  }
+
+  destroy() {
+    this.destroyed = true;
+    if (this.ready) {
+      if (this.wheelHandler) this.app.canvas.removeEventListener('wheel', this.wheelHandler);
+      this.app.ticker.remove(this.onTick, this);
+      this.app.destroy(true, { children: true });
+    }
+    this.clearPreviews();
+    if (this.bank) {
+      destroySpriteBank(this.bank);
+      this.bank = null;
+    }
+    this.groundSprites.length = 0;
+    this.baseGroundTex.length = 0;
+    this.spritePool.length = 0;
+    this.badgePool.length = 0;
+    this.animEntries.length = 0;
+    this.walkers.length = 0;
+    this.soldiers.length = 0;
+    this.barracksAnchors.length = 0;
+  }
+
+  private onTick(ticker: Ticker) {
+    this.watchFrameRate(ticker.deltaMS);
+    this.moveWalkers(ticker.deltaMS);
+    if (this.animEntries.length === 0) return;
+    this.animElapsedMs += ticker.deltaMS;
+    if (this.animElapsedMs < 280) return;
+    this.animElapsedMs %= 280;
+    this.animTick = (this.animTick + 1) >>> 0;
+    for (let i = 0; i < this.animEntries.length; i++) {
+      const entry = this.animEntries[i]!;
+      entry.sprite.texture = entry.frames[(this.animTick + entry.phase) % entry.frames.length]!;
+    }
+  }
+
+  /**
+   * Auto quality: if most frames over the last few seconds missed the target by a wide margin,
+   * switch to 'lite' once. Long gaps (tab in background, a breakpoint) are ignored.
+   */
+  private watchFrameRate(dt: number) {
+    if (!this.autoQuality || this.quality === 'lite' || dt > 250) return;
+    this.sampleMs += dt;
+    if (dt > 1000 / 38) this.slowMs += dt;
+    if (this.sampleMs < 4000) return;
+    const slow = this.slowMs / this.sampleMs;
+    this.sampleMs = 0; this.slowMs = 0;
+    if (slow > 0.5) { this.applyQuality('lite'); this.onQualityChange('lite'); }
+  }
+
+  /** Pick a quality. 'auto' starts high (or lite when the browser asks to save data) and watches the frame rate. */
+  setQuality(q: Quality | 'auto') {
+    this.autoQuality = q === 'auto';
+    const nav = typeof navigator !== 'undefined' ? (navigator as Navigator & { connection?: { saveData?: boolean } }) : null;
+    const start: Quality = q === 'auto' ? (nav?.connection?.saveData ? 'lite' : 'high') : q;
+    this.sampleMs = 0; this.slowMs = 0;
+    this.applyQuality(start);
+    return start;
+  }
+
+  private applyQuality(q: Quality) {
+    this.quality = q;
+    if (!this.ready) return;
+    const cfg = QUALITY[q];
+    const res = Math.min(window.devicePixelRatio || 1, cfg.maxRes);
+    if (this.app.renderer.resolution !== res) this.app.renderer.resize(this.app.screen.width, this.app.screen.height, res);
+    this.app.ticker.maxFPS = cfg.fps;
+    this.syncWalkers();
+  }
+
+  /** Stop drawing while a full window covers the map; the city keeps simulating. */
+  setPaused(p: boolean) {
+    if (p === this.paused) return;
+    this.paused = p;
+    if (!this.ready) return;
+    if (p) this.app.ticker.stop(); else this.app.ticker.start();
+  }
+
+  /** Free tiles (no building) a citizen may stand on; they roam only between roads of empty land. */
+  private freeTile(): Tile | null {
+    const s = this.state;
+    if (!s) return null;
+    for (let i = 0; i < 30; i++) {
+      const x = Math.floor(Math.random() * GRID), y = Math.floor(Math.random() * GRID);
+      if (!s.grid[y]![x]) return { x, y };
+    }
+    return null;
+  }
+
+  /** Free tile within ~3 tiles of a barracks at (ax, ay) for soldier patrol. */
+  private freeSoldierTile(ax: number, ay: number): Tile | null {
+    const s = this.state;
+    if (!s) return null;
+    for (let i = 0; i < 24; i++) {
+      const x = Math.max(0, Math.min(GRID - 1, ax + Math.floor(Math.random() * 7) - 3));
+      const y = Math.max(0, Math.min(GRID - 1, ay + Math.floor(Math.random() * 7) - 3));
+      if (!s.grid[y]![x]) return { x, y };
+    }
+    for (let dy = -3; dy <= 3; dy++) {
+      const y = ay + dy;
+      if (y < 0 || y >= GRID) continue;
+      for (let dx = -3; dx <= 3; dx++) {
+        const x = ax + dx;
+        if (x >= 0 && x < GRID && !s.grid[y]![x]) return { x, y };
+      }
+    }
+    return this.freeTile();
+  }
+
+  private syncWalkers() {
+    const bank = this.bank, s = this.state;
+    if (!bank || !s) return;
+    const want = Math.min(QUALITY[this.quality].walkers, Math.ceil(s.pop / 5));
+    while (this.walkers.length > want) { const w = this.walkers.pop()!; w.sprite.destroy(); }
+    while (this.walkers.length < want) {
+      const t = this.freeTile();
+      if (!t) break;
+      const v = Math.floor(Math.random() * bank.citizens.length);
+      const sprite = new Sprite({ texture: bank.citizens[v]![0]![4]!, roundPixels: true });
+      sprite.anchor.set(0.5, 1);
+      const id = this.npcSeq++;
+      sprite.eventMode = 'static';
+      sprite.cursor = 'pointer';
+      sprite.on('pointerover', () => { this.hoverNpc = id; this.setHover(null); });
+      sprite.on('pointerout', () => { if (this.hoverNpc === id) this.hoverNpc = -1; });
+      sprite.on('pointerdown', (e: FederatedPointerEvent) => e.stopPropagation());
+      sprite.on('pointerup', (e: FederatedPointerEvent) => e.stopPropagation());
+      sprite.on('pointertap', (e: FederatedPointerEvent) => {
+        e.stopPropagation();
+        const w = this.walkers.find((x) => x.id === id);
+        if (!w) return;
+        const g = sprite.getGlobalPosition();
+        this.onNpcClick({ id, variant: w.v, x: g.x, y: g.y - 12 });
+      });
+      this.walkLayer.addChild(sprite);
+      this.walkers.push({ sprite, x: t.x, y: t.y, tx: t.x, ty: t.y, v, speed: (v === 3 ? 0.9 : 0.6) + Math.random() * 0.4, wait: Math.random() * 2000, dist: Math.random() * 4, view: 0, flip: 1, id });
+    }
+    for (const w of this.walkers) {
+      if (s.grid[Math.round(w.y)]?.[Math.round(w.x)]) { const t = this.freeTile(); if (t) { w.x = w.tx = t.x; w.y = w.ty = t.y; } }
+    }
+
+    // Collect barracks anchors prioritized by building level (level 3 first, then 2, then 1)
+    this.barracksAnchors.length = 0;
+    for (let targetLv = 3; targetLv >= 1; targetLv--) {
+      for (let y = 0; y < GRID; y++) {
+        const row = s.grid[y]!;
+        for (let x = 0; x < GRID; x++) {
+          if (row[x] === 'barracks' && buildingLevel(s, x, y) === targetLv) {
+            for (let rep = 0; rep < targetLv; rep++) {
+              this.barracksAnchors.push({ x, y });
+            }
+          }
+        }
+      }
+    }
+
+    const wantSoldiers = this.barracksAnchors.length > 0 && s.troops > 0
+      ? Math.min(QUALITY[this.quality].soldiers, Math.ceil(s.troops / 6))
+      : 0;
+    while (this.soldiers.length > wantSoldiers) { const w = this.soldiers.pop()!; w.sprite.destroy(); }
+    while (this.soldiers.length < wantSoldiers) {
+      const anchor = this.barracksAnchors[this.soldiers.length % this.barracksAnchors.length]!;
+      const t = this.freeSoldierTile(anchor.x, anchor.y);
+      if (!t) break;
+      const sprite = new Sprite({ texture: bank.soldiers[0]![4]!, roundPixels: true });
+      sprite.anchor.set(0.5, 1);
+      sprite.scale.set(0.8, 0.8);
+      sprite.position.set(((t.x - t.y) * TW) / 2, ((t.x + t.y) * TH) / 2 + TH / 2 + 2);
+      sprite.zIndex = t.x + t.y;
+      sprite.eventMode = 'none';
+      this.walkLayer.addChild(sprite);
+      this.soldiers.push({
+        sprite,
+        x: t.x,
+        y: t.y,
+        tx: t.x,
+        ty: t.y,
+        v: 0,
+        speed: 0.75 + Math.random() * 0.35,
+        wait: Math.random() * 800,
+        dist: Math.random() * 4,
+        view: 0,
+        flip: 1,
+        id: -1,
+        ax: anchor.x,
+        ay: anchor.y,
+      });
+    }
+    for (let i = 0; i < this.soldiers.length; i++) {
+      const w = this.soldiers[i]!;
+      const anchor = this.barracksAnchors[i % this.barracksAnchors.length]!;
+      w.ax = anchor.x;
+      w.ay = anchor.y;
+      if (s.grid[Math.round(w.y)]?.[Math.round(w.x)] || Math.abs(w.x - anchor.x) > 4 || Math.abs(w.y - anchor.y) > 4) {
+        const t = this.freeSoldierTile(anchor.x, anchor.y);
+        if (t) {
+          w.x = w.tx = t.x;
+          w.y = w.ty = t.y;
+          w.sprite.position.set(((t.x - t.y) * TW) / 2, ((t.x + t.y) * TH) / 2 + TH / 2 + 2);
+          w.sprite.zIndex = t.x + t.y;
+        }
+      }
+    }
+  }
+
+  private stepWalker(w: Walker, set: Texture[][], s: GameState, dt: number) {
+    const dx = w.tx - w.x, dy = w.ty - w.y, d = Math.hypot(dx, dy);
+    let frame = 4; // idle
+    if (w.id >= 0 && (w.id === this.pausedNpc || w.id === this.hoverNpc)) {
+      w.wait = Math.max(w.wait, 500); // stand still and wait while the player talks to them
+    } else if (d < 0.05) {
+      w.wait -= dt;
+      if (w.wait <= 0) {
+        const nx = w.ax !== undefined
+          ? Math.max(0, Math.min(GRID - 1, w.ax + Math.floor(Math.random() * 7) - 3))
+          : Math.max(0, Math.min(GRID - 1, Math.round(w.x + (Math.random() * 8 - 4))));
+        const ny = w.ay !== undefined
+          ? Math.max(0, Math.min(GRID - 1, w.ay + Math.floor(Math.random() * 7) - 3))
+          : Math.max(0, Math.min(GRID - 1, Math.round(w.y + (Math.random() * 8 - 4))));
+        if (!s.grid[ny]![nx]) { w.tx = nx; w.ty = ny; }
+        w.wait = w.ax !== undefined ? 300 + Math.random() * 1400 : 400 + Math.random() * 2500;
+      }
+    } else {
+      const stepLen = Math.min(d, (w.speed * dt) / 1000);
+      const nx = w.x + (dx / d) * stepLen, ny = w.y + (dy / d) * stepLen;
+      if (s.grid[Math.round(ny)]?.[Math.round(nx)]) { w.tx = w.x; w.ty = w.y; w.wait = 0; }
+      else { w.x = nx; w.y = ny; w.dist += stepLen; }
+      // screen direction from the dominant tile axis: +x down-right, +y down-left, -x up-left, -y up-right
+      const alongX = Math.abs(dx) >= Math.abs(dy);
+      const down = alongX ? dx > 0 : dy > 0;
+      w.view = down ? 0 : 1;
+      w.flip = alongX ? (down ? 1 : -1) : (down ? -1 : 1);
+      frame = Math.floor(w.dist * 5) % 4;
+    }
+    w.sprite.texture = set[w.view]![frame]!;
+    w.sprite.scale.set(w.flip * 0.8, 0.8);
+    w.sprite.position.set(((w.x - w.y) * TW) / 2, ((w.x + w.y) * TH) / 2 + TH / 2 + 2);
+    w.sprite.zIndex = w.x + w.y;
+  }
+
+  private moveWalkers(dt: number) {
+    const bank = this.bank, s = this.state;
+    if (!bank || !s || (this.walkers.length === 0 && this.soldiers.length === 0)) return;
+    for (let i = 0; i < this.walkers.length; i++) {
+      const w = this.walkers[i]!;
+      this.stepWalker(w, bank.citizens[w.v]!, s, dt);
+    }
+    for (let i = 0; i < this.soldiers.length; i++) {
+      this.stepWalker(this.soldiers[i]!, bank.soldiers, s, dt);
+    }
+  }
+
+  private static readonly MAX_K = 2.5;
+  private static readonly VISIBLE_TILES = 24; // default view shows about this many tiles across
+
+  private applyView() {
+    const { width, height } = this.app.screen;
+    this.minK = Math.min(width / (GRID * TW + 40), height / (GRID * TH + MARGIN_TOP + 30));
+    this.k = Math.min(CityRenderer.MAX_K, Math.max(this.minK, this.k));
+    this.cx = Math.min((GRID * TW) / 2, Math.max(-(GRID * TW) / 2, this.cx));
+    this.cy = Math.min(GRID * TH, Math.max(-MARGIN_TOP, this.cy));
+    this.world.scale.set(this.k);
+    this.world.position.set(Math.round(width / 2 - this.cx * this.k), Math.round(height / 2 - this.cy * this.k));
+    this.app.stage.hitArea = this.app.screen;
+  }
+
+  /** Centre the map at a comfortable default zoom. */
+  resetView() {
+    const { width } = this.app.screen;
+    this.k = width / (CityRenderer.VISIBLE_TILES * TW);
+    this.cx = 0;
+    this.cy = (GRID * TH) / 2;
+    this.applyView();
+  }
+
+  /** Zoom by a factor, keeping the screen point (ax, ay) fixed (defaults to the centre). */
+  zoomBy(f: number, ax?: number, ay?: number) {
+    if (!this.ready) return;
+    const { width, height } = this.app.screen;
+    const gx = ax ?? width / 2, gy = ay ?? height / 2;
+    const p = this.world.toLocal({ x: gx, y: gy });
+    this.k = Math.min(CityRenderer.MAX_K, Math.max(this.minK, this.k * f));
+    this.cx = p.x - (gx - width / 2) / this.k;
+    this.cy = p.y - (gy - height / 2) / this.k;
+    this.applyView();
+  }
+
+  private pick(e: FederatedPointerEvent): Tile | null {
+    const p = this.world.toLocal(e.global);
+    const a = p.x / (TW / 2);
+    const b = p.y / (TH / 2);
+    const x = Math.floor((a + b) / 2);
+    const y = Math.floor((b - a) / 2);
+    return x >= 0 && y >= 0 && x < GRID && y < GRID ? { x, y } : null;
+  }
+
+  private diamond(g: Graphics, cx: number, cy: number, w: number, h: number) {
+    return g.poly([cx, cy, cx + w, cy + h, cx, cy + 2 * h, cx - w, cy + h]);
+  }
+
+  private drawGround() {
+    const bank = this.bank;
+    if (!bank) return;
+    this.ground.removeChildren();
+    this.groundSprites = Array.from({ length: GRID }, () => Array<Sprite>(GRID));
+    this.baseGroundTex = Array.from({ length: GRID }, () => Array<Texture>(GRID));
+
+    for (let d = 0; d < GRID * 2; d++) {
+      for (let y = 0; y < GRID; y++) {
+        const x = d - y;
+        if (x < 0 || x >= GRID) continue;
+        const parity = ((x + y) & 1) as 0 | 1;
+        const h = tileHash(x, y, 101);
+        // Weighted variant selection: ~55% lush grass (0), ~15% yellow flowers (1), ~15% blue/pink flowers (2), ~15% pebbles (3)
+        const r = h % 20;
+        const variant = r < 11 ? 0 : r < 14 ? 1 : r < 17 ? 2 : 3;
+        const tex = bank.ground[parity]![variant]!;
+        const c = tileToWorld(x, y);
+        // PixiJS v8 Sprite with roundPixels for crisp pixel art
+        // Source: https://pixijs.download/v8.22.0/docs/scene.Sprite.html
+        const sp = new Sprite({
+          texture: tex,
+          x: c.x - SPRITE_W / 2,
+          y: c.y,
+          roundPixels: true,
+        });
+        this.ground.addChild(sp);
+        this.groundSprites[y]![x] = sp;
+        this.baseGroundTex[y]![x] = tex;
+      }
+    }
+  }
+
+  private drawBlocks() {
+    const s = this.state;
+    const bank = this.bank;
+    if (!s || !bank) return;
+
+    let used = 0;
+    let badgeUsed = 0;
+    this.animEntries.length = 0;
+
+    // Depth-sorted by x+y diagonal, matching the original drawBlocks order
+    for (let d = 0; d < GRID * 2; d++) {
+      for (let y = 0; y < GRID; y++) {
+        const x = d - y;
+        if (x < 0 || x >= GRID) continue;
+        const kind = s.grid[y]![x];
+        const gSp = this.groundSprites[y]?.[x];
+        if (!kind) {
+          if (gSp) gSp.texture = this.baseGroundTex[y]![x]!;
+          continue;
+        }
+        if (gSp) gSp.texture = bank.foundation;
+
+        const lv = buildingLevel(s, x, y);
+        const frames = lv >= 2 ? bank.levelFrames(kind, lv) : bank.buildings[kind];
+        const phase = (x * 3 + y * 5) & 7;
+        const tex = frames[(this.animTick + phase) % frames.length]!;
+        const c = tileToWorld(x, y);
+
+        let sp = this.spritePool[used];
+        if (!sp) {
+          sp = new Sprite({ roundPixels: true });
+          this.spritePool.push(sp);
+          this.blocks.addChild(sp);
+        }
+        sp.texture = tex;
+        sp.position.set(c.x - SPRITE_W / 2, c.y + TILE_H - SPRITE_H);
+        sp.visible = true;
+        used++;
+
+        if (frames.length > 1) {
+          this.animEntries.push({ sprite: sp, frames, phase });
+        }
+
+        if (lv >= 2) {
+          const bTex = bank.badges[lv >= 3 ? 1 : 0]!;
+          let bSp = this.badgePool[badgeUsed];
+          if (!bSp) {
+            bSp = new Sprite({ roundPixels: true });
+            this.badgePool.push(bSp);
+            this.badges.addChild(bSp);
+          }
+          bSp.texture = bTex;
+          bSp.position.set(c.x - BADGE_W / 2, c.y + TILE_H - BADGE_H - 1);
+          bSp.visible = true;
+          badgeUsed++;
+        }
+      }
+    }
+
+    for (let i = used; i < this.spritePool.length; i++) {
+      this.spritePool[i]!.visible = false;
+    }
+    for (let i = badgeUsed; i < this.badgePool.length; i++) {
+      this.badgePool[i]!.visible = false;
+    }
+  }
+
+  private drawCursor() {
+    const g = this.cursor;
+    g.clear();
+    if (!this.hover) return;
+    const c = tileToWorld(this.hover.x, this.hover.y);
+    this.diamond(g, c.x, c.y, TW / 2, TH / 2)
+      .fill({ color: this.hoverBad ? 0xef5350 : 0x4fc3f7, alpha: 0.35 })
+      .stroke({ width: 2, color: this.hoverBad ? 0xef5350 : 0x4fc3f7 });
+  }
+
+  private setHover(t: Tile | null) {
+    const same = (!t && !this.hover) || (t && this.hover && t.x === this.hover.x && t.y === this.hover.y);
+    if (same) return;
+    this.hover = t;
+    this.updateCursorColor();
+    this.drawCursor();
+    this.onTileHover(t);
+  }
+
+  private updateCursorColor() {
+    if (!this.hover) { this.hoverBad = false; return; }
+    this.hoverBad = this.hoverCheck ? this.hoverCheck(this.hover) : !!(this.state && this.state.grid[this.hover.y]![this.hover.x] && this.placing);
+  }
+
+  /** Switch the colour theme (and later per-arc sprites) for the whole city. */
+  setArc(arc: ArcId | null) {
+    if (arc === this.arc) return;
+    this.arc = arc;
+    this.clearPreviews();
+    if (!this.ready) return;
+    const old = this.bank;
+    this.bank = buildSpriteBank(arc);
+    this.drawGround();
+    if (this.state) this.drawBlocks();
+    for (const w of this.walkers) w.sprite.destroy();
+    this.walkers.length = 0;
+    for (const w of this.soldiers) w.sprite.destroy();
+    this.soldiers.length = 0;
+    this.syncWalkers();
+    if (old) destroySpriteBank(old);
+    this.warmPreviews();
+  }
+
+  /** Freeze one citizen in place (while a dialog is open); pass -1 to release. */
+  pauseNpc(id: number) { this.pausedNpc = id; }
+
+  /** Image URL of a building's sprite in the current race style (cached), for UI cards. */
+  previewUrl(kind: string, level = 1): string | null {
+    const key = level >= 2 ? `${kind}@${level >= 3 ? 3 : 2}` : kind;
+    const hit = this.previews.get(key);
+    if (hit) return hit;
+    const c = this.previewCanvas(kind, level);
+    if (!c) return null;
+    // not warmed yet: encode now (synchronous, ~8 ms per sprite)
+    const url = c.toDataURL();
+    this.previews.set(key, url);
+    return url;
+  }
+
+  private previewCanvas(kind: string, level = 1): HTMLCanvasElement | null {
+    const bank = this.bank;
+    if (!bank || !(kind in bank.buildings)) return null;
+    const k = kind as BuildingKind;
+    const frames = level >= 2 ? bank.levelFrames(k, level) : bank.buildings[k];
+    const res = frames[0]?.source.resource as unknown;
+    return res instanceof HTMLCanvasElement ? res : null;
+  }
+
+  /**
+   * Encode every building preview in the background (toBlob runs off the main thread),
+   * so opening the shop for the first time does not stall on 20+ PNG encodes.
+   */
+  private warmPreviews() {
+    const bank = this.bank;
+    if (!bank) return;
+    for (const kind of Object.keys(bank.buildings)) {
+      if (this.previews.has(kind)) continue;
+      this.previewCanvas(kind)?.toBlob((b) => {
+        if (!b || this.bank !== bank || this.previews.has(kind)) return;
+        this.previews.set(kind, URL.createObjectURL(b));
+      });
+    }
+  }
+
+  private clearPreviews() {
+    for (const url of this.previews.values()) if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+    this.previews.clear();
+  }
+
+  setPlacing(p: boolean) {
+    this.placing = p;
+    this.updateCursorColor();
+    this.drawCursor();
+  }
+
+  draw(state: GameState) {
+    this.state = state;
+    if (!this.ready) return;
+    this.drawBlocks();
+    this.syncWalkers();
+    this.updateCursorColor();
+    this.drawCursor();
+  }
+}
