@@ -1,0 +1,9 @@
+node_modules
+.next
+*.tsbuildinfo
+next-env.d.ts
+.env*
+# Rust build output
+target/
+# local worker task files and reports (project management, not source)
+.agy/

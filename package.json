@@ -1,0 +1,11 @@
+{
+  "name": "metropolix",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @metropolix/web dev",
+    "build": "pnpm --filter @metropolix/web build",
+    "test": "pnpm --filter @metropolix/sim test",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
