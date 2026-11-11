@@ -1,0 +1,45 @@
+/*
+  Landing page extras: only what Tailwind cannot do cleanly.
+  Uses the game's tokens from globals.css (--ink --slab --rim --paper --gold ...).
+*/
+
+/* in-page links land below the sticky bar; smooth scroll unless the visitor asks for less motion */
+.l-section { scroll-margin-top: 4.5rem; }
+@media (prefers-reduced-motion: no-preference) {
+  html:has(main[data-page='landing']) { scroll-behavior: smooth; }
+}
+
+/* pixel frame for screenshots: ink outline, rim bevel, hard stepped shadow (no blur) */
+.shot {
+  display: block;
+  background: var(--slab-lo);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px var(--rim), 0 0 0 4px var(--ink), 4px 8px 0 4px var(--ink);
+}
+.shot img { display: block; width: 100%; height: auto; }
+
+/* section divider: a row of battlements, drawn as a repeating 16x8 pixel tile */
+.pixel-divider {
+  height: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%233a465e' d='M0 4h8v4H0z'/%3E%3Cpath fill='%231d2432' d='M8 0h8v8H8z'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  image-rendering: pixelated;
+}
+
+/* people cards: --card is that people's accent (set inline from ARCS[i].accent) */
+.people-card {
+  background: var(--slab);
+  border: 2px solid var(--card);
+  border-radius: 3px;
+  box-shadow: inset 0 4px 0 var(--card), inset 1px 5px 0 rgba(255, 255, 255, .12), 0 4px 0 var(--ink);
+}
+
+/* roadmap connector between steps (wide screens only) */
+.road-step::after {
+  content: '';
+  position: absolute; top: 50%; right: -1.25rem; width: 1rem; height: 4px;
+  background: repeating-linear-gradient(90deg, var(--rim) 0 4px, transparent 4px 8px);
+  display: none;
+}
+@media (min-width: 1024px) { .road-step:not(:last-child)::after { display: block; } }
