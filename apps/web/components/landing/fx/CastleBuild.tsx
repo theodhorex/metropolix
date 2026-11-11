@@ -27,13 +27,13 @@ export interface CastleBlock {
 }
 
 // Crisp castle palette
-const STONE_BASE = '#c4cddc';
-const STONE_LIGHT = '#d8dee9';
-const STONE_MED = '#cfd6e4';
-const STONE_DARK = '#9aa5b8';
-const STONE_DEEP = '#4c566a';
-const GATE_BG = '#242933';
-const ROOF_COLOR = '#5e81ac';
+const STONE_BASE = '#dcae74';
+const STONE_LIGHT = '#efc98e';
+const STONE_MED = '#e4bb80';
+const STONE_DARK = '#b07c48';
+const STONE_DEEP = '#6b4426';
+const GATE_BG = '#2a1a12';
+const ROOF_COLOR = '#c4483a';
 
 export const CASTLE_BLOCKS: CastleBlock[] = [
   // --- PHASE 0: FOUNDATION (y: 260-360) ---
