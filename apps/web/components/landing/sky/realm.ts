@@ -159,13 +159,17 @@ void main() {
     col += vec3(1.0, 0.95, 0.8) * streak * (1.0 - along / 0.16) * uNight;
   }
 
-  // aurora ribbons, posterised
+  // aurora curtains: a wavy lower hem, fine vertical rays rising from it and fading upward, posterised
   if (uAurora > 0.01) {
-    float w = sin(uv.x * 5.0 + uTime * 0.25 + sin(uv.x * 11.0 - uTime * 0.18) * 0.8);
-    float band = exp(-pow((t - (0.72 + w * 0.06)) * 9.0, 2.0));
-    float curtain = 0.6 + 0.4 * sin(uv.x * 40.0 + uTime * 0.6 + w * 3.0);
-    vec3 ac = mix(vec3(0.20, 0.95, 0.62), vec3(0.62, 0.38, 1.0), smoothstep(0.2, 0.9, uv.x + w * 0.1));
-    col += ac * floor(band * curtain * 5.0) / 5.0 * 0.55 * uAurora;
+    float w = sin(uv.x * 4.0 + uTime * 0.22 + sin(uv.x * 9.0 - uTime * 0.15) * 0.9);
+    float hem = 0.6 + w * 0.05;
+    float above = t - hem;
+    float body = step(0.0, above) * exp(-above * 5.5) * smoothstep(0.0, 0.015, above + 0.004);
+    float rays = pow(0.5 + 0.5 * sin(uv.x * aspect * 64.0 + w * 5.0 + uTime * 0.35), 3.0);
+    float drape = smoothstep(-0.3, 0.9, sin(uv.x * 3.4 + uTime * 0.06 + 1.3));
+    float glow = body * (0.3 + 0.7 * rays) * drape;
+    vec3 ac = mix(vec3(0.22, 0.96, 0.6), vec3(0.6, 0.36, 1.0), smoothstep(0.02, 0.3, above));
+    col += ac * floor(glow * 4.0) / 4.0 * 0.5 * uAurora;
   }
 
   // the visitor's lantern: a warm pool of light under the pointer after dusk
@@ -214,6 +218,9 @@ export function createRealmSky(host: HTMLElement, opts: RealmOptions): RealmSky 
   const canvas = renderer.domElement;
   canvas.className = 'realm-sky-canvas';
   host.appendChild(canvas);
+  // a shader this GPU cannot compile would paint black: drop the canvas so the CSS gradient shows instead
+  let broken = false;
+  renderer.debug.onShaderError = () => { broken = true; };
 
   const scene = new Scene();
   const camera = new PerspectiveCamera(50, 1, 0.1, 400);
@@ -386,9 +393,10 @@ export function createRealmSky(host: HTMLElement, opts: RealmOptions): RealmSky 
     uni.uNight.value = s.night; uni.uAurora.value = lite ? s.aurora * 0.8 : s.aurora; uni.uGlow.value = s.glow;
     uni.uTime.value = time; uni.uRise.value = 1 - Math.pow(1 - rise, 3); uni.uScroll.value = prog;
     uni.uMoon.value = dark ? 1 : 0;
-    // the sun climbs, crosses and sets as the page scrolls; the moon drifts slowly the other way
-    if (dark) { uni.uSunPos.value.set(0.76 - 0.42 * prog, 0.8 - 0.06 * prog); uni.uSunR.value = 0.034; }
-    else { uni.uSunPos.value.set(0.82 - 0.64 * prog, 0.5 + 0.38 * Math.sin(Math.PI * (prog + 0.12))); uni.uSunR.value = 0.046; }
+    // the sun climbs and sinks as the page scrolls; the moon drifts slowly
+    // both keep to the upper right, clear of the centred headings and text columns
+    if (dark) { uni.uSunPos.value.set(0.86 - 0.06 * prog, 0.84 - 0.05 * prog); uni.uSunR.value = 0.034; }
+    else { uni.uSunPos.value.set(0.87 - 0.08 * prog, 0.6 + 0.24 * Math.sin(Math.PI * (prog + 0.12))); uni.uSunR.value = 0.046; }
     uni.uLantern.value = 0; // the owner prefers the sparkle trail (motion/CursorTrail) over a lantern glow
     uni.uPtr.value.set(ptrOn ? ptrX : -1, ptrOn ? 1 - ptrY : -1);
 
@@ -459,6 +467,7 @@ export function createRealmSky(host: HTMLElement, opts: RealmOptions): RealmSky 
     }
 
     renderer.render(scene, camera);
+    if (broken) { cancelAnimationFrame(raf); canvas.remove(); return; }
     if (!canvas.dataset.ready) canvas.dataset.ready = '1';
   };
   raf = requestAnimationFrame(frame);
