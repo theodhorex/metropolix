@@ -106,6 +106,7 @@ export class CityRenderer {
   private underside = new Container();
   private rocks: { g: Graphics; y: number; phase: number }[] = [];
   private falls: TilingSprite[] = [];
+  private waterTex: Texture | null = null;
   private bobMs = 0;
   private baseY = 0;
   private effK = 1;
@@ -236,7 +237,8 @@ export class CityRenderer {
       this.app.ticker.remove(this.onTick, this);
       this.app.destroy(true, { children: true });
     }
-    for (const f of this.falls) f.texture.destroy(true);
+    this.waterTex?.destroy(true);
+    this.waterTex = null;
     this.falls.length = 0;
     this.rocks.length = 0;
     this.clearPreviews();
@@ -677,7 +679,7 @@ export class CityRenderer {
     const wx = q(B.x + half * 0.42);
     const wTop = Math.floor(edgeY(wx)) - 4;
     const wLen = depthAt(wx) + 60;
-    const tex = this.waterTexture();
+    const tex = (this.waterTex ??= this.waterTexture());
     const segs: [number, number, number][] = [[0, wLen, 0.95], [wLen, 34, 0.55], [wLen + 34, 30, 0.25]];
     for (const [y, len, alpha] of segs) {
       const f = new TilingSprite({ texture: tex, width: 12, height: len });
