@@ -146,7 +146,7 @@ export default function SiteFooter() {
               aria-label={tr(
                 'Rebuild the crest',
                 'Bangun ulang lambang',
-                '문장 다시 조립하기',
+                '엠블럼 다시 쌓기',
                 '重组纹章'
               )}
             >
