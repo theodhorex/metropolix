@@ -42,6 +42,64 @@ const SHARDS = [
   { dx: 0, dy: 26, rot: 90, s: 4 },
 ];
 
+const RELIC_I18N: Partial<Record<RelicKind, {
+  name: { en: string; id: string; ko: string; zh: string };
+  desc: { en: string; id: string; ko: string; zh: string };
+}>> = {
+  geode: {
+    name: { en: 'Crystal Geode', id: 'Geoda Kristal', ko: '수정 정동석', zh: '水晶晶洞' },
+    desc: {
+      en: 'A plain rock that cracked open full of light.',
+      id: 'Batu biasa yang pecah dan memancarkan cahaya.',
+      ko: '빛으로 가득 찬 깨진 평범한 바위입니다.',
+      zh: '一块裂开的普通石头，内里流光溢彩。',
+    },
+  },
+  moonpearl: {
+    name: { en: 'Moonwell Pearl', id: 'Mutiara Moonwell', ko: '달샘 진주', zh: '月井之珠' },
+    desc: {
+      en: 'Found in a well bucket. It glows on moonless nights.',
+      id: 'Ditemukan di ember sumur. Bersinar saat malam tanpa bulan.',
+      ko: '우물 두레박에서 발견되었습니다. 달이 없는 밤에 은은하게 빛납니다.',
+      zh: '在水井吊桶中发现。在无月之夜散发荧光。',
+    },
+  },
+  starmetal: {
+    name: { en: 'Starmetal Ore', id: 'Bijih Logam Bintang', ko: '별금속 광석', zh: '星金矿石' },
+    desc: {
+      en: 'Metal that fell from the sky. Smiths fight over it.',
+      id: 'Logam yang jatuh dari langit. Pandai besi berebut mendapatkannya.',
+      ko: '하늘에서 떨어진 금속입니다. 대장장이들이 서로 차지하려 다툽니다.',
+      zh: '自天外坠落的天外陨金。铁匠们为之争破头。',
+    },
+  },
+  goldtimber: {
+    name: { en: 'Gilded Timber', id: 'Kayu Berlapis Emas', ko: '금빛 목재', zh: '镀金原木' },
+    desc: {
+      en: 'A log with grain of real gold. The saw rang when it hit.',
+      id: 'Batang kayu dengan serat emas murni. Gergaji berdenting saat menyentuhnya.',
+      ko: '진짜 금결이 새겨진 통나무입니다. 톱이 닿는 순간 맑은 쇳소리가 울렸습니다.',
+      zh: '带有真金纹理的原木。锯条切入时发出清脆鸣响。',
+    },
+  },
+  phoenixfeather: {
+    name: { en: 'Phoenix Feather', id: 'Bulu Phoenix', ko: '불사조의 깃털', zh: '不死鸟之羽' },
+    desc: {
+      en: 'Fell from the canopy still burning, and never went out.',
+      id: 'Jatuh dari kanopi hutan dalam keadaan terbakar, dan tak pernah padam.',
+      ko: '불타는 채로 숲의 가지에서 떨어졌으며, 결코 꺼지지 않았습니다.',
+      zh: '自树冠坠落时仍在燃烧，且永不熄灭。',
+    },
+  },
+};
+
+const RARITY_NAMES: Record<string, { en: string; id: string; ko: string; zh: string }> = {
+  rare: { en: 'Rare', id: 'Langka', ko: '희귀', zh: '稀有' },
+  epic: { en: 'Epic', id: 'Epik', ko: '에픽', zh: '史诗' },
+  legendary: { en: 'Legendary', id: 'Legendaris', ko: '전설', zh: '传说' },
+  mythic: { en: 'Super Legendary', id: 'Super Legendaris', ko: '초전설', zh: '神话' },
+};
+
 export default function RelicTiles({ className = '' }: { className?: string }) {
   const tr = useTr();
   const foundRelics = useFoundRelics();
@@ -96,10 +154,19 @@ export default function RelicTiles({ className = '' }: { className?: string }) {
         const isCracked = burstTile === i;
         const relicDef = isRelicTile ? RELICS[t.relic!] : null;
         const rarityInfo = relicDef ? RARITY[relicDef.rarity] : null;
+        const relicI18n = t.relic ? RELIC_I18N[t.relic] : undefined;
+        const rarityI18n = relicDef ? RARITY_NAMES[relicDef.rarity] : undefined;
 
         const tileLabel = isFound && relicDef
-          ? `${relicDef.name} (${rarityInfo?.name})`
-          : tr('Frosted tile', 'Ubin kaca');
+          ? (relicI18n && rarityI18n
+              ? tr(
+                  `${relicI18n.name.en} (${rarityI18n.en})`,
+                  `${relicI18n.name.id} (${rarityI18n.id})`,
+                  `${relicI18n.name.ko} (${rarityI18n.ko})`,
+                  `${relicI18n.name.zh} (${rarityI18n.zh})`
+                )
+              : `${relicDef.name} (${rarityInfo?.name})`)
+          : tr('Frosted tile', 'Ubin kaca', '반투명 타일', '磨砂地块');
 
         return (
           <div
@@ -194,7 +261,7 @@ export default function RelicTiles({ className = '' }: { className?: string }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="truncate text-xs font-bold leading-tight">
-                        {relicDef.name}
+                        {relicI18n ? <T {...relicI18n.name} /> : relicDef.name}
                       </span>
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5">
@@ -205,13 +272,13 @@ export default function RelicTiles({ className = '' }: { className?: string }) {
                           backgroundColor: `color-mix(in srgb, ${rarityInfo.color} 18%, transparent)`,
                         }}
                       >
-                        {rarityInfo.name}
+                        {rarityI18n ? <T {...rarityI18n} /> : rarityInfo.name}
                       </span>
                     </div>
                   </div>
                 </div>
                 <p className="mt-1.5 text-[11px] leading-snug text-[var(--l-muted)]">
-                  {relicDef.desc}
+                  {relicI18n ? <T {...relicI18n.desc} /> : relicDef.desc}
                 </p>
                 {/* 3-second progress indicator */}
                 <div className="mt-2 h-0.5 w-full overflow-hidden rounded-full bg-[var(--l-line)]">
@@ -240,23 +307,25 @@ export default function RelicTiles({ className = '' }: { className?: string }) {
             </span>
             <div className="flex-1 text-xs leading-relaxed">
               <strong className="block font-bold text-[var(--l-ink)]">
-                <T en="Treasure hunter!" id="Pemburu harta karun!" />
+                <T en="Treasure hunter!" id="Pemburu harta karun!" ko="보물 사냥꾼!" zh="宝藏猎人！" />
               </strong>
               <span className="text-[var(--l-muted)]">
                 <T
                   en="In the game, relics turn up in your mines, lumber mills, workshops and farms, very rarely."
                   id="Di dalam game, relik sesekali muncul dari tambang, penggergajian, bengkel, dan ladang Anda, sangat jarang."
+                  ko="게임에서는 광산, 벌목장, 작업장, 농장에서 아주 드물게 유물이 발견됩니다."
+                  zh="在游戏中，矿井、伐木场、作坊与农场有极小概率会挖掘出遗物。"
                 />
               </span>
               <div className="mt-1 text-[11px] font-mono text-[var(--gold,#f2c14e)]">
                 {`${TOTAL_HERO_RELICS} / ${TOTAL_HERO_RELICS} `}
-                <T en="relics uncovered" id="relik terungkap" />
+                <T en="relics uncovered" id="relik terungkap" ko="유물 발견됨" zh="遗物已发现" />
               </div>
             </div>
             <button
               type="button"
               onClick={() => setShowToast(false)}
-              aria-label={tr('Close notification', 'Tutup pemberitahuan')}
+              aria-label={tr('Close notification', 'Tutup pemberitahuan', '알림 닫기', '关闭通知')}
               className="shrink-0 rounded-md p-1 text-[var(--l-muted)] hover:text-[var(--l-ink)]"
             >
               ✕

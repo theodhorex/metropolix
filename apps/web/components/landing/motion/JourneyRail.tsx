@@ -10,13 +10,18 @@ import './journey.css';
  * down as the page scrolls, passing a waypoint flag for every section. Flags are links to the sections.
  * Desktop only (>= 1100px, where the margin has room); hidden for touch-sized screens.
  */
-const STOPS: { id: string; en: string; idn: string }[] = [
-  { id: 'top', en: 'The gate', idn: 'Gerbang' },
-  { id: 'peoples', en: 'Peoples', idn: 'Bangsa' },
-  { id: 'how', en: 'A reign', idn: 'Masa kuasa' },
-  { id: 'world', en: 'The world', idn: 'Dunia' },
-  { id: 'chain', en: 'Roadmap', idn: 'Peta jalan' },
-  { id: 'faq', en: 'Questions', idn: 'Tanya jawab' },
+interface StopDef {
+  id: string;
+  label: { en: string; id: string; ko: string; zh: string };
+}
+
+const STOPS: readonly StopDef[] = [
+  { id: 'top', label: { en: 'The gate', id: 'Gerbang', ko: '성문', zh: '城门' } },
+  { id: 'peoples', label: { en: 'Peoples', id: 'Bangsa', ko: '종족', zh: '种族' } },
+  { id: 'how', label: { en: 'A reign', id: 'Masa kuasa', ko: '통치', zh: '统治时代' } },
+  { id: 'world', label: { en: 'The world', id: 'Dunia', ko: '세계', zh: '世界' } },
+  { id: 'chain', label: { en: 'Roadmap', id: 'Peta jalan', ko: '로드맵', zh: '路线图' } },
+  { id: 'faq', label: { en: 'Questions', id: 'Tanya jawab', ko: '자주 묻는 질문', zh: '常见问题' } },
 ];
 
 export default function JourneyRail() {
@@ -67,7 +72,7 @@ export default function JourneyRail() {
   };
 
   return (
-    <nav className="jr" aria-label={tr('Journey through the page', 'Perjalanan menyusuri halaman')}>
+    <nav className="jr" aria-label={tr('Journey through the page', 'Perjalanan menyusuri halaman', '페이지 둘러보기', '页面导览')}>
       <div className="jr-road" aria-hidden="true" />
       {stops.map((s) => {
         const meta = STOPS.find((x) => x.id === s.id)!;
@@ -75,7 +80,7 @@ export default function JourneyRail() {
           <button key={s.id} type="button" className="jr-stop" data-on={active === s.id || undefined}
             style={{ top: `${s.at * 100}%` }} onClick={() => go(s.id)} aria-current={active === s.id ? 'location' : undefined}>
             <span className="jr-flag" aria-hidden="true" />
-            <span className="jr-label font-display"><T en={meta.en} id={meta.idn} /></span>
+            <span className="jr-label font-display"><T {...meta.label} /></span>
           </button>
         );
       })}

@@ -51,14 +51,14 @@ export default function SiteNav() {
     <header className="pointer-events-none absolute inset-x-0 top-[22px] z-50 flex justify-center px-4">
       <nav
         data-hero-nav
-        aria-label={tr('Main navigation', 'Navigasi utama')}
+        aria-label={tr('Main navigation', 'Navigasi utama', '주요 탐색', '主导航')}
         className="pointer-events-auto inline-flex max-w-[calc(100vw-32px)] items-center gap-3 rounded-full border border-[var(--l-line)] bg-[color-mix(in_srgb,var(--l-surface)_90%,transparent)] shadow-[0_4px_24px_var(--l-shadow)] backdrop-blur-md sm:max-w-[calc(100vw-220px)] sm:gap-5 md:max-w-max md:gap-7"
         style={{ padding: '5px 6px 5px 16px' }}
       >
         <Link
           href="/"
           className="flex items-center gap-2.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--l-ink)]"
-          aria-label={tr('Metropolix home', 'Beranda Metropolix')}
+          aria-label={tr('Metropolix home', 'Beranda Metropolix', 'Metropolix 홈', 'Metropolix 首页')}
         >
           <Crest />
           <span className="font-serif-display text-[22px] font-normal leading-none tracking-[-0.04em] text-[var(--l-ink)] select-none">
@@ -69,7 +69,12 @@ export default function SiteNav() {
         {relicCount > 0 && (
           <span
             className="inline-flex items-center gap-1.5 rounded-full border border-[var(--l-line)] bg-[var(--l-surface-2)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--l-ink)] shadow-xs transition-all animate-fadeIn"
-            aria-label={tr(`${relicCount} of ${TOTAL_HERO_RELICS} relics found`, `${relicCount} dari ${TOTAL_HERO_RELICS} relik ditemukan`)}
+            aria-label={tr(
+              `${relicCount} of ${TOTAL_HERO_RELICS} relics found`,
+              `${relicCount} dari ${TOTAL_HERO_RELICS} relik ditemukan`,
+              `유물 ${TOTAL_HERO_RELICS}개 중 ${relicCount}개 발견`,
+              `已发现 ${relicCount}/${TOTAL_HERO_RELICS} 个遗物`
+            )}
           >
             <span
               className={`size-1.5 rounded-full ${relicCount === TOTAL_HERO_RELICS ? 'bg-amber-400' : 'bg-[var(--gold,#f2c14e)] animate-pulse'}`}
@@ -79,6 +84,8 @@ export default function SiteNav() {
               <T
                 en={`Relics ${relicCount}/${TOTAL_HERO_RELICS}`}
                 id={`Relik ${relicCount}/${TOTAL_HERO_RELICS}`}
+                ko={`유물 ${relicCount}/${TOTAL_HERO_RELICS}`}
+                zh={`遗物 ${relicCount}/${TOTAL_HERO_RELICS}`}
               />
             </span>
           </span>
@@ -89,7 +96,7 @@ export default function SiteNav() {
             href="#faq"
             className="rounded-sm text-[13px] font-medium text-[var(--l-muted)] transition-colors hover:text-[var(--l-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--l-ink)]"
           >
-            <T en="FAQ" id="FAQ" />
+            <T en="FAQ" id="FAQ" ko="FAQ" zh="常见问题" />
           </a>
           <a
             href={GITHUB}
@@ -99,7 +106,7 @@ export default function SiteNav() {
           >
             GitHub
             <span className="sr-only">
-              <T en=" (opens in a new tab)" id=" (buka di tab baru)" />
+              <T en=" (opens in a new tab)" id=" (buka di tab baru)" ko=" (새 탭에서 열림)" zh=" (在新标签页中打开)" />
             </span>
           </a>
         </div>
@@ -108,7 +115,7 @@ export default function SiteNav() {
           href="/play"
           className="inline-flex min-h-9 items-center justify-center rounded-full bg-[var(--l-ink)] px-4 py-1.5 text-[13px] font-semibold text-[var(--l-surface)] shadow-xs transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--l-ink)]"
         >
-          <T en="Play now" id="Play now" />
+          <T en="Play now" id="Main sekarang" ko="지금 플레이" zh="立即开玩" />
         </Link>
       </nav>
     </header>
