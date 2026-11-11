@@ -18,6 +18,10 @@ main[data-page='landing'] {
   font-family: var(--font-body), var(--font-cjk), system-ui, sans-serif;
 }
 main[data-page='landing'][data-lang='ko'] { --font-cjk: var(--font-kr); }
+/* three faces, three jobs: Fraunces for titles, Pixelify for labels, tags, numbers and buttons,
+   Atkinson Hyperlegible for reading. --font-pixel is the label face for older sections. */
+main[data-page='landing'] { --font-pixel: var(--font-display), var(--font-cjk); }
+main[data-page='landing'] .font-pixel { font-family: var(--font-display), var(--font-cjk), var(--font-body), sans-serif; }
 main[data-page='landing'] .font-display { font-family: var(--font-display), var(--font-cjk), var(--font-body), sans-serif; }
 main[data-page='landing'] .font-serif-display { font-family: var(--font-serif), var(--font-cjk-serif, var(--font-cjk)), Georgia, serif; }
 main[data-page='landing'][data-lang='ko'] { --font-cjk-serif: var(--font-kr-serif); }
@@ -45,12 +49,13 @@ main[data-page='landing'] {
   transition: background-color .6s, color .6s;
 }
 main[data-page='landing'][data-theme='dark'] {
-  --l-bg: #0b1020; --l-surface: #151c2c; --l-surface-2: #1b2336; --l-line: #2a3450;
-  --l-ink: #f1e9d6; --l-muted: #b3aa96; --l-faint: #8c8577;
+  /* night surfaces are deep indigo, cut from the same sky, instead of a neutral slate */
+  --l-bg: #0b0f2e; --l-surface: #161a40; --l-surface-2: #1e2352; --l-line: #343b78;
+  --l-ink: #f4ecd8; --l-muted: #c6c1dc; --l-faint: #9692b8;
   --l-sky-top: #070b1c; --l-sky-mid: #111a36; --l-sky-low: #1c2547;
   --l-shadow: rgba(0, 0, 0, .45);
 }
-html:has(main[data-page='landing'][data-theme='dark']) body { background: #0b1020; color: #f1e9d6; }
+html:has(main[data-page='landing'][data-theme='dark']) body { background: #0b0f2e; color: #f4ecd8; }
 
 /* ---------- the floating switch ---------- */
 .pf-pill {
@@ -111,7 +116,7 @@ html:has(main[data-page='landing'][data-theme='dark']) body { background: #0b102
 .pf-fx { position: fixed; inset: 0; z-index: 69; pointer-events: none; visibility: hidden; opacity: 0; }
 .pf-tiles { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(14, 1fr); }
 .pf-tile { display: block; transform: scaleY(0); }
-.pf-fx[data-to='dark'] .pf-tile { background: linear-gradient(#0b1020, #1c2547); }
+.pf-fx[data-to='dark'] .pf-tile { background: linear-gradient(#0b0f2e, #1e2352); }
 .pf-fx[data-to='light'] .pf-tile { background: linear-gradient(#fbfcfe, #dcebfb); }
 .pf-orb { position: absolute; left: 0; top: 0; width: 72px; height: 72px; image-rendering: pixelated; }
 .pf-fx[data-to='dark'] .pf-orb { background: #e9e3c8; clip-path: polygon(30% 0, 70% 0, 70% 15%, 85% 15%, 85% 30%, 100% 30%, 100% 70%, 85% 70%, 85% 85%, 70% 85%, 70% 100%, 30% 100%, 30% 85%, 15% 85%, 15% 70%, 0 70%, 0 30%, 15% 30%, 15% 15%, 30% 15%); box-shadow: inset -14px -10px 0 #cfc7a6; filter: drop-shadow(0 0 18px rgba(233, 227, 200, .6)); }
