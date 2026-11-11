@@ -108,7 +108,7 @@ export function myProfile(s: GameState, name: string): PlayerProfile {
 }
 
 /** A believable profile for a simulated mayor, always the same for the same row. */
-export function simProfile(p: PlayerRow): PlayerProfile {
+export function simProfile(p: PlayerRow, s?: GameState): PlayerProfile {
   let h = 2166136261;
   for (const ch of p.id + p.name) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   const r = mulberry(h >>> 0);
@@ -122,12 +122,14 @@ export function simProfile(p: PlayerRow): PlayerProfile {
   const displayed: RelicKind[] = [];
   const want = Math.min(3, Math.floor(r() * (lv / 2.5)));
   while (displayed.length < want && pool.length > 0) displayed.push(pool.splice(Math.floor(r() * pool.length), 1)[0]!);
+  // a mayor from the living world has a real record and trophy count, not an invented one
+  const live = s?.world?.mayors.find((m) => m.id === p.id);
   return {
     id: p.id, name: p.name, isYou: !!p.isYou, simulated: p.simulated, arc: p.arc ?? null, level: lv, title: titleFor(lv),
     chainPower: p.chainPower, wealth: p.wealth,
     citizens: Math.floor(lv * 40 + r() * lv * 60), buildings: Math.floor(6 + lv * 5 + r() * lv * 6),
-    trophies: Math.floor(lv * 12 + r() * lv * 30), finds: displayed.length + Math.floor(r() * lv * 0.6),
-    displayed, record: { won, lost: fights - won, held, breached: raided - held },
+    trophies: live ? live.trophies : Math.floor(lv * 12 + r() * lv * 30), finds: displayed.length + Math.floor(r() * lv * 0.6),
+    displayed, record: live ? { ...live.record } : { won, lost: fights - won, held, breached: raided - held },
   };
 }
 
@@ -171,7 +173,8 @@ const LINES = [
 
 export function botMessage(seed: number, n: number, players: PlayerRow[]): ChatMessage {
   const r = mulberry(seed * 7919 + n * 104729);
-  const p = players[Math.floor(r() * players.length)]!;
+  // before the world has loaded there is nobody to speak: a neutral line instead of a crash
+  const p = players.length ? players[Math.floor(r() * players.length)]! : { name: 'Herald', level: 2 };
   const line = LINES[Math.floor(r() * LINES.length)]!.replace('{l}', String(Math.max(2, p.level)));
   return { id: n, from: p.name, text: line, simulated: true };
 }

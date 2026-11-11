@@ -52,7 +52,7 @@ export const mayorLootPct = (m: Mayor) => Math.min(28, 8 + 2 * m.level);
 /** Gold a treasury earns per world step. */
 const incomePerStep = (lv: number) => 6 * lv + lv * lv;
 /** Gold a mayor needs before moving up a level (half of it is spent on the climb). */
-const levelNeed = (lv: number) => lv * lv * 150;
+const levelNeed = (lv: number) => lv * lv * 400;
 
 /** The war-room view of a mayor, so the raid code can treat mayors and the old fixed rivals the same. */
 export function mayorRival(m: Mayor): Rival {

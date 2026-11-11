@@ -49,6 +49,14 @@ describe('the world lives on its own', () => {
   });
 });
 
+describe('chat before the world exists', () => {
+  it('speaks as a herald instead of crashing when nobody is out there yet', () => {
+    const m = sim.botMessage(1, 1, []);
+    expect(m.from).toBe('Herald');
+    expect(m.text.length).toBeGreaterThan(0);
+  });
+});
+
 describe('raiding a mayor', () => {
   const strong = () => {
     const s = sim.newState(2); s.troops = 500; s.army = { vanguard: 200, raider: 200, breaker: 100 };
@@ -74,6 +82,12 @@ describe('raiding a mayor', () => {
       const again = sim.launchRaid(s, m.id, { commit: 100, focus: 'loot', rage: false, heal: false, ram: false });
       expect(again.ok).toBe(false);
     }
+  });
+  it('previews no more loot than the treasury allows', () => {
+    const { s, m } = strong();
+    m.gold = 100;
+    const pv = sim.previewRaid(s, m.id, { commit: 100, focus: 'loot', rage: false, heal: false, ram: false })!;
+    expect(pv.loot).toBeLessThanOrEqual(Math.floor((100 * sim.MAX_LOOT_PCT) / 100));
   });
   it('previews and scouts a mayor like any rival', () => {
     const { s, m } = strong();

@@ -218,7 +218,9 @@ export function previewRaid(s: GameState, rivalId: string, plan: RaidPlan) {
   const r = findRival(s, rivalId);
   if (!r || s.troops <= 0) return null;
   const c = compute(s, r, plan, 1000);
-  return { force: c.force, effDefense: c.effDef, destruction: c.destruction, stars: c.stars, loot: c.loot, lost: c.lost, sent: c.n };
+  const m = findMayor(s, r.id);
+  const loot = m ? Math.min(c.loot, Math.floor((m.gold * MAX_LOOT_PCT) / 100)) : c.loot; // a treasury only gives what it holds
+  return { force: c.force, effDefense: c.effDef, destruction: c.destruction, stars: c.stars, loot, lost: c.lost, sent: c.n };
 }
 
 export function launchRaid(s: GameState, rivalId: string, plan: RaidPlan): Result & { report?: BattleReport } {
