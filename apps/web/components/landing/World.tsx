@@ -5,7 +5,6 @@ import { ARCS, BUILDING_KINDS, GRID, WORLD_MAYORS } from '@metropolix/sim';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import CastleBuild from './fx/CastleBuild';
-import PixelWipe from './motion/PixelWipe';
 import { isLiteTier, isReducedMotion } from './fx/tier';
 import T from './prefs/T';
 import { useTr } from './prefs/store';
@@ -297,9 +296,7 @@ export default function World() {
       <div className="landing-grid-faint" aria-hidden="true" />
 
       {/* Pixel wipe section divider connecting sections */}
-      <div className="-mx-4 -mt-20 mb-12">
-        <PixelWipe to="var(--l-surface)" from="transparent" seed={42} height={40} />
-      </div>
+      <div className="pixel-divider -mx-4 -mt-20 mb-16" aria-hidden="true" />
 
       {/* Main Content: Heading & honest simulation counters */}
       <div ref={statsContainerRef} className="relative z-10 mx-auto w-full max-w-6xl">
