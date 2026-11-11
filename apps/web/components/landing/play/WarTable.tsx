@@ -4,20 +4,23 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ARCS, launchRaid, mayorPower, previewRaid, type BattleReport, type GameState, type RaidPlan } from '@metropolix/sim';
 import { warCity } from './showcase';
+import T from '../prefs/T';
+import { useTr } from '../prefs/store';
 import './play.css';
 
 /**
  * Raid a simulated mayor with the game's own battle maths: previewRaid while you drag,
  * launchRaid on a copy of the state when you press Raid. The showcase never changes.
  */
-const TIERS = [{ at: 0.06, label: 'Easy prey' }, { at: 0.4, label: 'Fair fight' }, { at: 0.9, label: 'Warlord' }];
+const TIERS = [{ at: 0.06, en: 'Easy prey', id: 'Mangsa empuk' }, { at: 0.4, en: 'Fair fight', id: 'Lawan sepadan' }, { at: 0.9, en: 'Warlord', id: 'Panglima perang' }];
 
 export default function WarTable() {
   const id = useId();
+  const tr = useTr();
   const base = useMemo<GameState>(() => warCity(), []);
   const targets = useMemo(() => {
     const ms = [...(base.world?.mayors ?? [])].sort((a, b) => mayorPower(a) - mayorPower(b));
-    return TIERS.map((t) => ({ tier: t.label, m: ms[Math.min(ms.length - 1, Math.floor(ms.length * t.at))]! })).filter((t) => t.m);
+    return TIERS.map((t) => ({ tier: <T en={t.en} id={t.id} />, m: ms[Math.min(ms.length - 1, Math.floor(ms.length * t.at))]! })).filter((t) => t.m);
   }, [base]);
   const [pick, setPick] = useState(0);
   const [commit, setCommit] = useState(100);
@@ -68,11 +71,11 @@ export default function WarTable() {
   return (
     <div className="war-table" data-reveal>
       <div className="war-head">
-        <span className="font-display war-tag">War table</span>
-        <p className="war-sub">Pick a rival, choose how many of your {base.troops} troops to send, and read the odds from the game&apos;s own battle maths.</p>
+        <span className="font-display war-tag"><T en="War table" id="Meja perang" /></span>
+        <p className="war-sub"><T en={<>Pick a rival, choose how many of your {base.troops} troops to send, and read the odds from the game&apos;s own battle maths.</>} id={<>Pilih rival, tentukan berapa dari {base.troops} pasukanmu yang dikirim, lalu baca peluangnya dari hitungan perang game yang asli.</>} /></p>
       </div>
 
-      <div className="war-targets" role="radiogroup" aria-label="Rival mayor">
+      <div className="war-targets" role="radiogroup" aria-label={tr('Rival mayor', 'Mayor rival')}>
         {targets.map(({ tier, m }, i) => (
           <button
             key={m.id} type="button" role="radio" aria-checked={pick === i}
@@ -82,13 +85,13 @@ export default function WarTable() {
           >
             <span className="war-tier font-display">{tier}</span>
             <span className="war-name">{m.name}</span>
-            <span className="war-meta">{arcOf(m.arc)?.name ?? m.arc} · level {m.level}</span>
-            <span className="war-meta">Treasury <b className="font-display">{m.gold}</b> · Power <b className="font-display">{mayorPower(m)}</b></span>
+            <span className="war-meta">{arcOf(m.arc)?.name ?? m.arc} · <T en="level" id="level" /> {m.level}</span>
+            <span className="war-meta"><T en="Treasury" id="Kas" /> <b className="font-display">{m.gold}</b> · <T en="Power" id="Kekuatan" /> <b className="font-display">{mayorPower(m)}</b></span>
           </button>
         ))}
       </div>
 
-      <label htmlFor={id} className="war-label">Troops sent <b className="font-display">{Math.round((base.troops * commit) / 100)}</b> of {base.troops}</label>
+      <label htmlFor={id} className="war-label"><T en="Troops sent" id="Pasukan dikirim" /> <b className="font-display">{Math.round((base.troops * commit) / 100)}</b> <T en="of" id="dari" /> {base.troops}</label>
       <input id={id} type="range" min={10} max={100} step={5} value={commit} className="war-range"
         onChange={(e) => { setCommit(+e.target.value); setReport(null); }} />
 
@@ -98,24 +101,24 @@ export default function WarTable() {
         <span className="war-sword-r" aria-hidden="true">⚔</span>
         {report ? (
           <div className="war-result">
-            <div className="war-stars" aria-label={`${report.stars} of 3 stars`}>
+            <div className="war-stars" aria-label={tr(`${report.stars} of 3 stars`, `${report.stars} dari 3 bintang`)}>
               {[0, 1, 2].map((i) => <span key={i} className={`war-star ${i < report.stars ? 'on' : ''}`} aria-hidden="true" />)}
             </div>
-            <p className="war-verdict font-display">{report.win ? 'Victory' : 'Repelled'}</p>
-            <p className="war-line">Loot <b className="font-display war-loot">{report.loot}</b> gold · lost <b className="font-display">{report.lost}</b> troops · {report.destruction}% destroyed</p>
+            <p className="war-verdict font-display">{report.win ? <T en="Victory" id="Menang" /> : <T en="Repelled" id="Dipukul mundur" />}</p>
+            <p className="war-line"><T en="Loot" id="Jarahan" /> <b className="font-display war-loot">{report.loot}</b> <T en="gold" id="emas" /> · <T en="lost" id="gugur" /> <b className="font-display">{report.lost}</b> <T en="troops" id="pasukan" /> · {report.destruction}% <T en="destroyed" id="hancur" /></p>
             <p className="war-round">{report.rounds[report.rounds.length - 1]?.text}</p>
           </div>
         ) : pv ? (
           <div className="war-preview">
-            <p>Expected: <b className="font-display">{pv.stars}★</b> · loot up to <b className="font-display">{pv.loot}</b> · losses about <b className="font-display">{pv.lost}</b></p>
-            <p className="war-odds">Your force {pv.force} against their defense {pv.effDefense}</p>
+            <p><T en="Expected:" id="Perkiraan:" /> <b className="font-display">{pv.stars}★</b> · <T en="loot up to" id="jarahan hingga" /> <b className="font-display">{pv.loot}</b> · <T en="losses about" id="korban sekitar" /> <b className="font-display">{pv.lost}</b></p>
+            <p className="war-odds"><T en={`Your force ${pv.force} against their defense ${pv.effDefense}`} id={`Kekuatanmu ${pv.force} melawan pertahanan mereka ${pv.effDefense}`} /></p>
           </div>
         ) : null}
       </div>
 
       <div className="war-actions">
-        <button type="button" className="war-btn" data-magnetic onClick={raid} disabled={busy}>{busy ? 'Marching…' : report ? 'Raid again' : 'Raid'}</button>
-        <span className="war-note">Simulated rivals. In the game they raid you back.</span>
+        <button type="button" className="war-btn" data-magnetic onClick={raid} disabled={busy}>{busy ? <T en="Marching…" id="Berbaris…" /> : report ? <T en="Raid again" id="Serbu lagi" /> : <T en="Raid" id="Serbu" />}</button>
+        <span className="war-note"><T en="Simulated rivals. In the game they raid you back." id="Rival simulasi. Di dalam game, mereka balas menyerbumu." /></span>
       </div>
     </div>
   );
