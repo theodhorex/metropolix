@@ -98,6 +98,7 @@ export class CityRenderer {
   private cy = 0;
   private k = 1;
   private minK = 0.2;
+  private zoomBoost = 1;
   private drag: { sx: number; sy: number; px: number; py: number; moved: boolean } | null = null;
   private wheelHandler: ((e: WheelEvent) => void) | null = null;
 
@@ -448,8 +449,9 @@ export class CityRenderer {
     this.k = Math.min(CityRenderer.MAX_K, Math.max(this.minK, this.k));
     this.cx = Math.min((GRID * TW) / 2, Math.max(-(GRID * TW) / 2, this.cx));
     this.cy = Math.min(GRID * TH, Math.max(-MARGIN_TOP, this.cy));
-    this.world.scale.set(this.k);
-    this.world.position.set(Math.round(width / 2 - this.cx * this.k), Math.round(height / 2 - this.cy * this.k));
+    const effK = Math.min(CityRenderer.MAX_K, Math.max(this.minK, this.k * this.zoomBoost));
+    this.world.scale.set(effK);
+    this.world.position.set(Math.round(width / 2 - this.cx * effK), Math.round(height / 2 - this.cy * effK));
     this.app.stage.hitArea = this.app.screen;
   }
 
@@ -467,6 +469,19 @@ export class CityRenderer {
     if (!this.ready) return;
     this.cx = cx; this.cy = cy; this.k = k;
     this.applyView();
+  }
+
+  /** Opt-in camera zoom multiplier for landing hero scroll exit transitions. */
+  setZoomMultiplier(factor: number) {
+    if (!this.ready) return;
+    this.zoomBoost = factor;
+    this.applyView();
+  }
+
+  /** Opt-in tint method for night mode / scene grading (keeps game default 0xffffff unchanged). */
+  setTint(color: number) {
+    if (!this.ready) return;
+    this.world.tint = color;
   }
 
   /** Zoom by a factor, keeping the screen point (ax, ay) fixed (defaults to the centre). */
