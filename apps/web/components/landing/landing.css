@@ -16,6 +16,125 @@
   scroll-margin-top: 4.5rem;
 }
 
+/* Make main and sections transparent so the day-to-night journey backdrop shows through */
+main[data-page='landing'] {
+  background: transparent !important;
+}
+main[data-page='landing'] > section.l-section,
+#how,
+#world {
+  background-color: transparent !important;
+}
+
+/* Day-to-night journey backdrop layer (fixed full-page behind all sections) */
+.landing-journey-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -20;
+  pointer-events: none;
+  overflow: hidden;
+  --sky-top: #dcebfb;
+  --sky-mid: #eaf3fd;
+  --sky-bot: #f7faff;
+  --stars-op: 0;
+}
+
+.landing-journey-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 50%, var(--sky-bot) 100%);
+  will-change: background;
+}
+
+.landing-journey-stars {
+  position: absolute;
+  inset: 0;
+  opacity: var(--stars-op, 0);
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, #ffffff 100%, transparent),
+    radial-gradient(2px 2px at 32% 10%, #fff4d6 100%, transparent),
+    radial-gradient(1px 1px at 58% 22%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 78% 15%, #e8f0fe 100%, transparent),
+    radial-gradient(2px 2px at 90% 25%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 20% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 48% 75%, #fff4d6 100%, transparent),
+    radial-gradient(2px 2px at 70% 55%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 78%, #e8f0fe 100%, transparent);
+  background-size: 360px 360px;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Clouds and birds on journey backdrop */
+.journey-cloud {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+  animation: journey-cloud-drift linear infinite;
+}
+.journey-cloud-1 {
+  top: 16%;
+  left: -20%;
+  width: min(44vw, 400px);
+  animation-duration: 95s;
+}
+.journey-cloud-2 {
+  top: 52%;
+  left: -25%;
+  width: min(38vw, 340px);
+  animation-duration: 120s;
+  animation-delay: -45s;
+}
+@keyframes journey-cloud-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(140vw); }
+}
+
+.journey-bird {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+  animation: journey-bird-fly linear infinite;
+}
+.journey-bird-1 {
+  top: 24%;
+  left: -8%;
+  width: 21px;
+  height: 9px;
+  animation-duration: 45s;
+}
+.journey-bird-2 {
+  top: 38%;
+  left: -8%;
+  width: 16px;
+  height: 7px;
+  animation-duration: 55s;
+  animation-delay: -22s;
+}
+@keyframes journey-bird-fly {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(65vw, -12px); }
+  100% { transform: translate(125vw, 0); }
+}
+
+/* Pause animations when tab is hidden or element is marked offscreen */
+html[data-page-hidden='true'] .journey-cloud,
+html[data-page-hidden='true'] .journey-bird,
+[data-offscreen='true'] .journey-cloud,
+[data-offscreen='true'] .journey-bird {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-cloud,
+  .journey-bird {
+    display: none !important;
+  }
+  .landing-journey-stars {
+    transition: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html:has(main[data-page='landing']) {
     scroll-behavior: smooth;
@@ -138,12 +257,28 @@
   }
 }
 
+/* Castle assembly styles */
+.castle-banner-group {
+  will-change: transform;
+}
+.castle-window {
+  transition: fill 0.4s ease;
+}
+.castle-window.lit {
+  fill: #ffd166 !important;
+  filter: drop-shadow(0 0 8px rgba(255, 209, 102, 0.95));
+}
+main[data-page='landing'][data-theme='dark'] .castle-window {
+  fill: #ffd166;
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.75));
+}
+
 /* Pinned stat banners in World section: pale pixel banners with notched pixel corners */
 .stat-banner-pixel {
   position: relative;
-  background: #ffffff;
-  border: 2px solid var(--landing-ink);
-  box-shadow: 3px 3px 0 var(--landing-ink);
+  background: var(--l-surface, #ffffff);
+  border: 2px solid var(--l-ink, #12151d);
+  box-shadow: 3px 3px 0 var(--l-ink, #12151d);
   clip-path: polygon(
     0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0,
     calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px,
