@@ -142,6 +142,24 @@ describe('levels, shop and marketplace', () => {
   });
 });
 
+describe('building descriptions follow the level', () => {
+  it('level 1 text matches the catalog for every building', () => {
+    for (const k of Object.keys(sim.BUILDINGS) as sim.BuildingKind[]) expect(sim.describeBuilding(k, 1)).toBe(sim.BUILDINGS[k].desc);
+  });
+  it('numbers grow with the level', () => {
+    expect(sim.describeBuilding('barracks', 2)).toBe('Trains up to 30 troops');
+    expect(sim.describeBuilding('barracks', 3)).toBe('Trains up to 40 troops');
+    expect(sim.describeBuilding('house', 3)).toBe('Houses 20 citizens');
+    expect(sim.describeBuilding('tower', 2)).toBe('+60 defense');
+    expect(sim.describeBuilding('farm', 2)).toBe('Grows food for 240 citizens');
+  });
+  it('text without numbers and bad levels stay safe', () => {
+    expect(sim.describeBuilding('park', 3)).toBe(sim.BUILDINGS.park.desc);
+    expect(sim.describeBuilding('barracks', 99)).toBe('Trains up to 40 troops');
+    expect(sim.describeBuilding('barracks', 0)).toBe('Trains up to 20 troops');
+  });
+});
+
 describe('players query', () => {
   const rows = sim.generatePlayers(42, 40);
   it('is deterministic with unique names', () => {

@@ -86,6 +86,29 @@ export const PERKS: Partial<Record<BuildingKind, [string, string]>> = {
   library: ['Reading room: more seats, better treasure odds', 'Grand archive: double seats, best treasure odds'],
 };
 
+/**
+ * One-line description of a building at a given level. Numbers in the text follow the level
+ * (a level 2 barracks trains 30 troops), and level 1 reads exactly like `BUILDINGS[k].desc`.
+ */
+export function describeBuilding(k: BuildingKind, level = 1): string {
+  const b = BUILDINGS[k];
+  const lv = Math.min(MAX_BLD_LEVEL, Math.max(1, Math.floor(level)));
+  const at = (v: number | undefined) => Math.floor(((v ?? 0) * LEVEL_PM[lv]!) / 1000);
+  switch (k) {
+    case 'house': return `Houses ${at(b.housing)} citizens`;
+    case 'rowhouse': return `Packs ${at(b.housing)} citizens on one tile`;
+    case 'farm': return `Grows food for ${at(b.food) * 20} citizens`;
+    case 'shop': return `${at(b.jobs)} jobs, good output`;
+    case 'factory': return `${at(b.jobs)} jobs, high output, pollutes`;
+    case 'school': return `Educates ${at(b.edu)} citizens`;
+    case 'library': return `Teaches ${at(b.edu)} citizens, cheap to run`;
+    case 'academy': return `Teaches ${at(b.edu)} citizens`;
+    case 'barracks': return `Trains up to ${at(b.troopCap)} troops`;
+    case 'tower': return `+${at(b.defense)} defense`;
+    default: return b.desc;
+  }
+}
+
 /** Why the building on (x, y) cannot be upgraded right now, or null. Pure. */
 export function upgradeBlocker(s: GameState, x: number, y: number): string | null {
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= GRID || y >= GRID) return 'Out of bounds';
