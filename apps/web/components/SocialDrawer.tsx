@@ -6,9 +6,10 @@ import Icon from './Icon';
 import { CloseX } from './ui';
 import { useEscape } from '@/lib/escape';
 
-type Tab = 'chat' | 'board' | 'players';
+type Tab = 'chat' | 'news' | 'board' | 'players';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'chat', label: 'Chat' },
+  { id: 'news', label: 'News' },
   { id: 'board', label: 'Ranks' },
   { id: 'players', label: 'Players' },
 ];
@@ -29,6 +30,10 @@ const PLAYER_SEED = 2026; // chat bot lines only; the player list comes from Gam
 export default function SocialDrawer({ open, onClose, s, act, playerName, players: sim_players, onProfile, preview }: Props) {
   const [tab, setTab] = useState<Tab>('chat');
   useEscape(open, onClose);
+  // the chat only needs who is out there, so it must not restart every time a treasury changes
+  const idKey = sim_players.map((p) => p.id).join();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const chatPlayers = useMemo(() => sim_players, [idKey]);
 
   return (
     <aside
@@ -49,7 +54,8 @@ export default function SocialDrawer({ open, onClose, s, act, playerName, player
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
         {/* Chat stays mounted so bots keep talking while other tabs are open */}
-        <div className={tab === 'chat' ? 'h-full' : 'hidden'}><Chat players={sim_players} name={playerName} /></div>
+        <div className={tab === 'chat' ? 'h-full' : 'hidden'}>{chatPlayers.length > 0 && <Chat players={chatPlayers} name={playerName} />}</div>
+        {tab === 'news' && s && <News s={s} />}
         {tab === 'board' && s && <Board s={s} players={sim_players} name={playerName} onProfile={onProfile} />}
         {tab === 'players' && s && <Players s={s} players={sim_players} name={playerName} onProfile={onProfile} />}
       </div>
@@ -101,6 +107,27 @@ function Chat({ players, name }: { players: sim.PlayerRow[]; name: string }) {
           placeholder="Say something..." className="field min-w-0 flex-1" aria-label="Chat message" />
         <button onClick={send} className="btn btn-accent text-sm">Send</button>
       </div>
+    </div>
+  );
+}
+
+/* ---------------- World news ---------------- */
+function News({ s }: { s: sim.GameState }) {
+  const items = s.world.news;
+  const ago = (t: number) => { const d = Math.max(0, s.tick - t); return d < 60 ? `${d}s` : `${Math.floor(d / 60)}m`; };
+  return (
+    <div className="h-full overflow-y-auto p-3">
+      <p className="mb-2 text-xs text-[var(--paper-dim)]">Raids and rises across the realm. Gold taken is gold lost from a treasury.</p>
+      {items.length === 0 && <p className="text-sm text-[var(--paper-dim)]">All quiet for now. Give the mayors a minute.</p>}
+      <ul className="space-y-1.5">
+        {items.map((n) => (
+          <li key={n.id} className={`flex items-start gap-2 border-2 px-2 py-1 text-sm ${n.kind === 'you' ? 'border-[var(--accent)] bg-[var(--slab-hi)]' : 'border-transparent bg-[var(--slab-lo)]'}`}>
+            <Icon name={n.kind === 'rise' ? 'star' : 'swords'} size={14} />
+            <span className="min-w-0 flex-1">{n.text}</span>
+            <span className="shrink-0 text-xs text-[var(--paper-dim)] tabular-nums">{ago(n.tick)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

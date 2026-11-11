@@ -54,7 +54,8 @@ function Gold({ n }: { n: number }) {
 
 export default function WarRoom({ open, s, act, onClose }: Props) {
   const [tab, setTab] = useState<TabId>('army');
-  const [target, setTarget] = useState('r1');
+  const [target, setTarget] = useState('');
+  const [tq, setTq] = useState<{ search: string; sort: 'gold' | 'power' | 'level' }>({ search: '', sort: 'gold' });
   const [plan, setPlan] = useState<sim.RaidPlan>({ commit: 100, focus: 'balanced', rage: false, heal: false, ram: false });
   const [report, setReport] = useState<sim.BattleReport | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -66,10 +67,18 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
   const level = st.level;
   const army = sim.armyOf(s);
   const run = (r: sim.Result) => { setMsg(r.ok ? null : (r.msg as string)); act(r); };
-  const rival = sim.RIVALS.find((r) => r.id === target)!;
+  const needle = tq.search.trim().toLowerCase();
+  const listed = [...s.world.mayors]
+    .filter((m) => !needle || m.name.toLowerCase().includes(needle))
+    .sort((a, b) => (tq.sort === 'gold' ? b.gold - a.gold : tq.sort === 'level' ? b.level - a.level : sim.mayorPower(b) - sim.mayorPower(a)) || a.name.localeCompare(b.name));
+  // until you pick someone, the top of the list is the target
+  const mayor = sim.findMayor(s, target) ?? listed[0] ?? s.world.mayors[0];
+  const rival = mayor ? sim.mayorRival(mayor) : sim.findRival(s, target) ?? sim.RIVALS[0]!;
+  const target_ = rival.id;
+  const shieldT = mayor ? sim.shieldLeft(s, mayor) : 0;
   const sc = sim.scout(rival);
-  const pv = sim.previewRaid(s, target, plan);
-  const cd = Math.max(0, (s.cooldowns[target] ?? 0) - s.tick);
+  const pv = sim.previewRaid(s, target_, plan);
+  const cd = Math.max(0, (s.cooldowns[target_] ?? 0) - s.tick);
   const shield = Math.max(0, s.shieldUntil - s.tick);
   const troopName = arc?.troop ?? 'Troop';
   const switchTab = (t: TabId) => { setTab(t); setMsg(null); };
@@ -167,20 +176,31 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
         <div className="flex flex-col gap-4 md:flex-row">
           <section className="shrink-0 md:w-56" aria-label="Targets">
             <SubHead>Targets</SubHead>
-            <ul className="space-y-1.5">
-              {sim.RIVALS.map((r) => {
-                const c = Math.max(0, (s.cooldowns[r.id] ?? 0) - s.tick);
-                const sel = target === r.id;
-                return (
-                  <li key={r.id}>
-                    <button onClick={() => { setTarget(r.id); setReport(null); }} aria-pressed={sel}
-                      className={`target w-full px-2.5 py-2 text-left ${sel ? 'target-on' : ''}`}>
-                      <span className="block font-bold">{r.name}</span>
-                      <span className="flex justify-between text-xs text-[var(--paper-dim)]"><span>Power {sim.rivalPower(r)}</span><span className={c > 0 ? '' : 'text-[var(--good)]'}>{c > 0 ? `back in ${c}s` : 'ready'}</span></span>
-                    </button>
-                  </li>
-                );
-              })}
+            <div className="mb-1.5 flex gap-1">
+              <input value={tq.search} onChange={(e) => setTq({ ...tq, search: e.target.value })} placeholder="Search mayor..." className="field min-w-0 flex-1 text-sm" aria-label="Search targets" />
+              <select value={tq.sort} onChange={(e) => setTq({ ...tq, sort: e.target.value as typeof tq.sort })} className="field w-20 text-sm" aria-label="Sort targets">
+                <option value="gold">Gold</option><option value="power">Power</option><option value="level">Level</option>
+              </select>
+            </div>
+            <ul className="max-h-[26rem] space-y-1.5 overflow-y-auto pr-1">
+              {listed.map((m) => {
+                  const c = Math.max(0, (s.cooldowns[m.id] ?? 0) - s.tick);
+                  const sh = sim.shieldLeft(s, m);
+                  const sel = target_ === m.id;
+                  return (
+                    <li key={m.id}>
+                      <button onClick={() => { setTarget(m.id); setReport(null); }} aria-pressed={sel}
+                        className={`target w-full px-2.5 py-1.5 text-left ${sel ? 'target-on' : ''}`}>
+                        <span className="flex items-baseline justify-between gap-2"><b className="truncate">{m.name}</b><span className="text-xs text-[var(--paper-dim)]">Lv {m.level}</span></span>
+                        <span className="flex justify-between text-xs text-[var(--paper-dim)] tabular-nums">
+                          <span className="flex items-center gap-0.5 text-[var(--gold)]"><Icon name="coin" size={10} />{m.gold}</span>
+                          <span>Pow {sim.mayorPower(m)}</span>
+                          <span className={sh > 0 ? 'text-[var(--bad)]' : c > 0 ? '' : 'text-[var(--good)]'}>{sh > 0 ? `shield ${sh}s` : c > 0 ? `${c}s` : 'ready'}</span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
             </ul>
           </section>
 
@@ -205,7 +225,13 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
                 <StatRow k="Defense" v={sc.defense} />
                 <StatRow k={`From ${sc.towers} tower${sc.towers === 1 ? '' : 's'}`} v={sc.towerDef} />
                 <StatRow k="Garrison" v={sc.garrison} />
-                <StatRow k="Gold in vaults" v={<span className="text-[var(--gold)]">up to {sc.loot}</span>} />
+                {mayor ? (
+                  <>
+                    <StatRow k="Treasury" v={<span className="text-[var(--gold)]">{mayor.gold}</span>} />
+                    <StatRow k={`Most you can take (${sim.MAX_LOOT_PCT}%)`} v={<span className="text-[var(--gold)]">{Math.floor((mayor.gold * sim.MAX_LOOT_PCT) / 100)}</span>} />
+                    <StatRow k="Condition" v={shieldT > 0 ? <span className="text-[var(--bad)]">shielded {shieldT}s</span> : mayor.wounded > 0 ? <span className="text-[var(--good)]">wounded {mayor.wounded}%</span> : 'fresh'} />
+                  </>
+                ) : <StatRow k="Gold in vaults" v={<span className="text-[var(--gold)]">up to {sc.loot}</span>} />}
               </div>
             </div>
 
@@ -248,9 +274,9 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
                 ) : <span className="text-[var(--paper-dim)]">You have no troops yet. Train some in the Army tab.</span>}
               </div>
               <div className="mt-3 flex justify-end">
-                <button className="btn btn-accent px-6 py-2 text-lg" disabled={!pv || cd > 0} onClick={() => {
-                  const r = sim.launchRaid(s, target, plan); setMsg(r.ok ? null : (r.msg as string)); if (r.ok && r.report) setReport(r.report); act(r);
-                }}>{cd > 0 ? `Troops resting, ${cd}s` : 'Attack!'}</button>
+                <button className="btn btn-accent px-6 py-2 text-lg" disabled={!pv || cd > 0 || shieldT > 0} onClick={() => {
+                  const r = sim.launchRaid(s, target_, plan); setMsg(r.ok ? null : (r.msg as string)); if (r.ok && r.report) setReport(r.report); act(r);
+                }}>{shieldT > 0 ? `Shielded, ${shieldT}s` : cd > 0 ? `Troops resting, ${cd}s` : 'Attack!'}</button>
               </div>
             </section>
 
