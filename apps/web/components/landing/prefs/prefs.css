@@ -38,7 +38,7 @@ main[data-page='landing'].lang-swap :is(h1, h2, h3, p, li, summary, a, button, s
 /* ---------- theme tokens for every landing section ---------- */
 main[data-page='landing'] {
   --l-bg: #fbfcfe; --l-surface: #ffffff; --l-surface-2: #f6f8fb; --l-line: #e6e9ef;
-  --l-ink: #12151d; --l-muted: #4a5160; --l-faint: #7a8193;
+  --l-ink: #12151d; --l-muted: #343b49; --l-faint: #5b6375;
   --l-sky-top: #dcebfb; --l-sky-mid: #eaf3fd; --l-sky-low: #f7faff;
   --l-shadow: rgba(20, 30, 60, .08);
   background: var(--l-bg); color: var(--l-ink);
