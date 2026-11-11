@@ -1,6 +1,7 @@
 'use client';
 
 import type { NewsItem } from '@metropolix/sim';
+import T from './prefs/T';
 
 const KIND_MARK: Record<NewsItem['kind'], { mark: string; tone: string }> = {
   raid: { mark: 'Raid', tone: 'bg-[#ea6a55]/20 text-[#9b2c1c] border-[#ea6a55]/40' },
@@ -20,14 +21,14 @@ export default function NewsTicker({ items, className = '' }: { items: NewsItem[
     <section
       aria-label="World news"
       aria-live="off"
-      className={`rounded-2xl border border-white/70 bg-white/85 p-3 shadow-[0_8px_30px_rgb(40_60_110/0.14)] backdrop-blur-md ${className}`}
+      className={`rounded-2xl border border-[var(--l-line)] bg-[color-mix(in_srgb,var(--l-surface)_86%,transparent)] p-3 shadow-[0_8px_30px_var(--l-shadow)] backdrop-blur-md ${className}`}
     >
       <p className="sr-only">A live feed of news from a simulated world of forty rival mayors. It updates every few seconds.</p>
       <div className="mb-2 flex items-center justify-between px-1">
-        <p className="font-display text-xs font-bold tracking-wide text-[#12151d]">World news · simulated</p>
+        <p className="font-display text-xs font-bold tracking-wide text-[var(--l-ink)]"><T en="World news · simulated" id="Berita dunia · simulasi" /></p>
         <span className="size-1.5 rounded-full bg-[#10b981] animate-pulse" aria-hidden="true" />
       </div>
-      <ul className="divide-y divide-[#12151d]/10 overflow-hidden rounded-xl bg-white/60 px-2">
+      <ul className="divide-y divide-[var(--l-line)] overflow-hidden rounded-xl bg-[color-mix(in_srgb,var(--l-surface-2)_70%,transparent)] px-2">
         {Array.from({ length: ROWS }, (_, i) => {
           const n = rows[i];
           return (
@@ -43,13 +44,13 @@ export default function NewsTicker({ items, className = '' }: { items: NewsItem[
                     {KIND_MARK[n.kind].mark}
                   </span>
                   <span
-                    className={`line-clamp-1 text-[12px] leading-tight ${i === 0 ? 'font-medium text-[#12151d]' : 'text-[#475069]'}`}
+                    className={`line-clamp-1 text-[12px] leading-tight ${i === 0 ? 'font-medium text-[var(--l-ink)]' : 'text-[var(--l-muted)]'}`}
                   >
                     {n.text}
                   </span>
                 </>
               ) : (
-                <span className="text-[12px] text-[#788198] italic">
+                <span className="text-[12px] text-[var(--l-faint)] italic">
                   {i === 0 ? 'Listening for news from the realm…' : ''}
                 </span>
               )}

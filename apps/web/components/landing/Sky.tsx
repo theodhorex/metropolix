@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ArcId } from '@metropolix/sim';
+import RelicTiles from './hero/RelicTiles';
 
 /*
   The hero's own art, all pixel shapes drawn as SVG rects/paths (crispEdges) and CSS motion only.
@@ -77,12 +78,15 @@ const BIRDS = [
   { top: '27%', size: 14, dur: 60, delay: -8 },
 ] as const;
 
-/** 10 frosted "map tiles"; the last four are left out on narrow screens. */
-const GLASS = [
-  { l: 6, t: 30, s: 54, d: 0, dur: 6 }, { l: 17, t: 58, s: 36, d: -2.2, dur: 7.5 }, { l: 29, t: 24, s: 28, d: -4, dur: 5.5 },
-  { l: 72, t: 34, s: 60, d: -1, dur: 8 }, { l: 85, t: 62, s: 38, d: -3.4, dur: 6.5 }, { l: 92, t: 22, s: 26, d: -5.1, dur: 7 },
-  { l: 40, t: 12, s: 22, d: -2.8, dur: 6 }, { l: 62, t: 52, s: 30, d: -0.6, dur: 9 }, { l: 12, t: 8, s: 24, d: -6, dur: 7.2 }, { l: 78, t: 10, s: 20, d: -3, dur: 5.8 },
-] as const;
+/** Night sky: deterministic pixel stars over the top half, and a 12x12 pixel moon. */
+const STARS = Array.from({ length: 42 }, (_, i) => ({
+  l: (i * 47 + 7) % 100,
+  t: ((i * 31 + 3) % 52) + 2,
+  s: i % 5 === 0 ? 3 : 2,
+  d: -((i * 11) % 9),
+}));
+const MOON = 'M4 0h4v1h2v1h1v2h1v4h-1v2h-1v1h-2v1h-4v-1h-2v-1h-1v-2h-1v-4h1v-2h1v-1h2z';
+const MOON_SHADE = 'M3 3h2v2h-2zM7 6h2v2h-2zM4 8h1v1h-1z';
 
 /** Falling pixels coloured by the chosen people (elf leaves, lizard spice, ash, embers, sparks). */
 const PARTICLE_COLORS: Record<ArcId, readonly string[]> = {
@@ -110,7 +114,17 @@ export default function Sky({ arc, children }: { arc: ArcId; children: ReactNode
   const colors = PARTICLE_COLORS[arc];
   return (
     <>
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,#dcebfb_0%,#eaf3fd_26%,#f7faff_44%,#fbfcfe_60%)]" />
+      <div aria-hidden="true" className="hero-sky pointer-events-none absolute inset-0 -z-10" />
+      {/* night only (dark theme): pixel stars and a pixel moon */}
+      <div aria-hidden="true" className="hero-night pointer-events-none absolute inset-0 -z-10">
+        {STARS.map((st, i) => (
+          <span key={i} className="hero-star absolute" style={{ left: `${st.l}%`, top: `${st.t}%`, width: st.s, height: st.s, animationDelay: `${st.d}s` }} />
+        ))}
+        <svg viewBox="0 0 12 12" shapeRendering="crispEdges" className="hero-moon absolute" aria-hidden="true">
+          <path d={MOON} fill="#f6efd6" />
+          <path d={MOON_SHADE} fill="#d9cfae" />
+        </svg>
+      </div>
 
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="sky-drift-a absolute top-3 -left-12 w-[min(62vw,560px)] sm:-left-6">
@@ -150,13 +164,6 @@ export default function Sky({ arc, children }: { arc: ArcId; children: ReactNode
       </div>
 
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        {GLASS.map((g, i) => (
-          <span
-            key={i}
-            className={`hero-glass absolute ${i >= 6 ? 'hidden md:block' : i >= 3 ? 'hidden sm:block' : ''}`}
-            style={{ left: `${g.l}%`, top: `${g.t + 34}%`, width: g.s, height: g.s, animationDelay: `${g.d}s`, animationDuration: `${g.dur}s` }}
-          />
-        ))}
         {PARTICLES.map((p, i) => (
           <span
             key={i}
@@ -173,6 +180,7 @@ export default function Sky({ arc, children }: { arc: ArcId; children: ReactNode
           />
         ))}
       </div>
+      <RelicTiles />
     </>
   );
 }

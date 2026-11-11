@@ -49,3 +49,46 @@
     mask-image: radial-gradient(ellipse 62% 56% at 50% 62%, #000 50%, transparent 100%);
   }
 }
+
+/* ---------- Sky in both themes ---------- */
+.hero-sky { background: linear-gradient(180deg, var(--l-sky-top, #dcebfb) 0%, var(--l-sky-mid, #eaf3fd) 26%, var(--l-sky-low, #f7faff) 44%, var(--l-bg, #fbfcfe) 60%); }
+.hero-night { opacity: 0; transition: opacity .8s ease; }
+.hero-star { background: #fff7dc; image-rendering: pixelated; animation: hero-twinkle 3.6s steps(3) infinite; }
+@keyframes hero-twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+.hero-moon { right: 27%; top: 23%; width: clamp(44px, 5vw, 72px); height: auto; filter: drop-shadow(0 0 18px rgb(246 239 214 / .45)); }
+
+main[data-page='landing'][data-theme='dark'] .hero-night { opacity: 1; }
+/* night grading: ranges, hills and the town sink into blue; the clouds cool down */
+.hero-land { transition: filter .8s ease; }
+main[data-page='landing'][data-theme='dark'] .hero-land { filter: brightness(.5) saturate(.75) hue-rotate(-12deg); }
+main[data-page='landing'][data-theme='dark'] .sky-drift-a,
+main[data-page='landing'][data-theme='dark'] .sky-drift-b { filter: grayscale(1) brightness(.42); opacity: .55; }
+main[data-page='landing'][data-theme='dark'] .sky-bird { display: none; }
+main[data-page='landing'][data-theme='dark'] .hero-glass {
+  background: rgb(160 190 255 / .08); border-color: rgb(190 210 255 / .35);
+  box-shadow: 0 0 16px rgb(140 170 255 / .18);
+}
+
+/* ---------- Hidden relics in the frosted tiles ---------- */
+.hero-glass-shimmer { background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / .55) 50%, transparent 70%); }
+.hero-shard { animation: hero-shard .7s cubic-bezier(.2, .7, .3, 1) forwards; }
+@keyframes hero-shard {
+  from { transform: translate(-50%, -50%) rotate(0); opacity: 1; }
+  to { transform: translate(calc(-50% + var(--sdx)), calc(-50% + var(--sdy))) rotate(var(--srot)); opacity: 0; }
+}
+.hero-relic-card { animation: hero-card-in .25s steps(4) both; }
+@keyframes hero-card-in { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.hero-relic-timer { transform-origin: left; animation: hero-timer 3s linear forwards; }
+@keyframes hero-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.hero-relic-toast { animation: hero-toast-in .35s steps(5) both; }
+@keyframes hero-toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-star, .hero-shard, .hero-relic-card, .hero-relic-toast { animation: none; }
+  .hero-relic-timer { animation: none; transform: none; }
+  .hero-land, .hero-night { transition: none; }
+}
+
+/* headline accent: AA-dark tone on the day sky, the raw people colour on the night sky */
+.hero-accent { color: var(--accent-text); transition: color .4s ease; }
+main[data-page='landing'][data-theme='dark'] .hero-accent { color: color-mix(in srgb, var(--accent-raw) 85%, #fff); }
