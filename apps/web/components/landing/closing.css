@@ -60,37 +60,46 @@ main[data-theme='dark'] .road-link { color: #8fc3ee; }
   .road-sign[data-up] .road-post { transform: scaleY(1); }
 }
 
-/* ===================== Torchlit night city ===================== */
-@property --tx { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
-@property --ty { syntax: '<percentage>'; inherits: true; initial-value: 55%; }
-
-.night-cta { min-height: 100vh; background: transparent; --tx: 50%; --ty: 55%; --torch: 210px; }
+/* ===================== The great gate (closing scene) ===================== */
+.night-cta { min-height: 100vh; background: transparent; }
 .night-scene {
   position: absolute; inset: 0; z-index: 0; overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0, 0, 0, .45) 12%, #000 34%);
-  mask-image: linear-gradient(to bottom, transparent 0, rgba(0, 0, 0, .45) 12%, #000 34%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0, 0, 0, .45) 8%, #000 22%);
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0, 0, 0, .45) 8%, #000 22%);
 }
-.night-img { object-fit: cover; object-position: 50% 70%; }
-.night-dark { filter: brightness(.34) saturate(1.2) hue-rotate(195deg) contrast(1.15); }
-.night-lit {
-  position: absolute; inset: 0;
-  -webkit-mask-image: radial-gradient(circle var(--torch) at var(--tx) var(--ty), #000 0, rgba(0, 0, 0, .55) 45%, transparent 100%);
-  mask-image: radial-gradient(circle var(--torch) at var(--tx) var(--ty), #000 0, rgba(0, 0, 0, .55) 45%, transparent 100%);
-  transition: --torch .6s cubic-bezier(.2, .8, .2, 1);
-}
-.night-warm { filter: brightness(1.02) saturate(1.25) sepia(.28) contrast(1.05); transition: filter .5s; }
-.night-cta[data-torch='follow']:not([data-lit]) { --torch: 150px; }
-/* hovering the Play button: the torch blooms and the lit city flares */
-.night-cta:has(.night-play:hover, .night-play:focus-visible) { --torch: 520px; }
-.night-cta:has(.night-play:hover, .night-play:focus-visible) .night-warm { filter: brightness(1.22) saturate(1.45) sepia(.35) contrast(1.1); }
+.night-img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
 
-/* wandering torch for touch and slow devices: animated custom properties, no JS */
-.night-cta[data-torch='wander'] { animation: night-wander 14s ease-in-out infinite alternate; }
-@keyframes night-wander {
-  0% { --tx: 22%; --ty: 62%; } 33% { --tx: 64%; --ty: 48%; } 66% { --tx: 80%; --ty: 70%; } 100% { --tx: 38%; --ty: 76%; }
-}
-.night-cta[data-torch='still'] { --torch: 340px; }
-.night-cta[data-offscreen] { animation-play-state: paused; }
+/* stone: warm sandstone by day, cold blue stone by night */
+.night-cta { --g-wall: #c9ad86; --g-block: #d8bf98; --g-block-hi: #e6d1ae; --g-block-lo: #bf9f76; --g-ring: #ecdcbc; --g-iron: #3a3330; }
+main[data-page='landing'][data-theme='dark'] .night-cta { --g-wall: #1d2238; --g-block: #2a3050; --g-block-hi: #343c60; --g-block-lo: #222842; --g-ring: #4a5378; --g-iron: #0d0f18; }
+.g-wall { fill: var(--g-wall); }
+.g-block { fill: var(--g-block); }
+.g-block-hi { fill: var(--g-block-hi); }
+.g-block-lo { fill: var(--g-block-lo); }
+.g-ring { stroke: var(--g-ring); }
+.g-ring-fill { fill: var(--g-ring); }
+.g-iron { fill: var(--g-iron); }
+
+/* the portcullis: shut until the scene is seen, then lifted to rest; fully up while Play is pointed at */
+.g-bars { transform: translateY(0); transition: transform 1.4s steps(14); }
+.night-cta[data-open] .g-bars { transform: translateY(-118px); }
+.night-cta:has(.night-play:hover, .night-play:focus-visible) .g-bars { transform: translateY(-262px); transition-duration: .7s; transition-timing-function: steps(10); }
+
+/* the hall: a low glow at rest, a flood of gold with rays when the gate opens */
+.g-hall { opacity: .55; transition: opacity .6s ease; }
+.g-rays polygon { fill: #fff1c2; }
+.g-rays { opacity: 0; transition: opacity .6s ease; transform-box: view-box; transform-origin: 50% 87%; }
+.night-cta:has(.night-play:hover, .night-play:focus-visible) .g-hall { opacity: 1; }
+.night-cta:has(.night-play:hover, .night-play:focus-visible) .g-rays { opacity: .22; animation: g-rays 9s linear infinite; }
+@keyframes g-rays { from { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } to { transform: rotate(-4deg); } }
+
+/* wall torches flicker in pixel steps */
+.g-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: g-flame 0.9s steps(3) infinite alternate; }
+.g-flame:nth-of-type(odd) { animation-duration: 1.1s; }
+@keyframes g-flame { from { transform: scaleY(1) scaleX(1); } 50% { transform: scaleY(1.18) scaleX(.9); } to { transform: scaleY(.9) scaleX(1.05); } }
+.g-torchglow { animation: g-torchglow 2.2s steps(4) infinite alternate; }
+@keyframes g-torchglow { from { opacity: .7; } to { opacity: 1; } }
+.night-cta[data-offscreen] .g-flame, .night-cta[data-offscreen] .g-torchglow, .night-cta[data-offscreen] .g-rays { animation-play-state: paused; }
 .night-cta[data-offscreen] .night-fly { animation-play-state: paused; }
 
 .night-flies { position: absolute; inset: 0; pointer-events: none; }
@@ -126,5 +135,55 @@ main[data-theme='dark'] .road-link { color: #8fc3ee; }
   .road-board, .road-post { transition: none; }
   .night-cta { animation: none !important; }
   .night-fly { display: none; }
-  .night-lit { transition: none; }
+  .g-bars { transition: none; }
+  .g-flame, .g-torchglow, .g-rays { animation: none !important; }
+  .g-hall, .g-rays { transition: none; }
+}
+
+/* ---------- Footer: crest + a town on the horizon whose windows light up ---------- */
+.site-footer {
+  color: var(--l-ink, #12151d);
+  background: linear-gradient(180deg, var(--l-surface-2, #f6f8fb) 0%, color-mix(in srgb, var(--l-sky-top, #dcebfb) 70%, var(--l-bg, #fbfcfe)) 100%);
+  border-top: 1px solid var(--l-line, #e6e9ef);
+  overflow: hidden;
+}
+.footer-muted { color: var(--l-muted, #4a5160); }
+.footer-link { color: var(--l-ink, #12151d); transition: color .2s; }
+.footer-link:hover, .footer-link:focus-visible { color: color-mix(in srgb, #3f9a52 80%, var(--l-ink, #12151d)); }
+.footer-gh { color: var(--l-ink, #12151d); box-shadow: 0 0 0 1px var(--l-line, #e6e9ef); background: var(--l-surface, #fff); transition: transform .2s; }
+.footer-gh:hover { transform: translateY(-2px); }
+.footer-rule { border-top: 1px solid var(--l-line, #e6e9ef); }
+.crest-btn { border-radius: 10px; cursor: pointer; transition: transform .2s; }
+.crest-btn:hover { transform: translateY(-2px) rotate(-3deg); }
+.crest-btn:focus-visible, .footer-link:focus-visible, .footer-gh:focus-visible { outline: 2px solid var(--l-ink, #12151d); outline-offset: 3px; }
+
+.horizon { position: relative; height: clamp(72px, 9.5vw, 132px); margin: 28px -16px 0; }
+.horizon svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hz-wall { fill: color-mix(in srgb, var(--l-ink, #12151d) 82%, #2a3450); }
+.hz-roof { fill: color-mix(in srgb, var(--l-ink, #12151d) 70%, #6b3a3a); }
+.hz-win { fill: #f2c14e; opacity: 0; transition: opacity .5s steps(3); }
+.horizon[data-lit] .hz-win { opacity: 1; }
+.hz-lighter {
+  position: absolute; bottom: 2px; left: -12px; width: 4px; height: 10px;
+  background: #f2c14e; box-shadow: 0 0 10px 3px rgba(242, 193, 78, .55);
+  animation: hz-walk 26s linear infinite;
+}
+.horizon[data-offscreen] .hz-lighter { animation-play-state: paused; }
+@keyframes hz-walk { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 24px)); } }
+main[data-page='landing'][data-theme='dark'] .hz-wall { fill: #05070f; }
+main[data-page='landing'][data-theme='dark'] .hz-roof { fill: #1a1424; }
+.hz-tree { fill: color-mix(in srgb, var(--l-ink, #12151d) 75%, #1f4a2e); }
+main[data-page='landing'][data-theme='dark'] .hz-tree { fill: #071410; }
+.hz-gate { fill: #f2c14e; opacity: .35; }
+.hz-flag { fill: #c0453a; }
+main[data-page='landing'][data-theme='dark'] .hz-flag { fill: #7a2a2a; }
+.hz-banner { transform-box: fill-box; transform-origin: 0 50%; animation: hz-wave 1.6s steps(2) infinite alternate; }
+@keyframes hz-wave { from { transform: scaleX(1); } to { transform: scaleX(.75); } }
+.hz-sails { animation: hz-turn 14s linear infinite; }
+@keyframes hz-turn { to { transform: rotate(360deg); } }
+.horizon[data-offscreen] .hz-sails, .horizon[data-offscreen] .hz-banner { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .hz-win { transition: none; }
+  .hz-lighter { animation: none; display: none; }
+  .hz-sails, .hz-banner { animation: none; }
 }

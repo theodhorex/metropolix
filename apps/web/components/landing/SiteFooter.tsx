@@ -4,6 +4,10 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import T from './prefs/T';
+import { useTr } from './prefs/store';
+import Horizon from './closing/Horizon';
+import './closing.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -63,6 +67,8 @@ function FooterCrest() {
 
 export default function SiteFooter() {
   const footerRef = useRef<HTMLElement>(null);
+  const tr = useTr();
+  const replay = useRef<() => void>(() => {});
 
   useEffect(() => {
     const footer = footerRef.current;
@@ -75,6 +81,7 @@ export default function SiteFooter() {
       const ring = footer.querySelector('.crest-ring');
 
       const tl = gsap.timeline({
+        paused: false,
         scrollTrigger: {
           trigger: footer,
           start: 'top 92%',
@@ -107,6 +114,8 @@ export default function SiteFooter() {
           '-=0.2'
         );
       }
+
+      replay.current = () => tl.restart();
     });
 
     mm.add('(prefers-reduced-motion: reduce)', () => {
@@ -124,39 +133,46 @@ export default function SiteFooter() {
   return (
     <footer
       ref={footerRef}
-      className="border-t border-[#d8e6d4] bg-[#f2f7f0] px-4 py-12 text-[var(--landing-ink)]"
+      className="site-footer relative px-4 pt-12 pb-0"
     >
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
           {/* Left: Animated Crest + Brand */}
           <div className="flex items-center gap-3">
-            <FooterCrest />
+            <button type="button" className="crest-btn" onClick={() => replay.current()} aria-label={tr('Rebuild the crest', 'Bangun ulang lambang')}>
+              <FooterCrest />
+            </button>
             <div>
-              <span className="font-serif-display text-xl font-medium tracking-tight text-[var(--landing-ink)]">
+              <span className="font-serif-display text-xl font-medium tracking-tight">
                 Metropolix
               </span>
-              <p className="text-xs text-[var(--landing-ink-muted)]">
-                Pixel fantasy realm on NEAR
+              <p className="footer-muted text-xs">
+                <T en="A pixel fantasy realm, headed for NEAR" id="Negeri fantasi pixel, menuju NEAR" />
               </p>
             </div>
           </div>
 
           {/* Middle: In-page and External Links */}
-          <nav aria-label="Footer Navigation" className="flex justify-start md:justify-center">
-            <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-[var(--landing-ink)]">
+          <nav aria-label={tr('Footer navigation', 'Navigasi bawah')} className="flex justify-start md:justify-center">
+            <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold">
               <li>
-                <a href="#peoples" className="hover:text-[#22722b] transition-colors">
-                  Peoples
+                <a href="#peoples" className="footer-link">
+                  <T en="Peoples" id="Bangsa" />
                 </a>
               </li>
               <li>
-                <a href="#how" className="hover:text-[#22722b] transition-colors">
-                  How it plays
+                <a href="#how" className="footer-link">
+                  <T en="How it plays" id="Cara bermain" />
                 </a>
               </li>
               <li>
-                <a href="#chain" className="hover:text-[#22722b] transition-colors">
-                  Roadmap
+                <a href="#chain" className="footer-link">
+                  <T en="Roadmap" id="Peta jalan" />
+                </a>
+              </li>
+              <li>
+                <a href="#faq" className="footer-link">
+                  FAQ
                 </a>
               </li>
               <li>
@@ -164,10 +180,10 @@ export default function SiteFooter() {
                   href={GITHUB}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-[#22722b] transition-colors"
+                  className="footer-link"
                 >
                   GitHub
-                  <span className="sr-only"> (opens in a new tab)</span>
+                  <span className="sr-only"><T en=" (opens in a new tab)" id=" (membuka tab baru)" /></span>
                 </a>
               </li>
             </ul>
@@ -179,8 +195,8 @@ export default function SiteFooter() {
               href={GITHUB}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Metropolix GitHub repository"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(18,21,29,0.12)] bg-white text-[var(--landing-ink)] shadow-sm transition-all hover:bg-[rgba(18,21,29,0.05)] hover:text-[#22722b]"
+              aria-label={tr('Metropolix GitHub repository', 'Repositori GitHub Metropolix')}
+              className="footer-gh inline-flex h-9 w-9 items-center justify-center rounded-full"
             >
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -194,15 +210,16 @@ export default function SiteFooter() {
         </div>
 
         {/* Small Legal & Pixel Art attribution */}
-        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-[rgba(18,21,29,0.06)] pt-6 sm:flex-row">
-          <p className="text-xs text-[var(--landing-ink-muted)]">
-            &copy; 2026 Metropolix. All rights reserved.
+        <div className="mt-8 flex flex-col items-center justify-between gap-3 footer-rule pt-6 sm:flex-row">
+          <p className="footer-muted text-xs">
+            &copy; 2026 Metropolix.
           </p>
-          <p className="text-xs text-[var(--landing-ink-muted)]">
-            Pixel art, peoples and fantasy simulation built for NEAR testnet.
+          <p className="footer-muted text-xs">
+            <T en="Pixel art, peoples and world drawn for Metropolix." id="Pixel art, bangsa, dan dunia digambar khusus untuk Metropolix." />
           </p>
         </div>
       </div>
+      <Horizon />
     </footer>
   );
 }
