@@ -3,8 +3,9 @@ import {
   Container,
   Graphics,
   Sprite,
+  Texture,
+  TilingSprite,
   type FederatedPointerEvent,
-  type Texture,
   type Ticker,
 } from 'pixi.js';
 import { buildingLevel, GRID, type ArcId, type BuildingKind, type GameState } from '@metropolix/sim';
@@ -51,7 +52,27 @@ export const tileToWorld = (x: number, y: number) => ({ x: ((x - y) * TW) / 2, y
 export interface CityRendererOptions {
   /** Draw without the dark backdrop (the canvas is see-through), for pages that paint their own sky. */
   transparent?: boolean;
+  /**
+   * Draw only the tiles in this inclusive rectangle and hang an earthen cliff, vines, a small waterfall
+   * and drifting rocks under its two front edges, so the map reads as a floating island (landing page).
+   * Citizens stay on the island. The game itself leaves this unset.
+   */
+  island?: { x0: number; y0: number; x1: number; y1: number };
 }
+
+/** Earth and stone layers of the island cliff, [lit face, shaded face], top to bottom. */
+const CLIFF = {
+  lip: [0x4f9a45, 0x3d7d39],
+  soil: [0x9a6238, 0x774a2a],
+  earth: [0x7d4c2c, 0x5f3920],
+  deep: [0x613a24, 0x472a19],
+  stone: [0x777482, 0x58566a],
+  rim: [0x46434f, 0x34323f],
+  pebble: [0xa39c94, 0x857f78],
+  root: [0xc9a46c, 0xa88552],
+  vine: 0x3f8f3c,
+  leaf: 0x6fc25a,
+};
 
 export class CityRenderer {
   private app = new Application();
@@ -82,6 +103,17 @@ export class CityRenderer {
   private soldiers: Walker[] = [];
   private barracksAnchors: Tile[] = [];
   private walkLayer = new Container();
+  private underside = new Container();
+  private rocks: { g: Graphics; y: number; phase: number }[] = [];
+  private falls: TilingSprite[] = [];
+  private bobMs = 0;
+  private baseY = 0;
+  private effK = 1;
+  // tiles citizens may use: the whole map, or the island
+  private bx0 = 0;
+  private by0 = 0;
+  private bx1 = GRID - 1;
+  private by1 = GRID - 1;
   private wantWalkers = 0;
   private previews = new Map<string, string>();
   private quality: Quality = 'high';
@@ -109,7 +141,14 @@ export class CityRenderer {
   private hoverNpc = -1;
   private npcSeq = 0;
 
-  constructor(private readonly options: CityRendererOptions = {}) {}
+  constructor(private readonly options: CityRendererOptions = {}) {
+    const isl = options.island;
+    if (isl) { this.bx0 = isl.x0; this.by0 = isl.y0; this.bx1 = isl.x1; this.by1 = isl.y1; }
+  }
+
+  private inBounds(x: number, y: number) { return x >= this.bx0 && y >= this.by0 && x <= this.bx1 && y <= this.by1; }
+  private clampX(v: number) { return Math.max(this.bx0, Math.min(this.bx1, v)); }
+  private clampY(v: number) { return Math.max(this.by0, Math.min(this.by1, v)); }
 
   async init(host: HTMLElement) {
     // PixiJS v8 Application initialization & stage setup
@@ -137,7 +176,8 @@ export class CityRenderer {
     this.blocks.eventMode = 'none';
     this.badges.eventMode = 'none';
     this.cursor.eventMode = 'none';
-    this.world.addChild(this.ground, this.blocks, this.badges, this.walkLayer, this.cursor);
+    this.underside.eventMode = 'none';
+    this.world.addChild(this.underside, this.ground, this.blocks, this.badges, this.walkLayer, this.cursor);
     this.app.stage.addChild(this.world);
     this.app.stage.eventMode = 'static';
     this.app.stage.hitArea = this.app.screen;
@@ -180,6 +220,7 @@ export class CityRenderer {
     // Source: https://pixijs.download/v8.22.0/docs/ticker.Ticker.html#add
     this.app.ticker.add(this.onTick, this);
     this.drawGround();
+    this.drawIsland();
     this.resetView();
     this.ready = true;
     this.applyQuality(this.quality);
@@ -195,6 +236,9 @@ export class CityRenderer {
       this.app.ticker.remove(this.onTick, this);
       this.app.destroy(true, { children: true });
     }
+    for (const f of this.falls) f.texture.destroy(true);
+    this.falls.length = 0;
+    this.rocks.length = 0;
     this.clearPreviews();
     if (this.bank) {
       destroySpriteBank(this.bank);
@@ -213,6 +257,7 @@ export class CityRenderer {
   private onTick(ticker: Ticker) {
     this.watchFrameRate(ticker.deltaMS);
     this.moveWalkers(ticker.deltaMS);
+    if (this.options.island) this.floatIsland(ticker.deltaMS);
     if (this.animEntries.length === 0) return;
     this.animElapsedMs += ticker.deltaMS;
     if (this.animElapsedMs < 280) return;
@@ -271,7 +316,8 @@ export class CityRenderer {
     const s = this.state;
     if (!s) return null;
     for (let i = 0; i < 30; i++) {
-      const x = Math.floor(Math.random() * GRID), y = Math.floor(Math.random() * GRID);
+      const x = this.bx0 + Math.floor(Math.random() * (this.bx1 - this.bx0 + 1));
+      const y = this.by0 + Math.floor(Math.random() * (this.by1 - this.by0 + 1));
       if (!s.grid[y]![x]) return { x, y };
     }
     return null;
@@ -282,16 +328,15 @@ export class CityRenderer {
     const s = this.state;
     if (!s) return null;
     for (let i = 0; i < 24; i++) {
-      const x = Math.max(0, Math.min(GRID - 1, ax + Math.floor(Math.random() * 7) - 3));
-      const y = Math.max(0, Math.min(GRID - 1, ay + Math.floor(Math.random() * 7) - 3));
+      const x = this.clampX(ax + Math.floor(Math.random() * 7) - 3);
+      const y = this.clampY(ay + Math.floor(Math.random() * 7) - 3);
       if (!s.grid[y]![x]) return { x, y };
     }
     for (let dy = -3; dy <= 3; dy++) {
       const y = ay + dy;
-      if (y < 0 || y >= GRID) continue;
       for (let dx = -3; dx <= 3; dx++) {
         const x = ax + dx;
-        if (x >= 0 && x < GRID && !s.grid[y]![x]) return { x, y };
+        if (this.inBounds(x, y) && !s.grid[y]![x]) return { x, y };
       }
     }
     return this.freeTile();
@@ -402,11 +447,11 @@ export class CityRenderer {
       w.wait -= dt;
       if (w.wait <= 0) {
         const nx = w.ax !== undefined
-          ? Math.max(0, Math.min(GRID - 1, w.ax + Math.floor(Math.random() * 7) - 3))
-          : Math.max(0, Math.min(GRID - 1, Math.round(w.x + (Math.random() * 8 - 4))));
+          ? this.clampX(w.ax + Math.floor(Math.random() * 7) - 3)
+          : this.clampX(Math.round(w.x + (Math.random() * 8 - 4)));
         const ny = w.ay !== undefined
-          ? Math.max(0, Math.min(GRID - 1, w.ay + Math.floor(Math.random() * 7) - 3))
-          : Math.max(0, Math.min(GRID - 1, Math.round(w.y + (Math.random() * 8 - 4))));
+          ? this.clampY(w.ay + Math.floor(Math.random() * 7) - 3)
+          : this.clampY(Math.round(w.y + (Math.random() * 8 - 4)));
         if (!s.grid[ny]![nx]) { w.tx = nx; w.ty = ny; }
         w.wait = w.ax !== undefined ? 300 + Math.random() * 1400 : 400 + Math.random() * 2500;
       }
@@ -450,8 +495,10 @@ export class CityRenderer {
     this.cx = Math.min((GRID * TW) / 2, Math.max(-(GRID * TW) / 2, this.cx));
     this.cy = Math.min(GRID * TH, Math.max(-MARGIN_TOP, this.cy));
     const effK = Math.min(CityRenderer.MAX_K, Math.max(this.minK, this.k * this.zoomBoost));
+    this.effK = effK;
+    this.baseY = Math.round(height / 2 - this.cy * effK);
     this.world.scale.set(effK);
-    this.world.position.set(Math.round(width / 2 - this.cx * effK), Math.round(height / 2 - this.cy * effK));
+    this.world.position.set(Math.round(width / 2 - this.cx * effK), this.baseY + this.bob());
     this.app.stage.hitArea = this.app.screen;
   }
 
@@ -502,7 +549,7 @@ export class CityRenderer {
     const b = p.y / (TH / 2);
     const x = Math.floor((a + b) / 2);
     const y = Math.floor((b - a) / 2);
-    return x >= 0 && y >= 0 && x < GRID && y < GRID ? { x, y } : null;
+    return this.inBounds(x, y) ? { x, y } : null;
   }
 
   private diamond(g: Graphics, cx: number, cy: number, w: number, h: number) {
@@ -519,7 +566,7 @@ export class CityRenderer {
     for (let d = 0; d < GRID * 2; d++) {
       for (let y = 0; y < GRID; y++) {
         const x = d - y;
-        if (x < 0 || x >= GRID) continue;
+        if (x < 0 || x >= GRID || !this.inBounds(x, y)) continue;
         const parity = ((x + y) & 1) as 0 | 1;
         const h = tileHash(x, y, 101);
         // Weighted variant selection: ~55% lush grass (0), ~15% yellow flowers (1), ~15% blue/pink flowers (2), ~15% pebbles (3)
@@ -540,6 +587,146 @@ export class CityRenderer {
         this.baseGroundTex[y]![x] = tex;
       }
     }
+  }
+
+  /** The island's outline in world px (top vertex, the side corners, the bottom vertex). */
+  private islandCorners() {
+    const isl = this.options.island!;
+    return {
+      top: tileToWorld(isl.x0, isl.y0),
+      left: tileToWorld(isl.x0, isl.y1 + 1),
+      right: tileToWorld(isl.x1 + 1, isl.y0),
+      bottom: tileToWorld(isl.x1 + 1, isl.y1 + 1),
+    };
+  }
+
+  /** Deepest point of the cliff below the island's bottom vertex, in world px. */
+  private islandDepth() {
+    const { left, right } = this.islandCorners();
+    return Math.round(((right.x - left.x) / 2) * 0.52);
+  }
+
+  /**
+   * World-space box that holds the whole island: the tallest buildings above the back corner, the cliff
+   * and the drifting rocks below. The landing page frames its camera on this.
+   */
+  islandBounds() {
+    if (!this.options.island) return null;
+    const { top, left, right, bottom } = this.islandCorners();
+    const y0 = top.y - MARGIN_TOP + 20;
+    const y1 = bottom.y + this.islandDepth() + 70;
+    return { x: left.x, y: y0, w: right.x - left.x, h: y1 - y0 };
+  }
+
+  /**
+   * The cliff under the two front edges, drawn once in 4 px columns so it stays pixel art at any zoom:
+   * grass lip, soil with roots, earth, deep earth and stone, tapering to a jagged point under the bottom
+   * vertex. The left face is lit, the right one shaded, like the buildings. Then vines, a waterfall and
+   * three rocks that drift below.
+   */
+  private drawIsland() {
+    if (!this.options.island) return;
+    this.underside.removeChildren();
+    const { left: L, right: R, bottom: B } = this.islandCorners();
+    const half = (R.x - L.x) / 2;
+    const DMAX = this.islandDepth();
+    const S = 4;
+    const q = (v: number) => Math.round(v / S) * S;
+    const edgeY = (x: number) => (x <= B.x ? L.y + (x - L.x) * 0.5 : B.y - (x - B.x) * 0.5);
+    // smooth value noise along x (knots every 48 px) so the depth wanders without jitter
+    const knot = (i: number) => (tileHash(i, 7, 911) % 1000) / 1000;
+    const noise = (x: number) => {
+      const t = (x - L.x) / 48, i = Math.floor(t), f = t - i, s = f * f * (3 - 2 * f);
+      return knot(i) * (1 - s) + knot(i + 1) * s;
+    };
+    const depthAt = (x: number) => {
+      const u = Math.min(1, Math.abs(x - B.x) / half);
+      return q(14 + DMAX * Math.pow(1 - u, 1.3) * (0.78 + 0.44 * noise(x)) + (tileHash(Math.round(x), 3, 17) % 3) * S);
+    };
+
+    const face = new Graphics();
+    const extras = new Graphics();
+    for (let x = L.x; x < R.x; x += S) {
+      const side = x + S / 2 <= B.x ? 0 : 1;
+      const top = Math.floor(Math.min(edgeY(x), edgeY(x + S))) - 2;
+      const d = depthAt(x + S / 2);
+      const h = tileHash(Math.round(x), 11, 5);
+      const lip = 6 + (h % 5 === 0 ? 8 : h % 3 === 0 ? 4 : 0);
+      const soil = Math.min(d, lip + 12 + q(noise(x + 300) * 10));
+      const earth = Math.min(d, Math.max(soil, q(d * (0.5 + 0.12 * noise(x + 600)))));
+      const deep = Math.min(d, Math.max(earth, q(d * (0.74 + 0.1 * noise(x + 900)))));
+      const bands: [number, number, number][] = [
+        [0, lip, CLIFF.lip[side]!], [lip, soil, CLIFF.soil[side]!], [soil, earth, CLIFF.earth[side]!],
+        [earth, deep, CLIFF.deep[side]!], [deep, d - S, CLIFF.stone[side]!], [d - S, d, CLIFF.rim[side]!],
+      ];
+      for (const [a, b, c] of bands) if (b > a) face.rect(x, top + a, S, b - a).fill(c);
+      // a pebble in the earth, a root in the soil
+      if (h % 7 === 0 && earth - soil > 12) extras.rect(x, top + soil + q((h >>> 4) % Math.max(1, earth - soil - 8)), S * (h % 2 ? 2 : 1), S).fill(CLIFF.pebble[side]!);
+      if (h % 11 === 1 && soil - lip > 6) extras.rect(x + 1, top + lip, 2, soil - lip + 4).fill(CLIFF.root[side]!);
+      // vines hang over the lip and sometimes past the bottom
+      if (h % 9 === 2) {
+        const len = 10 + ((h >>> 6) % 15) * S;
+        extras.rect(x, top + 2, S, len).fill(CLIFF.vine);
+        for (let k = 8; k < len; k += 12) extras.rect(k % 24 === 8 ? x - S : x + S, top + 2 + k, S, S).fill(CLIFF.leaf);
+        extras.rect(x, top + 2 + len, S, S).fill(CLIFF.leaf);
+      }
+    }
+    this.underside.addChild(face, extras);
+
+    // a thin waterfall pouring off the shaded face into the sky
+    const wx = q(B.x + half * 0.42);
+    const wTop = Math.floor(edgeY(wx)) - 4;
+    const wLen = depthAt(wx) + 60;
+    const tex = this.waterTexture();
+    const segs: [number, number, number][] = [[0, wLen, 0.95], [wLen, 34, 0.55], [wLen + 34, 30, 0.25]];
+    for (const [y, len, alpha] of segs) {
+      const f = new TilingSprite({ texture: tex, width: 12, height: len });
+      f.position.set(wx, wTop + y);
+      f.alpha = alpha;
+      this.underside.addChild(f);
+      this.falls.push(f);
+    }
+    // spray where it leaves the lip
+    extras.rect(wx - S, wTop + 2, S, S).fill(0xdff4ff).rect(wx + 12, wTop + 4, S, S).fill(0xdff4ff);
+
+    // rocks drifting below the tip
+    this.rocks.length = 0;
+    const rockAt: [number, number, number][] = [[-0.36, 0.62, 5], [0.32, 0.78, 4], [0.05, 1.06, 3]];
+    rockAt.forEach(([fx, fy, size], i) => {
+      const g = new Graphics();
+      const w = size * 8;
+      g.rect(-w / 2, 0, w, S).fill(CLIFF.lip[0]!);
+      g.rect(-w / 2, S, w / 2, w / 2).fill(CLIFF.earth[0]!).rect(0, S, w / 2, w / 2).fill(CLIFF.earth[1]!);
+      g.rect(-w / 4, S + w / 2, w / 4, w / 4).fill(CLIFF.stone[0]!).rect(0, S + w / 2, w / 4, w / 4).fill(CLIFF.stone[1]!);
+      const y = B.y + DMAX * fy;
+      g.position.set(q(B.x + half * fx), y);
+      this.underside.addChild(g);
+      this.rocks.push({ g, y, phase: i * 2.1 });
+    });
+  }
+
+  /** 12x24 pixel water: pale streaks on blue, tiled and scrolled down every frame. */
+  private waterTexture() {
+    const c = document.createElement('canvas');
+    c.width = 12; c.height = 24;
+    const ctx = c.getContext('2d')!;
+    ctx.fillStyle = '#5fb4ea'; ctx.fillRect(0, 0, 12, 24);
+    ctx.fillStyle = '#8fd2fa'; ctx.fillRect(4, 0, 4, 24);
+    ctx.fillStyle = '#e6f7ff';
+    for (const [x, y, h] of [[0, 2, 6], [4, 10, 8], [8, 16, 6], [4, 0, 3], [8, 4, 4]] as const) ctx.fillRect(x, y, 4, h);
+    ctx.fillStyle = '#3f8fcf'; ctx.fillRect(0, 12, 4, 6); ctx.fillRect(8, 8, 4, 4);
+    const t = Texture.from(c);
+    t.source.scaleMode = 'nearest';
+    return t;
+  }
+
+  /** The island breathes: a slow 3 px bob, the waterfall runs, the rocks drift on their own beat. */
+  private bob() { return this.options.island ? Math.round(Math.sin(this.bobMs / 1500) * 3 * this.effK) : 0; }
+  private floatIsland(dt: number) {
+    this.bobMs += Math.min(dt, 100);
+    this.world.position.y = this.baseY + this.bob();
+    for (const f of this.falls) f.tilePosition.y = (f.tilePosition.y + dt * 0.09) % 24;
+    for (const r of this.rocks) r.g.position.y = Math.round(r.y + Math.sin(this.bobMs / 1100 + r.phase) * 6);
   }
 
   private drawBlocks() {
