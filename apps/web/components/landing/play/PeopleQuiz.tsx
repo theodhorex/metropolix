@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ARCS, type ArcDef, type ArcId, type ArcMods } from '@metropolix/sim';
 import T from '../prefs/T';
 import { useTr } from '../prefs/store';
+import { isLiteTier } from '../fx/tier';
 
 interface QuestionChoice {
   id: string;
@@ -323,10 +324,7 @@ export default function PeopleQuiz({ onSelectArc }: { onSelectArc?: (arcId: ArcI
   const [resultArc, setResultArc] = useState<ArcDef | null>(null);
 
   // Check hardware tier for confetti density
-  const isLite =
-    typeof window !== 'undefined' &&
-    (window.matchMedia('(pointer: coarse)').matches ||
-      ((navigator as unknown as { hardwareConcurrency?: number }).hardwareConcurrency ?? 8) <= 4);
+  const isLite = typeof window !== 'undefined' && isLiteTier();
 
   const currentQ = QUESTIONS[step];
   const totalQuestions = QUESTIONS.length;

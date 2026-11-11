@@ -4,8 +4,9 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 
 /**
  * Performance tier detection as specified by the performance budget:
- * - FULL tier: high-spec desktop with fine pointer, >4 CPU cores, >4GB RAM.
- * - LITE tier: coarse pointer (touch/phone/tablet), <=4 cores, or <=4GB RAM.
+ * - FULL tier: laptops and desktops, big tablets.
+ * - LITE tier: phones and small touch tablets, devices reporting <=2 cores or <=2 GB, or Save-Data.
+ *   Lite keeps every scroll animation but in cheaper forms (no smooth-scroll engine, lower-res sky).
  * - Reduced motion: prefers-reduced-motion: reduce
  */
 
@@ -17,10 +18,14 @@ function checkReducedMotion(): boolean {
 function checkLiteTier(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    const isTouch = window.matchMedia('(pointer: coarse)').matches;
-    const cores = navigator.hardwareConcurrency ?? 8;
-    const mem = (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8;
-    return isTouch || cores <= 4 || mem <= 4;
+    const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
+    if (nav.connection?.saveData) return true;
+    // Chrome rounds these down (a normal 8-thread laptop can report 4 cores and 4 GB), so only the truly
+    // small numbers mean a weak device
+    if ((nav.hardwareConcurrency ?? 8) <= 2 || (nav.deviceMemory ?? 8) <= 2) return true;
+    // phones and small tablets: touch only, small screen
+    const touchOnly = window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(any-pointer: fine)').matches;
+    return touchOnly && Math.min(screen.width, screen.height) < 820;
   } catch {
     return false;
   }
