@@ -1,0 +1,21 @@
+/* The gold light between the landing gate and the game (see gateEntrance.ts and ArriveFade.tsx). */
+.enter-veil { position: fixed; inset: 0; z-index: 9999; pointer-events: none; display: grid; place-items: center; }
+.enter-tiles { position: absolute; inset: 0; display: grid; grid-auto-rows: 1fr; }
+.enter-tiles > i { display: block; opacity: 0; transform: scale(.4); background: #ffe7a8; box-shadow: 0 0 0 1px #ffe7a8; }
+.enter-tiles > i:nth-child(3n) { background: #fff2c8; box-shadow: 0 0 0 1px #fff2c8; }
+.enter-tiles > i:nth-child(7n + 2) { background: #ffd987; box-shadow: 0 0 0 1px #ffd987; }
+.enter-caption {
+  position: relative; opacity: 0; transform: translateY(10px);
+  font-family: var(--font-display), system-ui, sans-serif; font-size: clamp(14px, 1.6vw, 20px); letter-spacing: .14em;
+  text-transform: uppercase; color: #6a3d12;
+}
+
+/* arriving on /play: the tiles start lit and wink out */
+.enter-arrive .enter-tiles > i { opacity: 1; transform: none; animation: enter-out .32s steps(3) forwards; }
+@keyframes enter-out { to { opacity: 0; transform: scale(.4); } }
+
+/* the gate during the entrance: bars all the way up, the hall ablaze */
+.night-cta[data-enter] .g-bars { transform: translateY(-262px); transition-duration: .45s; transition-timing-function: steps(8); }
+.night-cta[data-enter] .g-hall { opacity: 1; }
+.night-cta[data-enter] .g-rays { opacity: .5; transition-duration: .3s; }
+.night-cta[data-enter] .night-hint { opacity: 0; transition: opacity .2s; }

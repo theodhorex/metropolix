@@ -1,15 +1,20 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type MouseEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import T from './prefs/T';
+import { useTr } from './prefs/store';
+import { enterGate } from '@/components/enter/gateEntrance';
+import '@/components/enter/enter.css';
 import GateScene from './closing/GateScene';
 import './closing.css';
 
 /**
  * The closing scene: the great gate of the realm. The portcullis lifts a little when the gate comes
  * into view and all the way while Play now is hovered or focused, flooding the arch with warm light.
- * Embers drift up from the torches. CSS does the motion; this component only flags visibility.
+ * Embers drift up from the torches. CSS does that motion; this component flags visibility, and a click
+ * on Play now walks the visitor through the gate into gold light before the game opens.
  */
 const EMBERS = [
   [8, 0, 9], [15, 2.4, 11], [24, 5.1, 8], [33, 1.3, 12], [41, 6.2, 10], [50, 3.3, 9], [58, 0.7, 13],
@@ -18,6 +23,21 @@ const EMBERS = [
 
 export default function FinalCta() {
   const root = useRef<HTMLElement>(null);
+  const leaving = useRef<(() => void) | null>(null);
+  const router = useRouter();
+  const tr = useTr();
+
+  useEffect(() => () => leaving.current?.(), []);
+
+  const onPlay = (e: MouseEvent<HTMLAnchorElement>) => {
+    const el = root.current;
+    // new tab, modified clicks and reduced motion keep the plain link
+    if (!el || leaving.current || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    e.preventDefault();
+    router.prefetch('/play');
+    leaving.current = enterGate(el, tr('Entering the realm', 'Memasuki negeri', '왕국으로 들어가는 중', '正在进入王国'), () => router.push('/play'));
+  };
 
   useEffect(() => {
     const el = root.current;
@@ -61,7 +81,7 @@ export default function FinalCta() {
           />
         </p>
         <div className="mt-8 flex justify-center">
-          <Link href="/play" data-magnetic className="night-play btn btn-gold px-10 py-4 text-xl">
+          <Link href="/play" onClick={onPlay} data-magnetic className="night-play btn btn-gold px-10 py-4 text-xl">
             <T en="Play now" id="Main sekarang" ko="지금 플레이" zh="立即开玩" />
           </Link>
         </div>
