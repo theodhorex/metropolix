@@ -1,4 +1,4 @@
-import { newState, GRID, RELIC_KINDS, DISPLAY_SLOTS, isRelic, checkName, canUpgrade, MAX_BLD_LEVEL, type GameState } from '@metropolix/sim';
+import { newState, GRID, ARCS, MAX_MAYOR_LEVEL, NEWS_MAX, type Mayor, type World, RELIC_KINDS, DISPLAY_SLOTS, isRelic, checkName, canUpgrade, MAX_BLD_LEVEL, type GameState } from '@metropolix/sim';
 
 const KEY = 'metropolix-save-v2';
 
@@ -13,6 +13,25 @@ function padGrid(old: GameState['grid']): GameState['grid'] {
   for (let y = 0; y < Math.min(old.length, GRID); y++)
     for (let x = 0; x < Math.min(old[y]?.length ?? 0, GRID); x++) g[y]![x] = old[y]![x] ?? null;
   return g;
+}
+
+const num = (v: unknown, lo: number, hi: number) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+/** Keep a saved world only if every mayor is sane; otherwise the caller falls back to a fresh one. */
+function cleanWorld(raw: unknown, fresh: World): World {
+  const w = raw as Partial<World> | undefined;
+  if (!w || !Array.isArray(w.mayors) || w.mayors.length < 10 || w.mayors.length > 200 || !num(w.rng, 0, 4294967295)) return fresh;
+  const ids = new Set<string>();
+  const mayors: Mayor[] = [];
+  for (const m of w.mayors as Partial<Mayor>[]) {
+    const rec = (m?.record ?? {}) as Partial<Mayor['record']>;
+    if (!m || typeof m.id !== 'string' || typeof m.name !== 'string' || ids.has(m.id) || !ARCS.some((a) => a.id === m.arc)
+      || !num(m.level, 1, MAX_MAYOR_LEVEL) || !num(m.gold, 0, 1e12) || !num(m.wounded, 0, 100) || !num(m.shieldUntil, 0, 1e12) || !num(m.trophies, 0, 1e9)
+      || !num(rec.won, 0, 1e9) || !num(rec.lost, 0, 1e9) || !num(rec.held, 0, 1e9) || !num(rec.breached, 0, 1e9)) return fresh;
+    ids.add(m.id);
+    mayors.push({ id: m.id, name: m.name, arc: m.arc!, level: Math.floor(m.level!), gold: Math.floor(m.gold!), wounded: Math.floor(m.wounded!), shieldUntil: Math.floor(m.shieldUntil!), trophies: Math.floor(m.trophies!), record: { won: rec.won!, lost: rec.lost!, held: rec.held!, breached: rec.breached! } });
+  }
+  const news = (Array.isArray(w.news) ? w.news : []).filter((n) => n && typeof n.id === 'number' && typeof n.tick === 'number' && typeof n.text === 'string' && (n.kind === 'raid' || n.kind === 'rise' || n.kind === 'you')).slice(0, NEWS_MAX);
+  return { rng: w.rng!, mayors, news, newsSeq: num(w.newsSeq, 0, 1e12) ? w.newsSeq! : news.length, nextTick: num(w.nextTick, 0, 1e12) ? w.nextTick! : 0 };
 }
 
 export function loadState(): GameState {
@@ -54,6 +73,7 @@ export function loadState(): GameState {
         const rec = (s.record ?? {}) as Partial<Record<keyof GameState['record'], unknown>>;
         merged.record = { won: 0, lost: 0, held: 0, breached: 0 };
         for (const k of ['won', 'lost', 'held', 'breached'] as const) { const v = rec[k]; if (typeof v === 'number' && v >= 0) merged.record[k] = Math.floor(v); }
+        merged.world = cleanWorld(s.world, fresh.world);
         return merged;
       }
     }
