@@ -8,6 +8,8 @@ import OnChain from '@/components/landing/OnChain';
 import FAQ from '@/components/landing/FAQ';
 import FinalCta from '@/components/landing/FinalCta';
 import SiteFooter from '@/components/landing/SiteFooter';
+import LandingMotion from '@/components/landing/LandingMotion';
+import JourneyRail from '@/components/landing/motion/JourneyRail';
 import CursorTrail from '@/components/landing/motion/CursorTrail';
 import MagneticFx from '@/components/landing/motion/MagneticFx';
 import PrefsToggle from '@/components/landing/prefs/PrefsToggle';
@@ -35,6 +37,8 @@ export default function LandingPage() {
       <FinalCta />
       <SiteFooter />
       <PrefsToggle />
+      <JourneyRail />
+      <LandingMotion />
       <CursorTrail />
       <MagneticFx />
     </main>
