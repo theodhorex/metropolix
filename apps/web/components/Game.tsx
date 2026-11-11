@@ -51,7 +51,6 @@ export default function Game() {
   const findsSeen = useRef<number | null>(null);
   const [profileOf, setProfileOf] = useState<sim.PlayerRow | 'you' | null>(null);
   const [renaming, setRenaming] = useState(false);
-  const others = useMemo(() => sim.generatePlayers(PLAYER_SEED, 40), []);
   const [guideTarget, setGuideTarget] = useState<GuideTarget>(null);
   const [talk, setTalk] = useState<NpcTalk | null>(null);
   const talkOpenRef = useRef(false);
@@ -207,13 +206,14 @@ export default function Game() {
 
   const s = stateRef.current;
   const st = s ? sim.stats(s) : null;
+  const others = s ? sim.worldRows(s) : [];
 
   const arc = s ? sim.arcDef(s.arc) : null;
   const myName = s?.name || account || 'Mayor';
   const profile = (() => {
     if (!s || !profileOf) return null;
     const all = [...others, sim.myRow(s, myName)];
-    const p = profileOf === 'you' ? sim.myProfile(s, myName) : sim.simProfile(profileOf);
+    const p = profileOf === 'you' ? sim.myProfile(s, myName) : sim.simProfile(profileOf, s);
     const pos = sim.ranked(all, 'chainPower').find((r) => r.id === p.id)?.rank;
     return { p, rank: pos ? { pos, of: all.length } : undefined };
   })();
@@ -361,19 +361,20 @@ export default function Game() {
               </section>
 
               <section className="panel mt-2.5 p-2.5">
-                <h2 className="font-display mb-1.5 flex items-center gap-1.5 text-base font-bold"><Icon name="city" size={18} /> Rival cities</h2>
+                <h2 className="font-display mb-1.5 flex items-center gap-1.5 text-base font-bold"><Icon name="city" size={18} /> Nearby mayors</h2>
                 <ul className="space-y-1.5">
-                  {RIVALS.map((r) => {
-                    const cd = Math.max(0, (s.cooldowns[r.id] ?? 0) - s.tick);
+                  {[...s.world.mayors].sort((x, y) => Math.abs(sim.mayorPower(x) - (st?.chainPower ?? 0)) - Math.abs(sim.mayorPower(y) - (st?.chainPower ?? 0))).slice(0, 5).map((m) => {
+                    const cd = Math.max(0, (s.cooldowns[m.id] ?? 0) - s.tick);
+                    const sh = sim.shieldLeft(s, m);
                     return (
-                      <li key={r.id} className="well flex items-center gap-2 px-2 py-1.5 text-sm">
-                        <div className="min-w-0 flex-1"><b className="block truncate">{r.name}</b>
+                      <li key={m.id} className="well flex items-center gap-2 px-2 py-1.5 text-sm">
+                        <div className="min-w-0 flex-1"><b className="block truncate">{m.name}</b>
                           <span className="flex gap-2.5 text-xs text-[var(--paper-dim)] tabular-nums">
-                            <span className="flex items-center gap-0.5" title="Defense"><Icon name="shield" size={11} />{r.defense}</span>
-                            <span className="flex items-center gap-0.5" title="Gold you could take"><Icon name="coin" size={11} />{sim.rivalLoot(r)}</span>
+                            <span className="flex items-center gap-0.5" title="Defense"><Icon name="shield" size={11} />{sim.mayorDefense(m)}</span>
+                            <span className="flex items-center gap-0.5" title="Treasury"><Icon name="coin" size={11} />{m.gold}</span>
                           </span>
                         </div>
-                        <button className="btn btn-quiet w-14 text-xs tabular-nums" disabled={cd > 0 || s.troops === 0} onClick={() => act(sim.attackRival(s, r.id))} title={cd > 0 ? 'Your troops are resting' : `Quick raid on ${r.name}`}>{cd > 0 ? `${cd}s` : 'Raid'}</button>
+                        <button className="btn btn-quiet w-14 text-xs tabular-nums" disabled={cd > 0 || sh > 0 || s.troops === 0} onClick={() => act(sim.attackRival(s, m.id))} title={sh > 0 ? 'Shielded after a recent raid' : cd > 0 ? 'Your troops are resting' : `Quick raid on ${m.name}`}>{sh > 0 ? `${sh}s` : cd > 0 ? `${cd}s` : 'Raid'}</button>
                       </li>
                     );
                   })}
