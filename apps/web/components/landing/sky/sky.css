@@ -1,0 +1,12 @@
+/* The page-wide sky. The canvas is drawn at a fraction of the screen size and scaled up pixel-sharp. */
+.realm-sky { position: fixed; inset: 0; z-index: -20; pointer-events: none; overflow: hidden; contain: strict; }
+.realm-sky-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.realm-sky-canvas[data-ready] { opacity: 1; }
+
+/* stand-in before three.js loads, and for reduced motion or no WebGL: the same morning (or night) sky */
+.realm-sky-fallback { position: absolute; inset: 0; background: linear-gradient(180deg, #2c83f0 0%, #69b3ff 45%, #ffe0bd 100%); }
+main[data-page='landing'][data-theme='dark'] .realm-sky-fallback { background: linear-gradient(180deg, #070d2e 0%, #142060 50%, #2b2a72 100%); }

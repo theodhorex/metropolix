@@ -10,6 +10,7 @@ import FinalCta from '@/components/landing/FinalCta';
 import SiteFooter from '@/components/landing/SiteFooter';
 import LandingMotion from '@/components/landing/LandingMotion';
 import JourneyRail from '@/components/landing/motion/JourneyRail';
+import RealmSky from '@/components/landing/sky/RealmSky';
 import CursorTrail from '@/components/landing/motion/CursorTrail';
 import MagneticFx from '@/components/landing/motion/MagneticFx';
 import PrefsToggle from '@/components/landing/prefs/PrefsToggle';
@@ -36,6 +37,7 @@ export default function LandingPage() {
       <FAQ />
       <FinalCta />
       <SiteFooter />
+      <RealmSky />
       <PrefsToggle />
       <JourneyRail />
       <LandingMotion />

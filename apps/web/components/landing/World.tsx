@@ -320,7 +320,7 @@ export default function World() {
         </div>
 
         {/* 4 Stat Cards: Pale Pixel Banners */}
-        <ul className="mt-16 grid grid-cols-2 gap-4 min-[901px]:grid-cols-4 lg:gap-6" data-reveal>
+        <ul className="mt-16 grid grid-cols-2 gap-4 min-[901px]:grid-cols-4 lg:gap-6">
           {STATS.map((s) => (
             <li
               key={s.label.en}
