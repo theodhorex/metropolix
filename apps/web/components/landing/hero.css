@@ -32,3 +32,28 @@ main[data-page='landing'][data-theme='dark'] .hero-haze { background: linear-gra
 /* headline accent: AA-dark tone on the day sky, the raw people colour on the night sky */
 .hero-accent { color: var(--accent-text); transition: color .4s ease; }
 main[data-page='landing'][data-theme='dark'] .hero-accent { color: color-mix(in srgb, var(--accent-raw) 85%, #fff); }
+
+/* ---------- world news: a pixel notice board under the floating island ---------- */
+.news-board {
+  width: min(100%, 340px); padding: 10px; color: var(--l-ink);
+  background: var(--l-surface); border: 2px solid var(--l-ink); box-shadow: 4px 4px 0 var(--l-ink);
+  clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px));
+}
+main[data-page='landing'][data-theme='dark'] .news-board { border-color: #6f78c8; box-shadow: 4px 4px 0 #0a0f2a; }
+.news-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; }
+.news-head p { font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.news-live { width: 6px; height: 6px; background: #22c55e; animation: news-live 1.6s steps(2) infinite; }
+@keyframes news-live { 50% { opacity: .25; } }
+.news-rows { margin: 0; padding: 0 8px; list-style: none; background: var(--l-surface-2); }
+.news-rows li { display: flex; align-items: center; gap: 8px; height: 34px; overflow: hidden; }
+.news-rows li + li { border-top: 1px dashed var(--l-line); }
+.news-tag { flex: none; min-width: 42px; padding: 1px 5px; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+.news-tag[data-kind='raid'] { background: #e5594a; color: #2a0b06; }
+.news-tag[data-kind='rise'] { background: #6fcf6a; color: #0d3313; }
+.news-tag[data-kind='you'] { background: #f2c14e; color: #3a2604; }
+.news-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12.5px; color: var(--l-muted); }
+.news-text-top { color: var(--l-ink); font-weight: 700; }
+.news-wait { font-style: italic; color: var(--l-faint); }
+.news-new { animation: news-in .5s cubic-bezier(.2, .9, .3, 1.2) both; }
+@keyframes news-in { from { transform: translateY(-100%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .news-live, .news-new { animation: none; } }

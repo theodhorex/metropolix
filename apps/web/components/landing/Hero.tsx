@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
-import { ARCS, type ArcId } from '@metropolix/sim';
+import { ARCS, type ArcId, type NewsItem } from '@metropolix/sim';
 import LiveCity from './LiveCity';
+import NewsTicker from './NewsTicker';
 import Sky from './Sky';
 import T from './prefs/T';
 import { useTr } from './prefs/store';
@@ -31,6 +32,7 @@ const ARC_NAMES: Record<ArcId, { en: string; id: string; ko: string; zh: string 
  */
 export default function Hero() {
   const [arc, setArc] = useState<ArcId>('elf');
+  const [news, setNews] = useState<NewsItem[]>([]);
   const tr = useTr();
   const raw = ARCS.find((a) => a.id === arc)?.accent ?? '#5fc07a';
 
@@ -88,8 +90,12 @@ export default function Hero() {
       </div>
 
       {/* the real game on its own map, floating as an island */}
-      <div className="hero-town relative h-[min(62svh,96vw)] w-full lg:h-[min(86svh,880px)]">
-        <LiveCity arc={arc} />
+      <div className="relative w-full">
+        <div className="hero-town relative h-[min(62svh,96vw)] w-full lg:h-[min(86svh,880px)]">
+          <LiveCity arc={arc} onNews={setNews} />
+        </div>
+        {/* news from the simulated world around the island, pinned under it on the right */}
+        <NewsTicker items={news} className="hero-news relative z-10 mx-auto -mt-2 lg:absolute lg:right-0 lg:bottom-[4%] lg:mt-0" />
       </div>
       </div>
     </section>
