@@ -1,20 +1,207 @@
-export default function SiteFooter() {
+'use client';
+
+import { useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
+
+const GITHUB = 'https://github.com/theodhorex/metropolix';
+
+function FooterCrest() {
   return (
-    <footer className="mt-8">
-      <div className="pixel-divider" aria-hidden="true" />
-      <div className="bg-[var(--slab)] px-4 py-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-display text-xl font-bold text-[var(--gold)]">Metropolix</p>
-          <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            <li>
-              <a href="https://github.com/theodhorex/metropolix" target="_blank" rel="noopener noreferrer" className="font-bold underline underline-offset-4">
-                GitHub<span className="sr-only"> (opens in a new tab)</span>
-              </a>
-            </li>
-            <li>Built for NEAR</li>
-          </ul>
+    <div className="relative flex h-10 w-10 items-center justify-center">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 32 32"
+        className="h-9 w-9 shrink-0"
+        shapeRendering="crispEdges"
+        style={{ imageRendering: 'pixelated' }}
+      >
+        {/* Pixel ring drawn around the crest */}
+        <rect
+          className="crest-ring"
+          x="1.5"
+          y="1.5"
+          width="29"
+          height="29"
+          fill="none"
+          stroke="#5fc07a"
+          strokeWidth="1.5"
+          strokeDasharray="116"
+          strokeDashoffset="116"
+        />
+
+        {/* Castle blocks: 16x16 scaled into 32x32 (each pixel = 2x2) */}
+        {/* Gold crenellations / towers */}
+        <rect className="crest-block" x="6" y="6" width="6" height="8" fill="#f2c14e" />
+        <rect className="crest-block" x="14" y="6" width="4" height="8" fill="#f2c14e" />
+        <rect className="crest-block" x="20" y="6" width="6" height="8" fill="#f2c14e" />
+
+        {/* Gold main body */}
+        <rect className="crest-block" x="6" y="14" width="20" height="12" fill="#f2c14e" />
+
+        {/* White highlights */}
+        <rect className="crest-block" x="6" y="6" width="4" height="2" fill="#ffffff" />
+        <rect className="crest-block" x="14" y="6" width="2" height="2" fill="#ffffff" />
+        <rect className="crest-block" x="20" y="6" width="4" height="2" fill="#ffffff" />
+        <rect className="crest-block" x="8" y="16" width="2" height="6" fill="#ffffff" />
+
+        {/* Ink gate & outlines */}
+        <rect className="crest-block" x="13" y="19" width="6" height="7" fill="#12151d" />
+        <rect className="crest-block" x="14" y="17" width="4" height="2" fill="#12151d" />
+        <rect className="crest-block" x="4" y="14" width="2" height="12" fill="#12151d" />
+        <rect className="crest-block" x="26" y="14" width="2" height="12" fill="#12151d" />
+        <rect className="crest-block" x="6" y="26" width="20" height="2" fill="#12151d" />
+        <rect className="crest-block" x="12" y="6" width="2" height="8" fill="#12151d" />
+        <rect className="crest-block" x="18" y="6" width="2" height="8" fill="#12151d" />
+      </svg>
+    </div>
+  );
+}
+
+export default function SiteFooter() {
+  const footerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const footer = footerRef.current;
+    if (!footer) return;
+
+    const mm = gsap.matchMedia();
+
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const blocks = footer.querySelectorAll('.crest-block');
+      const ring = footer.querySelector('.crest-ring');
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: footer,
+          start: 'top 92%',
+          once: true,
+        },
+      });
+
+      // Pixel blocks drop in, bounce and assemble into crest
+      tl.fromTo(
+        blocks,
+        { y: -20, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          stagger: 0.03,
+          duration: 0.6,
+          ease: 'bounce.out',
+        }
+      );
+
+      // Pixel ring draws around it
+      if (ring) {
+        tl.to(
+          ring,
+          {
+            strokeDashoffset: 0,
+            duration: 0.8,
+            ease: 'power2.inOut',
+          },
+          '-=0.2'
+        );
+      }
+    });
+
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      const blocks = footer.querySelectorAll('.crest-block');
+      const ring = footer.querySelector('.crest-ring');
+      gsap.set(blocks, { y: 0, opacity: 1 });
+      if (ring) gsap.set(ring, { strokeDashoffset: 0 });
+    });
+
+    return () => {
+      mm.revert();
+    };
+  }, []);
+
+  return (
+    <footer
+      ref={footerRef}
+      className="border-t border-[#d8e6d4] bg-[#f2f7f0] px-4 py-12 text-[var(--landing-ink)]"
+    >
+      <div className="mx-auto max-w-6xl">
+        <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
+          {/* Left: Animated Crest + Brand */}
+          <div className="flex items-center gap-3">
+            <FooterCrest />
+            <div>
+              <span className="font-serif-display text-xl font-medium tracking-tight text-[var(--landing-ink)]">
+                Metropolix
+              </span>
+              <p className="text-xs text-[var(--landing-ink-muted)]">
+                Pixel fantasy realm on NEAR
+              </p>
+            </div>
+          </div>
+
+          {/* Middle: In-page and External Links */}
+          <nav aria-label="Footer Navigation" className="flex justify-start md:justify-center">
+            <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-[var(--landing-ink)]">
+              <li>
+                <a href="#peoples" className="hover:text-[#22722b] transition-colors">
+                  Peoples
+                </a>
+              </li>
+              <li>
+                <a href="#how" className="hover:text-[#22722b] transition-colors">
+                  How it plays
+                </a>
+              </li>
+              <li>
+                <a href="#chain" className="hover:text-[#22722b] transition-colors">
+                  Roadmap
+                </a>
+              </li>
+              <li>
+                <a
+                  href={GITHUB}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[#22722b] transition-colors"
+                >
+                  GitHub
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+
+          {/* Right: GitHub Icon Link */}
+          <div className="flex items-center justify-start md:justify-end">
+            <a
+              href={GITHUB}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Metropolix GitHub repository"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(18,21,29,0.12)] bg-white text-[var(--landing-ink)] shadow-sm transition-all hover:bg-[rgba(18,21,29,0.05)] hover:text-[#22722b]"
+            >
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fillRule="evenodd"
+                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </a>
+          </div>
         </div>
-        <p className="mx-auto mt-4 max-w-6xl text-xs text-[var(--paper-dim)]">Pixel art, peoples and world drawn for Metropolix.</p>
+
+        {/* Small Legal & Pixel Art attribution */}
+        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-[rgba(18,21,29,0.06)] pt-6 sm:flex-row">
+          <p className="text-xs text-[var(--landing-ink-muted)]">
+            &copy; 2026 Metropolix. All rights reserved.
+          </p>
+          <p className="text-xs text-[var(--landing-ink-muted)]">
+            Pixel art, peoples and fantasy simulation built for NEAR testnet.
+          </p>
+        </div>
       </div>
     </footer>
   );
