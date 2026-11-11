@@ -6,9 +6,17 @@ main[data-page='landing'][data-lang='id'] .t-id,
 main[data-page='landing'][data-lang='ko'] .t-ko,
 main[data-page='landing'][data-lang='zh'] .t-zh { display: contents; }
 
-/* Korean and Chinese: the Latin fonts have no Hangul or Han glyphs, so each stack falls through to Noto.
-   --font-cjk is resolved where a font-family is declared, so it is set on <main> per language. */
-main[data-page='landing'] { --font-cjk: var(--font-sc); font-family: var(--font-body), var(--font-cjk), system-ui, sans-serif; }
+/* Korean and Chinese: the Latin web fonts have no Hangul or Han glyphs, so each stack falls through to the
+   system CJK fonts every OS ships (no extra download, kind to slow phones). --font-cjk is resolved where a
+   font-family is declared, so it is set on <main> per language. */
+main[data-page='landing'] {
+  --font-kr: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans CJK KR', 'Noto Sans KR', 'Source Han Sans KR', 'NanumGothic';
+  --font-sc: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', 'Source Han Sans SC';
+  --font-kr-serif: 'AppleMyungjo', 'Noto Serif CJK KR', 'Noto Serif KR', 'Nanum Myeongjo', 'Batang', var(--font-kr);
+  --font-sc-serif: 'Songti SC', 'Noto Serif CJK SC', 'Noto Serif SC', 'SimSun', var(--font-sc);
+  --font-cjk: var(--font-sc);
+  font-family: var(--font-body), var(--font-cjk), system-ui, sans-serif;
+}
 main[data-page='landing'][data-lang='ko'] { --font-cjk: var(--font-kr); }
 main[data-page='landing'] .font-display { font-family: var(--font-display), var(--font-cjk), var(--font-body), sans-serif; }
 main[data-page='landing'] .font-serif-display { font-family: var(--font-serif), var(--font-cjk-serif, var(--font-cjk)), Georgia, serif; }
