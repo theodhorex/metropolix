@@ -61,7 +61,7 @@ export default function BuildingPanel({ s, x, y, act, onClose, onPack, onDemolis
       <div className="flex items-start gap-3">
         <span className="flex h-20 w-20 shrink-0 items-end justify-center overflow-hidden border-2 border-[var(--ink)] bg-[var(--slab-lo)]"><ItemThumb k={k} size={80} preview={preview} /></span>
         <div className="min-w-0 text-sm">
-          <p>{b.desc}.</p>
+          <p>{sim.describeBuilding(k, lv)}.</p>
           {k === 'farm' && <p className="mt-1 text-[var(--paper-dim)]">Your city grows: {sim.foodTypes(s).join(', ') || 'nothing yet'}.</p>}
           {k === 'barracks' && <p className="mt-1 text-[var(--paper-dim)]">Drill bonus from upgraded barracks: +{sim.drillPm(s) / 10}% attack (most {sim.DRILL_CAP_PM / 10}%).</p>}
           {!up && <p className="mt-1 text-[var(--paper-dim)]">Decorations stay as they are; build more of them for more cheer.</p>}

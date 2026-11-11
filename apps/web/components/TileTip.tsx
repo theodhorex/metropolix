@@ -34,7 +34,7 @@ export default function TileTip({ s, tile, tool, preview }: { s: sim.GameState; 
     const b = sim.BUILDINGS[here];
     body = (
       <>
-        <Head k={here} preview={preview} sub={b.desc} />
+        <Head k={here} preview={preview} sub={sim.describeBuilding(here, sim.buildingLevel(s, tile.x, tile.y))} />
         {tool === 'demolish' && <Line tone="bad" icon="hammer">Tap to demolish, <Icon name="coin" size={12} /> {Math.floor(b.cost * 0.4)} back</Line>}
         {tool === 'pack' && <Line tone="good" icon="box">Tap to pack it into storage</Line>}
         {sim.canUpgrade(here) && <Line tone="dim" icon="star">Level {sim.buildingLevel(s, tile.x, tile.y)} of {sim.MAX_BLD_LEVEL}</Line>}
