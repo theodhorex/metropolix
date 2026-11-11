@@ -286,6 +286,17 @@ export const ARC_FILTER: Record<ArcId, string> = {
   dragon: 'hue-rotate(-35deg) saturate(1.6) brightness(0.72) contrast(1.1)',
   goblin: 'hue-rotate(55deg) saturate(0.9) brightness(0.8) contrast(1.15)',
 };
+/**
+ * Level 2 and 3 add-ons use their own milder filter. The race filters spin hues hard, which turned
+ * red banners orange on elf and silos pink on dragon; add-ons only need the race's light and dirt.
+ */
+export const ADDON_FILTER: Record<ArcId, string> = {
+  elf: 'saturate(0.7) brightness(1.02)',
+  lizard: 'saturate(0.8) brightness(0.98)',
+  caveman: 'sepia(0.55) saturate(0.85) brightness(0.88)',
+  dragon: 'saturate(0.85) brightness(0.8) contrast(1.1)',
+  goblin: 'saturate(0.7) brightness(0.82) contrast(1.1)',
+};
 let themeFilter: string | null = null;
 
 function canvasToTexture(canvas: HTMLCanvasElement): Texture {
@@ -1201,7 +1212,7 @@ export function buildSpriteBank(arc: ArcId | null): SpriteBank {
     const badges: [Texture, Texture] = [raw(buildBadgeTexture(2)), raw(buildBadgeTexture(3))];
     const soldiers = (['front', 'back'] as const).map((view) =>
       Array.from({ length: WALK_FRAMES + 1 }, (_, f) => raw(drawSoldier(arc, view, f))));
-    const arcFilter = arc ? ARC_FILTER[arc] : null;
+    const arcFilter = arc ? ADDON_FILTER[arc] : null;
     const levelCache = new Map<string, Texture[]>();
     const levelFrames = (kind: BuildingKind, level: number): Texture[] => {
       if (level <= 1 || !canUpgrade(kind)) return buildings[kind];
