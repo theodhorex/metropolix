@@ -10,49 +10,14 @@ import { isLiteTier, isReducedMotion } from './fx/tier';
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Splits text nodes in an element into inline-block word spans for staggered blur/reveal animations,
- * while preserving tags like <br> and <em>.
+ * The words of a [data-reveal-words] heading. Words are pre-split in JSX (`<T split>`), never here: cutting
+ * up text nodes React owns broke the spacing after a re-render (language switch, hydration). Headings
+ * without pre-split words reveal as one piece.
  */
 function splitWords(el: HTMLElement): HTMLElement[] {
-  const existing = el.querySelectorAll<HTMLElement>('.reveal-word');
-  if (existing.length > 0) return Array.from(existing);
-
-  const spans: HTMLElement[] = [];
-
-  function processNode(node: Node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || '';
-      const parts = text.split(/(\s+)/);
-      const fragment = document.createDocumentFragment();
-
-      parts.forEach((part) => {
-        if (/^\s+$/.test(part) || part === '') {
-          fragment.appendChild(document.createTextNode(part));
-        } else {
-          const span = document.createElement('span');
-          span.className = 'reveal-word inline-block';
-          span.textContent = part;
-          fragment.appendChild(span);
-          spans.push(span);
-        }
-      });
-
-      node.parentNode?.replaceChild(fragment, node);
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const elNode = node as HTMLElement;
-      if (elNode.tagName.toLowerCase() === 'br') {
-        return;
-      }
-      Array.from(elNode.childNodes).forEach(processNode);
-    }
-  }
-
-  Array.from(el.childNodes).forEach(processNode);
-  return spans;
+  const words = el.querySelectorAll<HTMLElement>('.reveal-word');
+  return words.length > 0 ? Array.from(words) : [el];
 }
-
-// 7x3 pixel bird path
-const BIRD_PATH = 'M0 0h1v1H0zM6 0h1v1H6zM1 1h1v1H1zM5 1h1v1H5zM2 2h3v1H2z';
 
 // 8px grid pixel cloud rows
 const CLOUD_ROWS: readonly (readonly [number, number][])[] = [
@@ -421,7 +386,7 @@ export default function LandingMotion() {
       <div className="landing-journey-sky" />
       <div className="landing-journey-stars" />
 
-      {/* Slow ambient pixel clouds and birds (CSS-driven, paused offscreen / hidden) */}
+      {/* Slow ambient pixel clouds (CSS-driven, paused offscreen / hidden) */}
       <div className="journey-cloud journey-cloud-1">
         <PixelCloudSvg />
       </div>
@@ -429,20 +394,6 @@ export default function LandingMotion() {
         <PixelCloudSvg flip />
       </div>
 
-      <svg
-        viewBox="0 0 7 3"
-        shapeRendering="crispEdges"
-        className="journey-bird journey-bird-1"
-      >
-        <path d={BIRD_PATH} fill="var(--landing-ink-muted, #475069)" />
-      </svg>
-      <svg
-        viewBox="0 0 7 3"
-        shapeRendering="crispEdges"
-        className="journey-bird journey-bird-2"
-      >
-        <path d={BIRD_PATH} fill="var(--landing-ink-muted, #475069)" />
-      </svg>
     </div>
   );
 }
