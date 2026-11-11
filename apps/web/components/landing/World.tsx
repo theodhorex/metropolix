@@ -128,7 +128,7 @@ export default function World() {
           {
             y: 0,
             opacity: 1,
-            ease: 'steps(3)',
+            ease: 'back.out(1.5)',
             stagger: { each: 0.015, from: 'center' },
             duration: 0.28,
           },
@@ -141,7 +141,7 @@ export default function World() {
           {
             y: 0,
             opacity: 1,
-            ease: 'steps(3)',
+            ease: 'back.out(1.5)',
             stagger: { each: 0.012, from: 'edges' },
             duration: 0.3,
           },
@@ -154,7 +154,7 @@ export default function World() {
           {
             y: 0,
             opacity: 1,
-            ease: 'steps(3)',
+            ease: 'back.out(1.5)',
             stagger: { each: 0.012, from: 'random' },
             duration: 0.25,
           },
@@ -167,7 +167,7 @@ export default function World() {
           {
             y: 0,
             opacity: 1,
-            ease: 'steps(3)',
+            ease: 'back.out(1.5)',
             stagger: 0.02,
             duration: 0.2,
           },

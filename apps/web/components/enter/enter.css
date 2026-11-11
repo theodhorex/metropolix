@@ -15,7 +15,7 @@
 @keyframes enter-out { to { opacity: 0; transform: scale(.4); } }
 
 /* the gate during the entrance: bars all the way up, the hall ablaze */
-.night-cta[data-enter] .g-bars { transform: translateY(-262px); transition-duration: .45s; transition-timing-function: steps(8); }
+.night-cta[data-enter] .g-bars { transform: translateY(-262px); transition-duration: .5s; transition-timing-function: cubic-bezier(.3, 0, .2, 1); }
 .night-cta[data-enter] .g-hall { opacity: 1; }
 .night-cta[data-enter] .g-rays { opacity: .5; transition-duration: .3s; }
 .night-cta[data-enter] .night-hint { opacity: 0; transition: opacity .2s; }

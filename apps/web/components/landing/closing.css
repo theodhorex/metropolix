@@ -55,7 +55,7 @@ main[data-theme='dark'] .road-link { color: #8fc3ee; }
   .road-post {
     display: block; position: absolute; left: 50%; bottom: 100%; width: 6px; margin-left: -3px; height: calc(100cqw / 4 * .58);
     background: repeating-linear-gradient(#8a5a34 0 6px, #6b4426 6px 12px); transform-origin: bottom; transform: scaleY(.15);
-    transition: transform .5s steps(5);
+    transition: transform .6s cubic-bezier(.2, .9, .3, 1.25);
   }
   .road-sign[data-up] .road-post { transform: scaleY(1); }
 }
@@ -81,9 +81,9 @@ main[data-page='landing'][data-theme='dark'] .night-cta { --g-wall: #1d2238; --g
 .g-iron { fill: var(--g-iron); }
 
 /* the portcullis: shut until the scene is seen, then lifted to rest; fully up while Play is pointed at */
-.g-bars { transform: translateY(0); transition: transform 1.4s steps(14); }
+.g-bars { transform: translateY(0); transition: transform 1.6s cubic-bezier(.45, 0, .2, 1); }
 .night-cta[data-open] .g-bars { transform: translateY(-118px); }
-.night-cta:has(.night-play:hover, .night-play:focus-visible) .g-bars { transform: translateY(-262px); transition-duration: .7s; transition-timing-function: steps(10); }
+.night-cta:has(.night-play:hover, .night-play:focus-visible) .g-bars { transform: translateY(-262px); transition-duration: .8s; transition-timing-function: cubic-bezier(.3, 0, .2, 1); }
 
 /* the hall: a low glow at rest, a flood of gold with rays when the gate opens */
 .g-hall { opacity: .55; transition: opacity .6s ease; }

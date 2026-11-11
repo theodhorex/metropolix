@@ -5,7 +5,6 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import T from './prefs/T';
 import { useTr } from './prefs/store';
-import { isLite } from './closing/tier';
 import './closing.css';
 
 /**
@@ -141,7 +140,7 @@ export default function OnChain() {
       // phone: a straight road down the left, the caravan is a DOM sprite that slides along it
       const fill = stage.querySelector<HTMLElement>('.road-vert-fill');
       const cart = stage.querySelector<HTMLElement>('.road-vert-cart');
-      if (still || isLite() || !fill || !cart) { showAll(); if (fill) fill.style.transform = 'scaleY(1)'; return; }
+      if (still || !fill || !cart) { showAll(); if (fill) fill.style.transform = 'scaleY(1)'; return; }
       const marks = signs.map((s) => s.offsetTop / Math.max(1, stage.offsetHeight));
       const st = ScrollTrigger.create({
         trigger: stage, start: 'top 75%', end: 'bottom 80%', scrub: 0.6,
@@ -177,7 +176,7 @@ export default function OnChain() {
       signs.forEach((s, k) => s.toggleAttribute('data-up', p >= (at[k] ?? 1) - 0.01));
     };
 
-    if (still || isLite()) {
+    if (still) {
       path.style.strokeDasharray = 'none';
       place(at[0] ?? 0);
       showAll();
