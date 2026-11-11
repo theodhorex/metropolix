@@ -48,6 +48,11 @@ interface Walker {
 
 export const tileToWorld = (x: number, y: number) => ({ x: ((x - y) * TW) / 2, y: ((x + y) * TH) / 2 });
 
+export interface CityRendererOptions {
+  /** Draw without the dark backdrop (the canvas is see-through), for pages that paint their own sky. */
+  transparent?: boolean;
+}
+
 export class CityRenderer {
   private app = new Application();
   private world = new Container();
@@ -103,12 +108,14 @@ export class CityRenderer {
   private hoverNpc = -1;
   private npcSeq = 0;
 
+  constructor(private readonly options: CityRendererOptions = {}) {}
+
   async init(host: HTMLElement) {
     // PixiJS v8 Application initialization & stage setup
     // Source: https://pixijs.download/v8.22.0/docs/app.Application.html#init
     await this.app.init({
       resizeTo: host,
-      background: 0x0e131d,
+      ...(this.options.transparent ? { backgroundAlpha: 0 } : { background: 0x0e131d }),
       antialias: false,
       roundPixels: true,
       resolution: Math.min(window.devicePixelRatio || 1, QUALITY[this.quality].maxRes),
