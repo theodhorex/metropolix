@@ -5,6 +5,7 @@ import Peoples from '@/components/landing/Peoples';
 import HowItPlays from '@/components/landing/HowItPlays';
 import World from '@/components/landing/World';
 import OnChain from '@/components/landing/OnChain';
+import FAQ from '@/components/landing/FAQ';
 import FinalCta from '@/components/landing/FinalCta';
 import SiteFooter from '@/components/landing/SiteFooter';
 import '@/components/landing/landing.css';
@@ -24,6 +25,7 @@ export default function LandingPage() {
       <HowItPlays />
       <World />
       <OnChain />
+      <FAQ />
       <FinalCta />
       <SiteFooter />
     </main>
