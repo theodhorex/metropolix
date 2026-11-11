@@ -10,6 +10,14 @@
   --landing-line: rgba(18, 21, 29, 0.1);
   --landing-line-subtle: rgba(18, 21, 29, 0.06);
 }
+/* the older landing-* ink tokens follow the theme too (sections written before the dark theme use them) */
+main[data-page='landing'] {
+  --landing-ink: var(--l-ink);
+  --landing-ink-muted: var(--l-muted);
+  --landing-ink-faint: color-mix(in srgb, var(--l-ink) 45%, transparent);
+  --landing-line: color-mix(in srgb, var(--l-ink) 11%, transparent);
+  --landing-line-subtle: color-mix(in srgb, var(--l-ink) 6%, transparent);
+}
 
 /* in-page links land below sticky nav; smooth scroll handled by Lenis or fallback */
 .l-section {
@@ -65,69 +73,42 @@ main[data-page='landing'] > section.l-section,
   transition: opacity 0.3s ease;
 }
 
-/* Clouds and birds on journey backdrop */
+/* Clouds on the journey backdrop. They sit behind every section, so they are kept faint and small:
+   they drift past headings without fighting the text. */
 .journey-cloud {
   position: absolute;
   pointer-events: none;
   will-change: transform;
   animation: journey-cloud-drift linear infinite;
+  opacity: .42;
 }
+main[data-page='landing'][data-theme='dark'] .journey-cloud { opacity: .16; filter: saturate(.4) brightness(.8); }
 .journey-cloud-1 {
-  top: 16%;
+  top: 9%;
   left: -20%;
-  width: min(44vw, 400px);
-  animation-duration: 95s;
+  width: min(26vw, 260px);
+  animation-duration: 110s;
 }
 .journey-cloud-2 {
-  top: 52%;
+  top: 78%;
   left: -25%;
-  width: min(38vw, 340px);
-  animation-duration: 120s;
-  animation-delay: -45s;
+  width: min(22vw, 220px);
+  animation-duration: 140s;
+  animation-delay: -60s;
 }
 @keyframes journey-cloud-drift {
   0% { transform: translateX(0); }
   100% { transform: translateX(140vw); }
 }
 
-.journey-bird {
-  position: absolute;
-  pointer-events: none;
-  will-change: transform;
-  animation: journey-bird-fly linear infinite;
-}
-.journey-bird-1 {
-  top: 24%;
-  left: -8%;
-  width: 21px;
-  height: 9px;
-  animation-duration: 45s;
-}
-.journey-bird-2 {
-  top: 38%;
-  left: -8%;
-  width: 16px;
-  height: 7px;
-  animation-duration: 55s;
-  animation-delay: -22s;
-}
-@keyframes journey-bird-fly {
-  0% { transform: translate(0, 0); }
-  50% { transform: translate(65vw, -12px); }
-  100% { transform: translate(125vw, 0); }
-}
-
 /* Pause animations when tab is hidden or element is marked offscreen */
 html[data-page-hidden='true'] .journey-cloud,
-html[data-page-hidden='true'] .journey-bird,
-[data-offscreen='true'] .journey-cloud,
-[data-offscreen='true'] .journey-bird {
+[data-offscreen='true'] .journey-cloud {
   animation-play-state: paused !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .journey-cloud,
-  .journey-bird {
+  .journey-cloud {
     display: none !important;
   }
   .landing-journey-stars {
@@ -162,8 +143,8 @@ html[data-page-hidden='true'] .journey-bird,
   line-height: 1;
   padding: 0.3rem 0.65rem;
   border-radius: 9999px;
-  background: rgba(18, 21, 29, 0.05);
-  border: 1px solid rgba(18, 21, 29, 0.1);
+  background: var(--landing-line-subtle);
+  border: 1px solid var(--landing-line);
   color: var(--landing-ink);
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -202,10 +183,10 @@ html[data-page-hidden='true'] .journey-bird,
 /* Pixel frame for screenshots: light theme with ink outline and soft rim */
 .shot-light {
   display: block;
-  background: #f4f5f7;
-  border: 1px solid rgba(18, 21, 29, 0.15);
+  background: var(--l-surface-2);
+  border: 1px solid var(--l-line);
   border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(18, 21, 29, 0.06), 0 1px 3px rgba(18, 21, 29, 0.08);
+  box-shadow: 0 4px 16px var(--l-shadow), 0 1px 3px var(--l-shadow);
   overflow: hidden;
 }
 .shot-light img {
@@ -227,9 +208,14 @@ html[data-page-hidden='true'] .journey-bird,
 /* Section divider: subtle light repeating 16x8 pixel battlements */
 .pixel-divider {
   height: 8px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%23e6e8ec' d='M0 4h8v4H0z'/%3E%3Cpath fill='%23d5d9e0' d='M8 0h8v8H8z'/%3E%3C/svg%3E");
-  background-repeat: repeat-x;
-  image-rendering: pixelated;
+  max-width: 72rem;
+  margin-inline: auto;
+  /* battlements drawn in the theme's line colour, fading out at both ends */
+  background:
+    linear-gradient(90deg, var(--l-line) 50%, transparent 50%) 0 100% / 16px 4px repeat-x,
+    linear-gradient(90deg, transparent 50%, var(--l-line) 50%) 0 0 / 16px 8px repeat-x;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
 }
 
 /* People card light styling */

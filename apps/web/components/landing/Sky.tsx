@@ -69,8 +69,9 @@ const RANGES = [
 const HILL_BACK = ridge(COLS, VB_H, 36, 22, 60, 12, 8, 16, 2);
 const HILL_FRONT = ridge(COLS, VB_H, 18, 16, 46, 30, 6, 12, 7);
 
-/** Tiny V-shaped bird on a 7x3 grid. */
-const BIRD = 'M0 0h1v1H0zM6 0h1v1H6zM1 1h1v1H1zM5 1h1v1H5zM2 2h3v1H2z';
+/** Tiny pixel gull on a 9x3 grid, two frames: wings up (an "m" with a body) and wings down. */
+const BIRD_UP = 'M1 0h2v1H1zM6 0h2v1H6zM0 1h1v1H0zM3 1h1v1H3zM5 1h1v1H5zM8 1h1v1H8zM4 2h1v1H4z';
+const BIRD_DOWN = 'M4 0h1v1H4zM1 1h2v1H1zM4 1h1v1H4zM6 1h2v1H6zM0 2h1v1H0zM8 2h1v1H8z';
 const BIRDS = [
   { top: '15%', size: 28, dur: 38, delay: -4 },
   { top: '21%', size: 20, dur: 46, delay: -19 },
@@ -136,12 +137,13 @@ export default function Sky({ arc, children }: { arc: ArcId; children: ReactNode
         {BIRDS.map((b, i) => (
           <svg
             key={i}
-            viewBox="0 0 7 3"
+            viewBox="0 0 9 3"
             shapeRendering="crispEdges"
             className="sky-bird absolute left-0"
-            style={{ top: b.top, width: b.size, height: (b.size * 3) / 7, animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` }}
+            style={{ top: b.top, width: b.size, height: (b.size * 3) / 9, animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` }}
           >
-            <path d={BIRD} fill="#475069" />
+            <path className="bird-up" d={BIRD_UP} fill="#475069" style={{ animationDelay: `${i * -0.13}s` }} />
+            <path className="bird-down" d={BIRD_DOWN} fill="#475069" style={{ animationDelay: `${i * -0.13}s` }} />
           </svg>
         ))}
       </div>
@@ -158,7 +160,7 @@ export default function Sky({ arc, children }: { arc: ArcId; children: ReactNode
           <path d={HILL_FRONT} fill="#a6d98f" />
         </svg>
         {/* a breath of haze over the far ranges */}
-        <div className="absolute inset-x-0 bottom-[28%] h-[26%] bg-[linear-gradient(180deg,rgb(255_255_255/0),rgb(255_255_255/0.5))]" />
+        <div className="hero-haze absolute inset-x-0 bottom-[28%] h-[26%]" />
         {/* only the town shows; the rest of the map's grass melts away so the ranges stay visible */}
         <div className="hero-town absolute inset-0">{children}</div>
       </div>

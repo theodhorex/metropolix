@@ -7,9 +7,10 @@
 
 .peoples-section {
   position: relative;
-  background-color: var(--l-bg);
+  /* the hero's ground colour melts into the day-to-night sky behind the page (no hard seam) */
+  background: linear-gradient(180deg, var(--l-bg) 0, color-mix(in srgb, var(--l-bg) 60%, transparent) 220px, transparent 520px);
   color: var(--l-ink);
-  transition: background-color 0.4s ease, color 0.4s ease;
+  transition: color 0.4s ease;
   content-visibility: auto;
   contain-intrinsic-size: auto 900px;
 }
