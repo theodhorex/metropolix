@@ -15,8 +15,8 @@ gsap.registerPlugin(ScrollTrigger);
   - section pills pop in; paragraphs, cards and lists drift up in staggered batches;
   - the intro: the nav drops in, the hero title rises, the village lifts into the valley while the sun
     climbs in the sky canvas (./sky/realm.ts).
-  Lenis smooths wheel scrolling on capable desktops; touch, lite devices and reduced motion keep native
-  scrolling, and reduced motion shows everything at rest.
+  Lenis smooths wheel and trackpad scrolling wherever there is a mouse; touch keeps native momentum, and
+  reduced motion keeps native scrolling and shows everything at rest.
 */
 
 const EASE = 'expo.out';
@@ -48,8 +48,9 @@ export default function LandingMotion() {
     document.addEventListener('click', onAnchor);
 
     const ctx = gsap.context(() => {
-      if (!reduced && !lite) {
-        lenis = new Lenis({ duration: 1.15, smoothWheel: true, autoRaf: false });
+      // wheel and trackpad glide on every device with a mouse; touch keeps its native momentum
+      if (!reduced && matchMedia('(any-pointer: fine)').matches) {
+        lenis = new Lenis({ lerp: 0.075, wheelMultiplier: 0.9, smoothWheel: true, autoRaf: false });
         lenis.on('scroll', ScrollTrigger.update);
         tick = (t: number) => lenis?.raf(t * 1000);
         gsap.ticker.add(tick);
@@ -67,6 +68,8 @@ export default function LandingMotion() {
       if (heroRest.length) intro.fromTo(heroRest, { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 1.1, ease: EASE, stagger: 0.09 }, 0.55);
       const town = document.querySelector('.hero-town');
       if (town) intro.fromTo(town, { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 1.8, ease: EASE }, 0.35);
+      const news = document.querySelector('.hero-news');
+      if (news) intro.fromTo(news, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: EASE }, 1.1);
       const land = document.querySelectorAll('.hero-land');
       if (land.length) intro.fromTo(land, { y: 40 }, { y: 0, duration: 1.8, ease: EASE }, 0.2);
 
@@ -79,6 +82,16 @@ export default function LandingMotion() {
         else gsap.fromTo(h2, { yPercent: 40, opacity: 0, clipPath: 'inset(0 0 100% 0)' },
           { yPercent: 0, opacity: 1, clipPath: 'inset(0 0 -20% 0)', duration: 1.2, ease: EASE, scrollTrigger: st });
       });
+
+      // ---------- section heads drift a little slower than the page (scrubbed depth) ----------
+      if (!lite) {
+        document.querySelectorAll<HTMLElement>('main section :is(div, header):not(.night-card):has(> h2[data-reveal-words])').forEach((head) => {
+          gsap.fromTo(head, { y: 46 }, {
+            y: -46, ease: 'none',
+            scrollTrigger: { trigger: head, start: 'top bottom', end: 'bottom top', scrub: true },
+          });
+        });
+      }
 
       // ---------- pills pop ----------
       document.querySelectorAll<HTMLElement>('main section .landing-pill').forEach((pill) => {
