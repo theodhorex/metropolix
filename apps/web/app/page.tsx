@@ -8,6 +8,8 @@ import OnChain from '@/components/landing/OnChain';
 import FAQ from '@/components/landing/FAQ';
 import FinalCta from '@/components/landing/FinalCta';
 import SiteFooter from '@/components/landing/SiteFooter';
+import CursorTrail from '@/components/landing/motion/CursorTrail';
+import MagneticFx from '@/components/landing/motion/MagneticFx';
 import '@/components/landing/landing.css';
 
 export const metadata: Metadata = {
@@ -28,6 +30,8 @@ export default function LandingPage() {
       <FAQ />
       <FinalCta />
       <SiteFooter />
+      <CursorTrail />
+      <MagneticFx />
     </main>
   );
 }
