@@ -3,154 +3,86 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import T from './prefs/T';
+import { isLite } from './closing/tier';
+import './closing.css';
 
-gsap.registerPlugin(ScrollTrigger);
+/**
+ * The closing scene: the city at night. A warm, lit copy of the same city shows through a torch that
+ * follows the pointer (on touch screens and slow devices the torch wanders by itself, CSS only).
+ * Hovering Play now makes the torch bloom and the lit city flare. Fireflies drift up.
+ */
+const FLIES = [
+  [6, 0, 9], [14, 2.4, 11], [22, 5.1, 8], [31, 1.3, 12], [39, 6.2, 10], [47, 3.3, 9], [55, 0.7, 13],
+  [63, 4.4, 10], [71, 2.1, 11], [79, 5.6, 9], [87, 1.8, 12], [94, 3.9, 10], [18, 7.2, 14], [68, 7.9, 13],
+] as const; // [left %, delay s, duration s]
 
 export default function FinalCta() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const bgRef = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const bg = bgRef.current;
-    if (!section || !bg) return;
+    const el = root.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => { el.toggleAttribute('data-offscreen', !e?.isIntersecting); });
+    io.observe(el);
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (still) { el.dataset.torch = 'still'; return () => io.disconnect(); }
+    if (isLite()) { el.dataset.torch = 'wander'; return () => io.disconnect(); }
+    el.dataset.torch = 'follow';
 
-    const mm = gsap.matchMedia();
-
-    mm.add('(prefers-reduced-motion: no-preference)', () => {
-      // Background drifts slightly with scroll (yPercent -12 -> 0, scrub)
-      gsap.fromTo(
-        bg,
-        { yPercent: -12 },
-        {
-          yPercent: 0,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: section,
-            start: 'top bottom',
-            end: 'bottom top',
-            scrub: 1,
-          },
-        }
-      );
-    });
-
-    mm.add('(prefers-reduced-motion: reduce)', () => {
-      gsap.set(bg, { yPercent: 0 });
-    });
-
-    return () => {
-      mm.revert();
+    let raf = 0, x = 50, y = 55, tx = 50, ty = 55;
+    const tick = () => {
+      // ease toward the pointer and stop the loop once settled
+      x += (tx - x) * 0.18; y += (ty - y) * 0.18;
+      el.style.setProperty('--tx', `${x.toFixed(2)}%`);
+      el.style.setProperty('--ty', `${y.toFixed(2)}%`);
+      raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.05 ? requestAnimationFrame(tick) : 0;
     };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      const r = el.getBoundingClientRect();
+      tx = ((e.clientX - r.left) / r.width) * 100;
+      ty = ((e.clientY - r.top) / r.height) * 100;
+      el.dataset.lit = '';
+      kick();
+    };
+    const onLeave = () => { delete el.dataset.lit; tx = 50; ty = 55; kick(); };
+    el.addEventListener('pointermove', onMove, { passive: true });
+    el.addEventListener('pointerleave', onLeave);
+    return () => { io.disconnect(); cancelAnimationFrame(raf); el.removeEventListener('pointermove', onMove); el.removeEventListener('pointerleave', onLeave); };
   }, []);
 
-  // Pre-generate ember configurations for falling particles
-  const embers = [
-    { left: '8%', delay: '0s', dur: '4.5s', size: 3 },
-    { left: '18%', delay: '1.2s', dur: '5.2s', size: 4 },
-    { left: '26%', delay: '2.8s', dur: '6.1s', size: 3 },
-    { left: '38%', delay: '0.6s', dur: '4.8s', size: 4 },
-    { left: '49%', delay: '3.1s', dur: '5.5s', size: 3 },
-    { left: '60%', delay: '1.7s', dur: '4.2s', size: 5 },
-    { left: '72%', delay: '2.4s', dur: '6.4s', size: 3 },
-    { left: '81%', delay: '0.9s', dur: '5.0s', size: 4 },
-    { left: '92%', delay: '3.5s', dur: '5.8s', size: 3 },
-  ];
-
   return (
-    <section
-      ref={sectionRef}
-      id="cta"
-      aria-labelledby="cta-h"
-      className="relative flex min-h-[92vh] items-center justify-center overflow-hidden bg-white px-4 py-24 md:min-h-screen"
-    >
-      {/* Lower ~78% Night Scene Image with Mask Fade into White */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[78%] overflow-hidden"
-        style={{
-          maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 15%, black 40%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.4) 15%, black 40%)',
-        }}
-      >
-        <div
-          ref={bgRef}
-          className="relative h-[120%] w-full"
-          style={{ willChange: 'transform' }}
-        >
-          <Image
-            src="/landing/city.jpg"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover object-bottom"
-            style={{
-              filter: 'brightness(0.38) contrast(1.25) saturate(1.15)',
-            }}
-          />
-          {/* Deep blue night overlay */}
-          <div
-            className="absolute inset-0 bg-[#070f20]/65 mix-blend-multiply"
-            aria-hidden="true"
-          />
+    <section ref={root} id="cta" aria-labelledby="cta-h" className="night-cta relative flex items-center justify-center overflow-hidden px-4 py-24">
+      <div className="night-scene" aria-hidden="true">
+        <Image src="/landing/city.jpg" alt="" fill sizes="100vw" className="night-img night-dark" />
+        <div className="night-lit">
+          <Image src="/landing/city.jpg" alt="" fill sizes="100vw" className="night-img night-warm" />
         </div>
-
-        {/* Falling pixel embers */}
-        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden="true">
-          {embers.map((e, idx) => (
-            <div
-              key={idx}
-              className="pixel-ember"
-              style={{
-                left: e.left,
-                animationDelay: e.delay,
-                animationDuration: e.dur,
-                width: `${e.size}px`,
-                height: `${e.size}px`,
-              }}
-            />
+        <div className="night-flies">
+          {FLIES.map(([left, delay, dur], i) => (
+            <span key={i} className={`night-fly ${i >= 8 ? 'night-fly-extra' : ''}`} style={{ left: `${left}%`, animationDelay: `-${delay}s`, animationDuration: `${dur}s` }} />
           ))}
         </div>
       </div>
 
-      {/* Frosted White-to-Clear Card Centred on Top */}
-      <div
-        className="relative z-20 mx-auto w-full max-w-2xl px-6 py-14 text-center sm:px-12 sm:py-16"
-        style={{
-          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.22) 100%)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderRadius: '26px',
-          border: '1px solid rgba(255, 255, 255, 0.8)',
-          boxShadow: '0 24px 64px rgba(10, 18, 36, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-        }}
-        data-reveal
-      >
-        <div className="mb-3">
-          <span className="landing-pill">Your turn</span>
-        </div>
-
-        <h2
-          id="cta-h"
-          data-reveal-words
-          className="font-serif-display text-4xl font-normal tracking-tight text-[var(--landing-ink)] sm:text-5xl"
-        >
-          Your realm is waiting.
+      <div className="night-card relative z-20 mx-auto w-full max-w-2xl px-6 py-14 text-center sm:px-12 sm:py-16" data-reveal>
+        <div className="mb-3"><span className="landing-pill"><T en="Your turn" id="Giliranmu" /></span></div>
+        <h2 id="cta-h" data-reveal-words className="night-title font-serif-display">
+          <T en={<>Your realm is <em>waiting.</em></>} id={<>Negerimu sudah <em>menunggu.</em></>} />
         </h2>
-
-        <p className="mx-auto mt-4 max-w-md text-base text-[var(--landing-ink-muted)] sm:text-lg">
-          Free, in your browser. Your city is saved on this device.
+        <p className="night-line mx-auto mt-4 max-w-md text-base sm:text-lg">
+          <T en="Free, in your browser. Your city is saved on this device." id="Gratis, langsung di browser. Kotamu disimpan di perangkat ini." />
         </p>
-
         <div className="mt-8 flex justify-center">
-          <Link
-            href="/play"
-            className="btn btn-gold px-10 py-4 text-xl shadow-lg transition-transform duration-150 hover:scale-105"
-          >
-            Play now
+          <Link href="/play" data-magnetic className="night-play btn btn-gold px-10 py-4 text-xl">
+            <T en="Play now" id="Main sekarang" />
           </Link>
         </div>
+        <p className="night-hint font-display" aria-hidden="true">
+          <T en="Move your torch over the city" id="Gerakkan obormu di atas kota" />
+        </p>
       </div>
     </section>
   );

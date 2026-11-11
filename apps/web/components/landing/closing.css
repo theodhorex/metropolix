@@ -1,0 +1,130 @@
+/* ===================== Roadmap road ===================== */
+.road-section { background: transparent; }
+.road-lead { color: var(--l-muted, #4a5160); }
+.road-stage { position: relative; margin-top: 48px; container-type: inline-size; }
+
+.road-wide { display: none; width: 100%; height: auto; aspect-ratio: 4 / 1; overflow: visible; }
+.road-bed { fill: none; stroke: color-mix(in srgb, #c9a26a 32%, var(--l-surface-2, #f6f8fb)); stroke-width: 26; stroke-linecap: square; }
+.road-line { fill: none; stroke: #b8864e; stroke-width: 6; stroke-dasharray: 14 10; stroke-linecap: butt; }
+main[data-theme='dark'] .road-bed { stroke: #2a3046; }
+main[data-theme='dark'] .road-line { stroke: #d8a868; }
+.road-cart { will-change: transform; }
+
+.road-signs { list-style: none; display: grid; gap: 22px; padding: 0 0 0 64px; margin: 0; }
+.road-sign { position: relative; perspective: 900px; }
+.road-post { display: none; }
+.road-board {
+  position: relative; display: flex; flex-direction: column; gap: 10px; padding: 20px 22px; border-radius: 14px;
+  background: var(--l-surface, #fff); border: 1px solid var(--l-line, #e6e9ef); color: var(--l-ink, #12151d);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--l-line, #e6e9ef) 80%, #000 10%), 0 14px 30px var(--l-shadow, rgba(20, 30, 60, .08));
+  transform-origin: 50% 0; transform: rotateX(-78deg); opacity: .25;
+  transition: transform .7s cubic-bezier(.2, 1.4, .3, 1), opacity .35s;
+}
+.road-sign[data-up] .road-board { transform: none; opacity: 1; }
+.road-chip { width: fit-content; font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid; }
+.road-sign[data-state='done'] .road-chip { background: #eef8ed; color: #22722b; border-color: #8ad394; }
+.road-sign[data-state='next'] .road-chip { background: #fff8e6; color: #8a5d08; border-color: #e8c060; }
+.road-sign[data-state='plan'] .road-chip { background: transparent; color: var(--l-muted, #555d6e); border-style: dashed; border-color: var(--l-faint, #c4c9d4); }
+main[data-theme='dark'] .road-sign[data-state='done'] .road-chip { background: #16301c; color: #9fe0a6; border-color: #2f6b3a; }
+main[data-theme='dark'] .road-sign[data-state='next'] .road-chip { background: #33270c; color: #f0cf7a; border-color: #6e5414; }
+.road-title { font-size: 21px; font-weight: 400; letter-spacing: -.02em; line-height: 1.2; }
+.road-text { font-size: 14px; line-height: 1.55; color: var(--l-muted, #4a5160); }
+.road-link { width: fit-content; font-size: 12.5px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; color: color-mix(in srgb, #1b5e94 80%, var(--l-ink, #12151d)); }
+main[data-theme='dark'] .road-link { color: #8fc3ee; }
+.road-link:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+/* phone: a straight road on the left with a caravan sprite */
+.road-vert { position: absolute; left: 20px; top: 0; bottom: 0; width: 18px; border-radius: 4px; background: color-mix(in srgb, #c9a26a 28%, var(--l-surface-2, #f6f8fb)); }
+.road-vert-fill { position: absolute; left: 6px; top: 0; bottom: 0; width: 6px; transform-origin: top; transform: scaleY(0); background: repeating-linear-gradient(#b8864e 0 12px, transparent 12px 20px); }
+.road-vert-cart {
+  position: absolute; left: -3px; top: 0; width: 24px; height: 28px; will-change: transform;
+  background:
+    linear-gradient(#e5594a, #e5594a) 10px 0 / 6px 3px no-repeat,
+    linear-gradient(#efe4c9, #efe4c9) 2px 4px / 20px 12px no-repeat,
+    linear-gradient(#7a4a24, #7a4a24) 2px 16px / 20px 3px no-repeat,
+    linear-gradient(#3a2a1c, #3a2a1c) 3px 19px / 6px 6px no-repeat,
+    linear-gradient(#3a2a1c, #3a2a1c) 15px 19px / 6px 6px no-repeat;
+  image-rendering: pixelated;
+}
+
+@media (min-width: 900px) {
+  .road-wide { display: block; }
+  .road-vert { display: none; }
+  .road-signs { grid-template-columns: repeat(3, 1fr); gap: 28px; padding: 0; margin-top: 4px; }
+  /* a pixel post rises from each sign up to its stop on the road (stops sit ~39% down a 4:1 road) */
+  .road-post {
+    display: block; position: absolute; left: 50%; bottom: 100%; width: 6px; margin-left: -3px; height: calc(100cqw / 4 * .58);
+    background: repeating-linear-gradient(#8a5a34 0 6px, #6b4426 6px 12px); transform-origin: bottom; transform: scaleY(.15);
+    transition: transform .5s steps(5);
+  }
+  .road-sign[data-up] .road-post { transform: scaleY(1); }
+}
+
+/* ===================== Torchlit night city ===================== */
+@property --tx { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+@property --ty { syntax: '<percentage>'; inherits: true; initial-value: 55%; }
+
+.night-cta { min-height: 100vh; background: transparent; --tx: 50%; --ty: 55%; --torch: 210px; }
+.night-scene {
+  position: absolute; inset: 0; z-index: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0, 0, 0, .45) 12%, #000 34%);
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0, 0, 0, .45) 12%, #000 34%);
+}
+.night-img { object-fit: cover; object-position: 50% 70%; }
+.night-dark { filter: brightness(.34) saturate(1.2) hue-rotate(195deg) contrast(1.15); }
+.night-lit {
+  position: absolute; inset: 0;
+  -webkit-mask-image: radial-gradient(circle var(--torch) at var(--tx) var(--ty), #000 0, rgba(0, 0, 0, .55) 45%, transparent 100%);
+  mask-image: radial-gradient(circle var(--torch) at var(--tx) var(--ty), #000 0, rgba(0, 0, 0, .55) 45%, transparent 100%);
+  transition: --torch .6s cubic-bezier(.2, .8, .2, 1);
+}
+.night-warm { filter: brightness(1.02) saturate(1.25) sepia(.28) contrast(1.05); transition: filter .5s; }
+.night-cta[data-torch='follow']:not([data-lit]) { --torch: 150px; }
+/* hovering the Play button: the torch blooms and the lit city flares */
+.night-cta:has(.night-play:hover, .night-play:focus-visible) { --torch: 520px; }
+.night-cta:has(.night-play:hover, .night-play:focus-visible) .night-warm { filter: brightness(1.22) saturate(1.45) sepia(.35) contrast(1.1); }
+
+/* wandering torch for touch and slow devices: animated custom properties, no JS */
+.night-cta[data-torch='wander'] { animation: night-wander 14s ease-in-out infinite alternate; }
+@keyframes night-wander {
+  0% { --tx: 22%; --ty: 62%; } 33% { --tx: 64%; --ty: 48%; } 66% { --tx: 80%; --ty: 70%; } 100% { --tx: 38%; --ty: 76%; }
+}
+.night-cta[data-torch='still'] { --torch: 340px; }
+.night-cta[data-offscreen] { animation-play-state: paused; }
+.night-cta[data-offscreen] .night-fly { animation-play-state: paused; }
+
+.night-flies { position: absolute; inset: 0; pointer-events: none; }
+.night-fly {
+  position: absolute; bottom: -8px; width: 4px; height: 4px; background: #ffe39a;
+  box-shadow: 0 0 6px 2px rgba(255, 210, 110, .55); opacity: 0;
+  animation: night-fly linear infinite;
+}
+@keyframes night-fly {
+  0% { transform: translate(0, 0); opacity: 0; }
+  12% { opacity: 1; }
+  50% { transform: translate(18px, -45vh); }
+  85% { opacity: .8; }
+  100% { transform: translate(-10px, -92vh); opacity: 0; }
+}
+@media (pointer: coarse), (max-width: 760px) { .night-fly-extra { display: none; } }
+
+.night-card {
+  border-radius: 26px; color: var(--l-ink, #12151d);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--l-surface, #fff) 96%, transparent) 0%, color-mix(in srgb, var(--l-surface, #fff) 70%, transparent) 45%, color-mix(in srgb, var(--l-surface, #fff) 18%, transparent) 100%);
+  border: 1px solid color-mix(in srgb, var(--l-surface, #fff) 70%, transparent);
+  backdrop-filter: blur(14px) saturate(1.1); -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  box-shadow: 0 30px 60px rgba(6, 12, 30, .3);
+}
+.night-title { font-size: clamp(34px, 4.4vw, 54px); font-weight: 400; letter-spacing: -.035em; line-height: 1.08; }
+.night-title em { font-style: italic; font-weight: 500; color: color-mix(in srgb, var(--landing-accent, #e8a13a) 70%, var(--l-ink, #12151d)); }
+.night-line { color: var(--l-muted, #4a5160); }
+.night-play { box-shadow: 0 4px 0 #8a6a1e, 0 14px 30px rgba(242, 193, 78, .35); }
+.night-hint { margin-top: 18px; font-size: 11px; letter-spacing: .06em; color: var(--l-faint, #7a8193); }
+@media (pointer: coarse) { .night-hint { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .road-board, .road-post { transition: none; }
+  .night-cta { animation: none !important; }
+  .night-fly { display: none; }
+  .night-lit { transition: none; }
+}
