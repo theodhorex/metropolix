@@ -33,7 +33,10 @@ html, body { height: 100%; }
 body { background: var(--night); color: var(--paper); font-family: var(--font-body), system-ui, sans-serif; overflow: hidden; }
 /* the game owns the whole viewport; the landing page scrolls like a document */
 html:has(main[data-page='landing']), html:has(main[data-page='landing']) body { height: auto; overflow: auto; }
+/* the landing is a light page; the game stays dark */
+html:has(main[data-page='landing']) body { background: #fbfcfe; color: var(--ink); overflow-x: hidden; }
 .font-display { font-family: var(--font-display), var(--font-body), sans-serif; letter-spacing: .02em; }
+.font-serif-display { font-family: var(--font-serif), Georgia, serif; }
 
 /* ---- panels ---- */
 .panel {
