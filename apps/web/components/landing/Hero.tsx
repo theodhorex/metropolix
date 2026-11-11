@@ -37,24 +37,23 @@ export default function Hero() {
   return (
     <section
       aria-labelledby="hero-title"
-      className="hero-root relative isolate min-h-svh overflow-hidden bg-[var(--l-bg)] text-[var(--l-ink)] md:min-h-dvh"
+      className="hero-root relative isolate min-h-svh overflow-hidden text-[var(--l-ink)] md:min-h-dvh"
       style={{ '--accent-text': TEXT_ACCENT[arc], '--accent-raw': raw } as CSSProperties}
     >
-      <Sky arc={arc}>
-        <LiveCity arc={arc} />
-      </Sky>
+      <Sky arc={arc} />
 
-      <div className="pointer-events-none relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-5 pt-[clamp(6.5rem,30svh,32svh)] text-center">
+      <div className="relative z-10 mx-auto grid min-h-svh w-full max-w-7xl items-center gap-2 px-5 pt-[6.5rem] pb-6 md:min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-6 lg:px-10 lg:pt-20 lg:pb-4">
+      <div className="pointer-events-none flex flex-col items-center text-center lg:items-start lg:text-left">
         <h1
           id="hero-title"
           data-reveal-words
           className="font-serif-display text-balance"
-          style={{ fontSize: 'clamp(34px, 5.2vw, 76px)', fontWeight: 400, letterSpacing: '-0.04em', lineHeight: 1.04, color: 'var(--l-ink)' }}
+          style={{ fontSize: 'clamp(34px, 4.6vw, 70px)', fontWeight: 400, letterSpacing: '-0.04em', lineHeight: 1.04, color: 'var(--l-ink)' }}
         >
           <T split en="Ten minutes to rule a" id="Sepuluh menit memerintah" ko="10분 만에 다스리는" zh="十分钟统治" /><br />
           <em className="hero-accent font-medium italic"><T split en="fantasy realm." id="negeri fantasi." ko="판타지 왕국." zh="奇幻王国。" /></em>
         </h1>
-        <p className="mt-4 max-w-[34rem] text-base leading-relaxed text-pretty text-[var(--l-muted)]">
+        <p data-hero-rest className="mt-4 max-w-[34rem] text-base leading-relaxed text-pretty text-[var(--l-muted)]">
           <T
             en="Pick a people, raise a city, raid forty rival mayors. In your browser, no sign-up."
             id="Pilih bangsa, bangun kota, serbu empat puluh wali kota rival. Langsung di browser, tanpa daftar."
@@ -63,7 +62,7 @@ export default function Hero() {
           />
         </p>
 
-        <div role="group" aria-label={tr('Choose a people for the village below', 'Pilih bangsa untuk desa di bawah', '아래 마을의 종족 선택', '为下方村庄选择种族')} className="pointer-events-auto mt-6 flex flex-wrap justify-center gap-2">
+        <div data-hero-rest role="group" aria-label={tr('Choose a people for the floating village', 'Pilih bangsa untuk desa melayang', '떠 있는 마을의 종족 선택', '为浮空村庄选择种族')} className="pointer-events-auto mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
           {ARCS.map((a) => (
             <button
               key={a.id}
@@ -78,14 +77,20 @@ export default function Hero() {
             </button>
           ))}
         </div>
-        <p className="mt-3 text-xs text-[var(--l-faint)]">
+        <p data-hero-rest className="mt-3 text-xs text-[var(--l-faint)]">
           <T
-            en="The village below is the real game, running live."
-            id="Desa di bawah adalah game aslinya, berjalan langsung."
-            ko="아래 마을은 실제 게임이 실시간으로 구동되는 화면입니다."
-            zh="下方村庄是真实运行的游戏实况。"
+            en="The floating village is the real game, running live."
+            id="Desa melayang itu adalah game aslinya, berjalan langsung."
+            ko="떠 있는 마을은 실제 게임이 실시간으로 구동되는 화면입니다."
+            zh="这座浮空村庄就是实时运行的真实游戏。"
           />
         </p>
+      </div>
+
+      {/* the real game on its own map, floating as an island */}
+      <div className="hero-town relative h-[min(62svh,96vw)] w-full lg:h-[min(86svh,880px)]">
+        <LiveCity arc={arc} />
+      </div>
       </div>
     </section>
   );

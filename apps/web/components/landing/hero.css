@@ -1,20 +1,10 @@
 /* Hero ambient art: CSS-only motion (transform/opacity), all of it off under prefers-reduced-motion. */
 
-.hero-land {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
+.hero-ranges {
+  /* far ranges: soft at the peaks, lost in mist at the bottom so the hero never ends on a hard line */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 52%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 52%, transparent 100%);
 }
-
-@keyframes sky-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(var(--drift, 36px), 6px, 0); } }
-.sky-drift-a { --drift: 36px; animation: sky-drift 14s ease-in-out infinite alternate; }
-.sky-drift-b { --drift: -32px; animation: sky-drift 17s ease-in-out infinite alternate; }
-
-@keyframes sky-bird { from { transform: translate3d(-12vw, 0, 0); } 50% { transform: translate3d(54vw, -14px, 0); } to { transform: translate3d(112vw, 4px, 0); } }
-.sky-bird { animation: sky-bird 40s linear infinite; opacity: .75; }
-/* wing flap: the two frames swap on a hard step */
-@keyframes bird-flap { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
-.sky-bird .bird-up { animation: bird-flap .5s infinite; }
-.sky-bird .bird-down { animation: bird-flap .5s infinite reverse; }
 
 @keyframes hero-fall {
   0% { transform: translate3d(0, -4vh, 0); opacity: 0; }
@@ -25,43 +15,18 @@
 .hero-fall { animation: hero-fall 12s linear infinite; image-rendering: pixelated; }
 
 @media (prefers-reduced-motion: reduce) {
-  .sky-drift-a, .sky-drift-b, .sky-bird { animation: none; }
-  .sky-bird { display: none; }
   .hero-fall { display: none; }
 }
 
-/* the live map is a 40x40 diamond of grass: show the town only, as a village resting in the valley */
-.hero-town {
-  -webkit-mask-image: radial-gradient(ellipse 33% 46% at 50% 68%, #000 50%, transparent 100%);
-  mask-image: radial-gradient(ellipse 33% 46% at 50% 68%, #000 50%, transparent 100%);
-}
-@media (max-width: 767px) {
-  .hero-town {
-    -webkit-mask-image: radial-gradient(ellipse 62% 56% at 50% 62%, #000 50%, transparent 100%);
-    mask-image: radial-gradient(ellipse 62% 56% at 50% 62%, #000 50%, transparent 100%);
-  }
-}
-
-/* ---------- Sky in both themes ---------- */
-.hero-sky { background: linear-gradient(180deg, var(--l-sky-top, #dcebfb) 0%, var(--l-sky-mid, #eaf3fd) 26%, var(--l-sky-low, #f7faff) 44%, var(--l-bg, #fbfcfe) 60%); }
-.hero-night { opacity: 0; transition: opacity .8s ease; }
-.hero-star { background: #fff7dc; image-rendering: pixelated; animation: hero-twinkle 3.6s steps(3) infinite; }
-@keyframes hero-twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
-.hero-moon { right: 27%; top: 23%; width: clamp(44px, 5vw, 72px); height: auto; filter: drop-shadow(0 0 18px rgb(246 239 214 / .45)); }
-
-main[data-page='landing'][data-theme='dark'] .hero-night { opacity: 1; }
-/* night grading: ranges, hills and the town sink into blue; the clouds cool down */
+/* ---------- night grading (the sky itself is ./sky/RealmSky) ---------- */
+/* the far ranges sink into blue (the island is tinted by the renderer itself, see LiveCity) */
 .hero-land { transition: filter .8s ease; }
-main[data-page='landing'][data-theme='dark'] .hero-land { filter: brightness(.36) saturate(.7) hue-rotate(-18deg); }
-main[data-page='landing'][data-theme='dark'] .sky-drift-a,
-main[data-page='landing'][data-theme='dark'] .sky-drift-b { filter: sepia(1) hue-rotate(185deg) saturate(1.4) brightness(.36); opacity: .7; }
+main[data-page='landing'][data-theme='dark'] .hero-land { filter: brightness(.58) saturate(.85) hue-rotate(-14deg); }
 /* morning haze over the far hills; at night it becomes a low blue mist instead of a pale band */
 .hero-haze { background: linear-gradient(180deg, rgb(255 255 255 / 0), rgb(255 255 255 / .5)); transition: background .8s ease; }
 main[data-page='landing'][data-theme='dark'] .hero-haze { background: linear-gradient(180deg, rgb(28 37 71 / 0), rgb(28 37 71 / .55)); }
-main[data-page='landing'][data-theme='dark'] .sky-bird { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  .hero-star { animation: none; }
-  .hero-land, .hero-night { transition: none; }
+  .hero-land { transition: none; }
 }
 
 /* headline accent: AA-dark tone on the day sky, the raw people colour on the night sky */
