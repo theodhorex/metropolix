@@ -1,7 +1,7 @@
 // War room: army roles, heroes, spells, siege, scouting, raids with stars, defense plans.
 // Deterministic and integer-only; randomness comes from the state's PRNG.
 import {
-  RIVALS, TROOP_ATTACK, addXp, arcDef, cityMods, levelFromXp, pushLog, rivalLoot, rngInt, stats,
+  applyRaidToMayor, findMayor, findRival, pushNews, MAX_LOOT_PCT, TROOP_ATTACK, addXp, arcDef, cityMods, levelFromXp, pushLog, rivalLoot, rngInt, stats,
   ATTACK_COOLDOWN, type GameState, type Result, type Rival,
 } from './index';
 
@@ -137,8 +137,14 @@ export type Tile = 'hall' | 'tower' | 'wall' | 'store' | 'house' | 'barracks' | 
 export interface Scout { trait: Trait; defense: number; towerDef: number; garrison: number; towers: number; stores: number; loot: number; grid: Tile[][] }
 const TRAIT_OF: Record<string, Trait> = { r1: 'hoarder', r2: 'militia', r3: 'bastion', r4: 'militia' };
 
+/** Mayors have no fixed trait: derive a stable one from their id. */
+function traitOf(id: string): Trait {
+  if (TRAIT_OF[id]) return TRAIT_OF[id]!;
+  let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return (['bastion', 'militia', 'hoarder'] as const)[h % 3]!;
+}
 export function scout(r: Rival): Scout {
-  const trait = TRAIT_OF[r.id] ?? 'bastion';
+  const trait = traitOf(r.id);
   const t = TRAITS[trait];
   const defense = pm(r.defense, t.defPm);
   const towerDef = Math.floor((defense * t.towerPct) / 100);
@@ -209,19 +215,23 @@ function compute(s: GameState, r: Rival, plan: RaidPlan, roll: number) {
 
 /** Expected result with a neutral roll, no side effects. */
 export function previewRaid(s: GameState, rivalId: string, plan: RaidPlan) {
-  const r = RIVALS.find((x) => x.id === rivalId);
+  const r = findRival(s, rivalId);
   if (!r || s.troops <= 0) return null;
   const c = compute(s, r, plan, 1000);
   return { force: c.force, effDefense: c.effDef, destruction: c.destruction, stars: c.stars, loot: c.loot, lost: c.lost, sent: c.n };
 }
 
 export function launchRaid(s: GameState, rivalId: string, plan: RaidPlan): Result & { report?: BattleReport } {
-  const r = RIVALS.find((x) => x.id === rivalId);
+  const r = findRival(s, rivalId);
   if (!r) return { ok: false, msg: 'Unknown city' };
   if (s.troops <= 0) return { ok: false, msg: 'No troops. Train some in the Army tab.' };
   const cd = s.cooldowns[r.id] ?? 0;
   if (cd > s.tick) return { ok: false, msg: `${r.name} is recovering, wait ${cd - s.tick}s` };
+  const mayor = findMayor(s, r.id);
+  if (mayor && mayor.shieldUntil > s.tick) return { ok: false, msg: `${r.name} is shielded for ${mayor.shieldUntil - s.tick}s` };
   const c = compute(s, r, plan, 850 + rngInt(s, 300));
+  // a real treasury can only give what it holds: loot comes out of the mayor's gold
+  if (mayor) c.loot = Math.min(c.loot, Math.floor((mayor.gold * MAX_LOOT_PCT) / 100));
   if (c.rageUsed) s.spells.rage--;
   if (c.healUsed) s.spells.heal--;
   if (c.ram) s.siege--;
@@ -233,6 +243,10 @@ export function launchRaid(s: GameState, rivalId: string, plan: RaidPlan): Resul
   addXp(s, xp);
   const win = c.stars >= 1;
   if (win) s.record.won++; else s.record.lost++;
+  if (mayor) {
+    applyRaidToMayor(s, mayor, { loot: c.loot, stars: c.stars, win });
+    pushNews(s, 'you', win ? `You raided ${mayor.name} and took ${c.loot} gold.` : `Your raid on ${mayor.name} was thrown back.`);
+  }
   const style = arcDef(s.arc)?.attackStyle ?? 'a bold assault';
   const rounds: Round[] = [
     { title: 'Approach', text: `${c.n} troops march on ${r.name} (${TRAITS[c.sc.trait].name}). ${style}.` },

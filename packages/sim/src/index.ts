@@ -191,6 +191,7 @@ export interface GameState {
   nameChanges: number;               // renames after the first name; the first one is free
   levels: Record<string, number>;    // "x,y" -> building level 2..3 (missing = level 1)
   record: BattleRecord;              // lifetime battle tally for the profile
+  world: World;                      // the other mayors: living cities that grow and raid
 }
 /** Attacks you won and lost, raids on you that your walls held or that broke in. */
 export interface BattleRecord { won: number; lost: number; held: number; breached: number }
@@ -234,6 +235,7 @@ export function newState(seed = 1): GameState {
     army: { vanguard: 0, raider: 0, breaker: 0 }, spells: { rage: 0, heal: 0 }, siege: 0, heroes: {}, defPlan: 'balanced', trophies: 0, shieldUntil: 0, raidLog: [],
     vault: freshVault(), displayed: [], finds: 0, lastFind: null, seen: [],
     name: '', nameChanges: 0, record: { won: 0, lost: 0, held: 0, breached: 0 }, levels: {},
+    world: initWorld(seed),
   };
   for (let i = 0; i < 6; i++) addNpcListing(s);
   for (let i = 0; i < 4; i++) addNpcOrder(s);
@@ -381,18 +383,22 @@ export function pushLog(s: GameState, msg: string) {
 }
 
 export function attackRival(s: GameState, rivalId: string): Result {
-  const r = RIVALS.find((x) => x.id === rivalId);
+  const r = findRival(s, rivalId);
   if (!r) return { ok: false, msg: 'Unknown city' };
   if (s.troops <= 0) return { ok: false, msg: 'No troops. Build barracks and train troops.' };
   const cd = s.cooldowns[r.id] ?? 0;
   if (cd > s.tick) return { ok: false, msg: `${r.name} on cooldown, wait ${cd - s.tick}s` };
+  const mayor = findMayor(s, r.id);
+  if (mayor && mayor.shieldUntil > s.tick) return { ok: false, msg: `${r.name} is shielded for ${mayor.shieldUntil - s.tick}s` };
   const force = Math.floor((pm(s.troops * TROOP_ATTACK, cityMods(s).attackPm) * (850 + rngInt(s, 300))) / 1000);
   const win = force > r.defense;
   s.cooldowns[r.id] = s.tick + ATTACK_COOLDOWN;
   if (win) {
-    const loot = pm(rivalLoot(r), modsOf(s).lootPm);
+    let loot = pm(rivalLoot(r), modsOf(s).lootPm);
+    if (mayor) loot = Math.min(loot, Math.floor((mayor.gold * MAX_LOOT_PCT) / 100));
     const lost = Math.max(1, Math.floor((s.troops * 15) / 100));
     s.gold += loot; loseTroops(s, lost);
+    if (mayor) { applyRaidToMayor(s, mayor, { loot, stars: 1, win: true }); pushNews(s, 'you', `You raided ${mayor.name} and took ${loot} gold.`); }
     addXp(s, 25);
     s.record.won++;
     pushLog(s, `Victory over ${r.name} with ${arcDef(s.arc)?.attackStyle ?? 'a bold assault'}: +${loot} gold, lost ${lost} troops.`);
@@ -400,6 +406,7 @@ export function attackRival(s: GameState, rivalId: string): Result {
   }
   const lost = Math.max(1, Math.floor((s.troops * 40) / 100));
   loseTroops(s, lost);
+  if (mayor) applyRaidToMayor(s, mayor, { loot: 0, stars: 0, win: false });
   s.record.lost++;
   pushLog(s, `Defeat at ${r.name}: lost ${lost} troops.`);
   return { ok: true, win, lost };
@@ -569,6 +576,7 @@ function marketStep(s: GameState) {
 /** Rivals strong enough to be sent against you, given your ChainPower (the raid timer picks one of them). */
 export function raidThreats(s: GameState): Rival[] {
   const cp = stats(s).chainPower;
+  if (s.world) return s.world.mayors.map(mayorRival).filter((r) => rivalPower(r) <= Math.floor((cp * 16) / 10) + 60);
   return RIVALS.filter((r) => rivalPower(r) <= Math.floor((cp * 16) / 10) + 60);
 }
 
@@ -584,6 +592,7 @@ export function step(s: GameState): GameState {
   if (st.hungry && s.tick % 15 === 0) pushLog(s, 'Your citizens are hungry! Build farms or buy food.');
   marketStep(s);
   findStep(s);
+  worldStep(s);
 
   const room = st.housing - s.pop;
   if (room > 0 && st.happinessPm >= 300) {
@@ -600,8 +609,9 @@ export function step(s: GameState): GameState {
   if (s.tick >= s.nextRaidTick) {
     s.nextRaidTick = s.tick + 90 + rngInt(s, 60);
     const now = stats(s);
-    const pool = raidThreats(s);
-    const r = pool.length ? pool[rngInt(s, pool.length)]! : RIVALS[0]!;
+    const picked = pickRaider(s, now.chainPower);
+    const pool = picked ? [] : raidThreats(s);
+    const r = picked ?? (pool.length ? pool[rngInt(s, pool.length)]! : s.world ? mayorRival(s.world.mayors.reduce((w, m) => (mayorPower(m) < mayorPower(w) ? m : w))) : RIVALS[0]!);
     if (s.tick < s.shieldUntil) {
       pushLog(s, `${r.name} found your shield up and turned back.`);
     } else {
@@ -615,11 +625,15 @@ export function step(s: GameState): GameState {
         s.trophies = Math.max(0, s.trophies - 6);
         logRaid(s, { tick: s.tick, by: r.name, won: false, stolen, lost, def: effDef, atk: r.attack });
         s.record.breached++;
+        applyRaidOnYou(s, r.id, { stolen, held: false });
+        pushNews(s, 'you', `${r.name} raided you and took ${stolen} gold.`);
         pushLog(s, `${r.name} raided you (atk ${r.attack} > def ${effDef}): -${stolen} gold, -${lost} troops. Shield up for ${SHIELD_TICKS}s.`);
       } else {
         s.trophies += 3;
         logRaid(s, { tick: s.tick, by: r.name, won: true, stolen: 0, lost: 0, def: effDef, atk: r.attack });
         s.record.held++;
+        applyRaidOnYou(s, r.id, { stolen: 0, held: true });
+        pushNews(s, 'you', `${r.name} attacked you and was turned back.`);
         pushLog(s, `${r.name} attacked but your defense (${effDef}) held.`);
       }
     }
@@ -637,3 +651,5 @@ export * from './upgrade';
 import { clearLevel, drillPm, foodTypes, FOOD_VARIETY_PM, weightedCounts } from './upgrade';
 import { RELICS, RELIC_KINDS, discover, findStep, freshVault, isRelic, relicBonus, type Rarity, type RelicKind } from './vault';
 export * from './names';
+export * from './world';
+import { MAX_LOOT_PCT, applyRaidOnYou, applyRaidToMayor, findMayor, findRival, initWorld, mayorPower, mayorRival, pickRaider, pushNews, worldStep, type World } from './world';
