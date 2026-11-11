@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { LANGS, type Lang } from './langs';
 
 /**
@@ -32,10 +32,11 @@ function Words({ text, lang }: { text: string; lang: Lang }) {
   return (
     <>
       {units.map((w, i) => (
-        <span key={i}>
+        <Fragment key={i}>
           {i > 0 && sep}
-          <span className="reveal-word inline-block">{w}</span>
-        </span>
+          {/* the mask clips the word while it rises; the space stays outside so it is never collapsed */}
+          <span className="reveal-mask"><span className="reveal-word">{w}</span></span>
+        </Fragment>
       ))}
     </>
   );
