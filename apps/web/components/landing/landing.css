@@ -1,45 +1,199 @@
 /*
-  Landing page extras: only what Tailwind cannot do cleanly.
-  Uses the game's tokens from globals.css (--ink --slab --rim --paper --gold ...).
+  Landing page styles: light theme with pixel fantasy accents.
+  Uses the project tokens: ink #12151d, Fraunces serif headings, Pixelify Sans labels.
 */
 
-/* in-page links land below the sticky bar; smooth scroll unless the visitor asks for less motion */
-.l-section { scroll-margin-top: 4.5rem; }
-@media (prefers-reduced-motion: no-preference) {
-  html:has(main[data-page='landing']) { scroll-behavior: smooth; }
+:root {
+  --landing-ink: #12151d;
+  --landing-ink-muted: #525866;
+  --landing-ink-faint: rgba(18, 21, 29, 0.4);
+  --landing-line: rgba(18, 21, 29, 0.1);
+  --landing-line-subtle: rgba(18, 21, 29, 0.06);
 }
 
-/* pixel frame for screenshots: ink outline, rim bevel, hard stepped shadow (no blur) */
+/* in-page links land below sticky nav; smooth scroll handled by Lenis or fallback */
+.l-section {
+  scroll-margin-top: 4.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(main[data-page='landing']) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Headings: Fraunces weight 400, clamp(26px,3.1vw,44px), -0.03em, centred */
+.landing-h2 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(26px, 3.1vw, 44px);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--landing-ink);
+  text-align: center;
+}
+
+/* Pill label above headings: tiny rounded chip, pale tint, 11px */
+.landing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0.3rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(18, 21, 29, 0.05);
+  border: 1px solid rgba(18, 21, 29, 0.1);
+  color: var(--landing-ink);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Faint pixel grid squares at the top of sections (1px pale lines, radius 0, slowly fading) */
+.landing-grid-faint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 96px;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(18, 21, 29, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(18, 21, 29, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85) 0%, transparent 100%);
+  animation: landing-grid-fade 8s ease-in-out infinite alternate;
+}
+
+@keyframes landing-grid-fade {
+  0% { opacity: 0.35; }
+  100% { opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-grid-faint {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+/* Pixel frame for screenshots: light theme with ink outline and soft rim */
+.shot-light {
+  display: block;
+  background: #f4f5f7;
+  border: 1px solid rgba(18, 21, 29, 0.15);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(18, 21, 29, 0.06), 0 1px 3px rgba(18, 21, 29, 0.08);
+  overflow: hidden;
+}
+.shot-light img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Keep legacy .shot for backwards compatibility */
 .shot {
   display: block;
-  background: var(--slab-lo);
+  background: #f4f5f7;
   border: 2px solid var(--ink);
   border-radius: 2px;
-  box-shadow: 0 0 0 2px var(--rim), 0 0 0 4px var(--ink), 4px 8px 0 4px var(--ink);
+  box-shadow: 0 0 0 1px rgba(18, 21, 29, 0.1), 3px 5px 0 2px var(--ink);
 }
 .shot img { display: block; width: 100%; height: auto; }
 
-/* section divider: a row of battlements, drawn as a repeating 16x8 pixel tile */
+/* Section divider: subtle light repeating 16x8 pixel battlements */
 .pixel-divider {
   height: 8px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%233a465e' d='M0 4h8v4H0z'/%3E%3Cpath fill='%231d2432' d='M8 0h8v8H8z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%23e6e8ec' d='M0 4h8v4H0z'/%3E%3Cpath fill='%23d5d9e0' d='M8 0h8v8H8z'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   image-rendering: pixelated;
 }
 
-/* people cards: --card is that people's accent (set inline from ARCS[i].accent) */
-.people-card {
-  background: var(--slab);
-  border: 2px solid var(--card);
-  border-radius: 3px;
-  box-shadow: inset 0 4px 0 var(--card), inset 1px 5px 0 rgba(255, 255, 255, .12), 0 4px 0 var(--ink);
+/* People card light styling */
+.people-card-light {
+  background: #ffffff;
+  border: 1px solid rgba(18, 21, 29, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(18, 21, 29, 0.04);
 }
 
-/* roadmap connector between steps (wide screens only) */
-.road-step::after {
+/* Roadmap step connector (wide screens only) */
+.road-step-light::after {
   content: '';
-  position: absolute; top: 50%; right: -1.25rem; width: 1rem; height: 4px;
-  background: repeating-linear-gradient(90deg, var(--rim) 0 4px, transparent 4px 8px);
+  position: absolute;
+  top: 50%;
+  right: -1.25rem;
+  width: 1.25rem;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, rgba(18, 21, 29, 0.25) 0 4px, transparent 4px 8px);
   display: none;
 }
-@media (min-width: 1024px) { .road-step:not(:last-child)::after { display: block; } }
+@media (min-width: 1024px) {
+  .road-step-light:not(:last-child)::after {
+    display: block;
+  }
+}
+
+/* Pinned stat banners in World section: pale pixel banners with notched pixel corners */
+.stat-banner-pixel {
+  position: relative;
+  background: #ffffff;
+  border: 2px solid var(--landing-ink);
+  box-shadow: 3px 3px 0 var(--landing-ink);
+  clip-path: polygon(
+    0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0,
+    calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%,
+    8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px)
+  );
+}
+
+/* Accordion panel transition */
+.how-panel {
+  transition: flex-grow 0.9s cubic-bezier(0.77, 0, 0.18, 1);
+  will-change: flex-grow;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .how-panel {
+    transition: none;
+  }
+}
+
+/* Falling embers for night scene */
+@keyframes ember-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.pixel-ember {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #f2c14e;
+  animation: ember-fall linear infinite;
+  pointer-events: none;
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-ember {
+    display: none;
+  }
+}
