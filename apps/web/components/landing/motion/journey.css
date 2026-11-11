@@ -1,0 +1,59 @@
+/* Journey rail: a pixel road on the left margin, waypoint flags, and a walking knight. */
+.jr {
+  position: fixed; z-index: 55; left: 18px; top: 18vh; bottom: 14vh; width: 14px;
+  display: none;
+}
+@media (min-width: 1100px) and (pointer: fine) { .jr { display: block; } }
+
+.jr-road {
+  position: absolute; left: 5px; top: 0; bottom: 0; width: 4px;
+  background: repeating-linear-gradient(to bottom, var(--l-line, #e6e9ef) 0 6px, transparent 6px 10px);
+}
+
+.jr-stop {
+  position: absolute; left: 0; width: 14px; height: 14px; margin-top: -7px; cursor: pointer;
+  display: flex; align-items: center; background: none; border: 0; padding: 0;
+}
+.jr-stop:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
+/* a tiny pixel pennant on a pole */
+.jr-flag { position: relative; width: 14px; height: 14px; }
+.jr-flag::before {
+  content: ''; position: absolute; left: 5px; top: 0; width: 2px; height: 14px; background: var(--l-faint, #8a92a3);
+}
+.jr-flag::after {
+  content: ''; position: absolute; left: 7px; top: 1px; width: 7px; height: 5px;
+  background: var(--l-line, #d5dae4); clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transition: background .3s, transform .3s;
+}
+.jr-stop[data-on] .jr-flag::after { background: var(--landing-accent, #f2b630); transform: scaleX(1.3); transform-origin: left; animation: jr-wave .6s steps(2) infinite alternate; }
+@keyframes jr-wave { to { transform: scaleX(1.1) skewY(8deg); } }
+
+.jr-label {
+  position: absolute; left: 22px; white-space: nowrap; font-size: 11px; color: var(--l-ink, #12151d);
+  padding: 3px 8px; border-radius: 999px; background: var(--l-surface, #fff); box-shadow: 0 0 0 1px var(--l-line, #e6e9ef), 0 4px 12px var(--l-shadow, rgba(0, 0, 0, .08));
+  opacity: 0; transform: translateX(-6px); transition: opacity .25s, transform .25s; pointer-events: none;
+}
+.jr:hover .jr-label, .jr-stop:focus-visible .jr-label, .jr-stop[data-on] .jr-label { opacity: 1; transform: none; }
+.jr:not(:hover) .jr-stop:not([data-on]) .jr-label { opacity: 0; }
+
+/* the knight: an 8x10 sprite drawn with 2px pixels */
+.jr-knight { position: absolute; left: -2px; width: 18px; height: 22px; margin-top: -11px; transition: top .12s linear; pointer-events: none; }
+.jr-knight > span {
+  position: absolute; left: 2px; top: 0; width: 2px; height: 2px; background: transparent;
+  box-shadow:
+    /* helmet */ 4px 0 #9aa4b8, 6px 0 #9aa4b8, 8px 0 #9aa4b8, 2px 2px #9aa4b8, 4px 2px #c9d1e0, 6px 2px #c9d1e0, 8px 2px #c9d1e0, 10px 2px #9aa4b8,
+    /* visor */ 2px 4px #9aa4b8, 4px 4px #12151d, 6px 4px #12151d, 8px 4px #12151d, 10px 4px #9aa4b8,
+    /* plume */ 10px -2px var(--landing-accent, #e5594a), 12px -2px var(--landing-accent, #e5594a),
+    /* body + tabard */ 2px 6px #9aa4b8, 4px 6px var(--landing-accent, #e5594a), 6px 6px var(--landing-accent, #e5594a), 8px 6px var(--landing-accent, #e5594a), 10px 6px #9aa4b8,
+    2px 8px #9aa4b8, 4px 8px var(--landing-accent, #e5594a), 6px 8px #f2c14e, 8px 8px var(--landing-accent, #e5594a), 10px 8px #9aa4b8,
+    4px 10px var(--landing-accent, #e5594a), 6px 10px var(--landing-accent, #e5594a), 8px 10px var(--landing-accent, #e5594a),
+    /* shield on the left, sword on the right */ 0 6px #6b4a2a, 0 8px #6b4a2a, 0 10px #6b4a2a, 12px 4px #dfe5ef, 12px 6px #dfe5ef, 12px 8px #8a6a3a,
+    /* legs */ 4px 12px #5a6276, 8px 12px #5a6276, 4px 14px #3a3f4c, 8px 14px #3a3f4c;
+}
+.jr-knight[data-walk] > span { animation: jr-step .22s steps(2) infinite; }
+@keyframes jr-step { 50% { transform: translateY(-2px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .jr-knight { transition: none; }
+  .jr-knight[data-walk] > span, .jr-stop[data-on] .jr-flag::after { animation: none; }
+}
