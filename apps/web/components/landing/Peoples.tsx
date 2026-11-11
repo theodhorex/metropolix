@@ -8,6 +8,7 @@ import ArcPortrait from '../ArcPortrait';
 import T from './prefs/T';
 import { useTr } from './prefs/store';
 import PeopleQuiz from './play/PeopleQuiz';
+import { isLiteTier } from './fx/tier';
 import './peoples.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -223,36 +224,42 @@ export default function Peoples() {
     // 2. Compute device capability tier once
     const finePointer = window.matchMedia('(pointer: fine)').matches;
     const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const nav = navigator as unknown as { hardwareConcurrency?: number; deviceMemory?: number };
-    const isLite =
-      window.matchMedia('(pointer: coarse)').matches ||
-      (nav.hardwareConcurrency ?? 8) <= 4 ||
-      (nav.deviceMemory ?? 8) <= 4;
+    const isLite = isLiteTier();
 
-    // 3. GSAP Staggered Pixel Drop-in animation for cards
+    // 3. Scroll deals the five cards like a hand: they start stacked and fanned in the middle of the
+    //    grid and spread to their places as the grid scrolls up (scrubbed, so they follow the wheel);
+    //    each portrait drifts inside its frame for depth.
     const ctx = gsap.context(() => {
-      const cardEls = grid.querySelectorAll<HTMLElement>('.people-card-wrapper');
-
-      if (!isReducedMotion) {
-        gsap.fromTo(
-          cardEls,
-          { opacity: 0, y: -48 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            stagger: 0.09,
-            ease: 'steps(6)',
-            scrollTrigger: {
-              trigger: grid,
-              start: 'top 82%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-      } else {
-        gsap.set(cardEls, { opacity: 1, y: 0 });
+      const cardEls = Array.from(grid.querySelectorAll<HTMLElement>('.people-card-wrapper'));
+      if (isReducedMotion || cardEls.length === 0) {
+        gsap.set(cardEls, { opacity: 1, clearProps: 'transform' });
+        return;
       }
+      const mid = (cardEls.length - 1) / 2;
+      const toCentre = (el: HTMLElement) => {
+        const g = grid.getBoundingClientRect(), r = el.getBoundingClientRect();
+        // measured without the tween's own transform (gsap reverts it during refresh)
+        return g.left + g.width / 2 - (r.left + r.width / 2);
+      };
+      gsap.fromTo(cardEls, {
+        x: (i: number, el: HTMLElement) => toCentre(el) * 0.82,
+        y: (i: number) => 150 + Math.abs(i - mid) * 26,
+        rotation: (i: number) => (i - mid) * 8,
+        scale: 0.84,
+        opacity: 0,
+        transformOrigin: '50% 100%',
+      }, {
+        x: 0, y: 0, rotation: 0, scale: 1, opacity: 1,
+        ease: 'power2.out',
+        stagger: 0.06,
+        scrollTrigger: { trigger: grid, start: 'top 95%', end: 'top 38%', scrub: 0.7, invalidateOnRefresh: true },
+      });
+      grid.querySelectorAll<HTMLElement>('.people-portrait-frame > *').forEach((img) => {
+        gsap.fromTo(img, { yPercent: -7, scale: 1.14 }, {
+          yPercent: 7, scale: 1.14, ease: 'none',
+          scrollTrigger: { trigger: img, start: 'top bottom', end: 'bottom top', scrub: true },
+        });
+      });
     }, section);
 
     // 4. Desktop Pointer Tilt & Moving Light Sheen (Full Tier only, non-reduced motion)
