@@ -455,6 +455,13 @@ export class CityRenderer {
     this.applyView();
   }
 
+  /** Look at the world point (cx, cy) at zoom k (used by the landing page to frame its showcase town). */
+  setView(cx: number, cy: number, k: number) {
+    if (!this.ready) return;
+    this.cx = cx; this.cy = cy; this.k = k;
+    this.applyView();
+  }
+
   /** Zoom by a factor, keeping the screen point (ax, ay) fixed (defaults to the centre). */
   zoomBy(f: number, ax?: number, ay?: number) {
     if (!this.ready) return;
