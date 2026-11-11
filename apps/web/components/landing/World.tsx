@@ -13,10 +13,50 @@ import { useTr } from './prefs/store';
 gsap.registerPlugin(ScrollTrigger);
 
 const STATS = [
-  { to: ARCS.length, suffix: '', enLabel: 'peoples to rule', idLabel: 'bangsa untuk diperintah', accent: '#5fc07a' },
-  { to: BUILDING_KINDS.length, suffix: '', enLabel: 'kinds of building', idLabel: 'ragam bangunan', accent: '#e8a13a' },
-  { to: WORLD_MAYORS, suffix: '', enLabel: 'rival mayors (simulated)', idLabel: 'walikota lawan (simulasi)', accent: '#e5594a' },
-  { to: GRID * GRID, suffix: '', enLabel: 'tiles on the map', idLabel: 'petak di peta', accent: '#4fc3f7' },
+  {
+    to: ARCS.length,
+    suffix: '',
+    label: {
+      en: 'peoples to rule',
+      id: 'bangsa untuk diperintah',
+      ko: '통치할 종족',
+      zh: '可统治的种族',
+    },
+    accent: '#5fc07a',
+  },
+  {
+    to: BUILDING_KINDS.length,
+    suffix: '',
+    label: {
+      en: 'kinds of building',
+      id: 'ragam bangunan',
+      ko: '건축물의 종류',
+      zh: '建筑类型',
+    },
+    accent: '#e8a13a',
+  },
+  {
+    to: WORLD_MAYORS,
+    suffix: '',
+    label: {
+      en: 'rival mayors (simulated)',
+      id: 'walikota lawan (simulasi)',
+      ko: '라이벌 시장 (시뮬레이션)',
+      zh: '对手城主（模拟）',
+    },
+    accent: '#e5594a',
+  },
+  {
+    to: GRID * GRID,
+    suffix: '',
+    label: {
+      en: 'tiles on the map',
+      id: 'petak di peta',
+      ko: '지도 위 타일',
+      zh: '地图地块',
+    },
+    accent: '#4fc3f7',
+  },
 ];
 
 export default function World() {
@@ -266,16 +306,18 @@ export default function World() {
         <div className="text-center" data-reveal>
           <div className="mb-3">
             <span className="landing-pill">
-              <T en="Living world" id="Dunia hidup" />
+              <T en="Living world" id="Dunia hidup" ko="살아 숨 쉬는 세계" zh="鲜活的世界" />
             </span>
           </div>
           <h2 id="world-h" data-reveal-words className="landing-h2">
-            <T en="The realm keeps moving" id="Kerajaan tak pernah diam" />
+            <T split en="The realm keeps moving" id="Kerajaan tak pernah diam" ko="왕국은 멈추지 않습니다" zh="王国时刻运转不息" />
           </h2>
           <p className="mx-auto mt-4 max-w-prose text-base text-[var(--landing-ink-muted)] sm:text-lg">
             <T
               en={`${WORLD_MAYORS} simulated rival mayors grow, level up and raid each other and you, even while you plan. A raided city gets a shield. Loot always comes out of a real treasury.`}
               id={`${WORLD_MAYORS} walikota lawan tumbuh, naik level, dan saling menyerang bahkan saat kamu menyusun rencana. Kota terserang mendapat perisai. Jarahan selalu berasal dari kas nyata.`}
+              ko={`${WORLD_MAYORS}명의 시뮬레이션 라이벌 시장들은 당신이 계획을 세우는 중에도 스스로 성장하고, 레벨을 올리며, 서로와 당신을 약탈합니다. 약탈당한 도시는 보호막을 얻습니다. 전리품은 언제나 실제 금고에서 차감됩니다.`}
+              zh={`${WORLD_MAYORS} 位模拟对手城主即便在你运筹帷幄之际，也会不断发展、升级，并彼此发起突袭（包括突袭你的城市）。遭受突袭的城市将获得护盾。掠夺的战利品始终出自真实的国库。`}
             />
           </p>
         </div>
@@ -284,7 +326,7 @@ export default function World() {
         <ul className="mt-16 grid grid-cols-2 gap-4 min-[901px]:grid-cols-4 lg:gap-6" data-reveal>
           {STATS.map((s) => (
             <li
-              key={s.enLabel}
+              key={s.label.en}
               className="stat-banner-pixel flex flex-col items-center justify-center p-6 text-center transition-transform hover:-translate-y-1"
             >
               <span
@@ -298,7 +340,7 @@ export default function World() {
                 {s.suffix}
               </span>
               <span className="mt-2 text-xs font-semibold uppercase tracking-wider text-[var(--landing-ink-muted)] sm:text-sm">
-                <T en={s.enLabel} id={s.idLabel} />
+                <T {...s.label} />
               </span>
             </li>
           ))}

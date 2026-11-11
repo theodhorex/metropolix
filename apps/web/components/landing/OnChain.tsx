@@ -17,23 +17,76 @@ const REPO = 'https://github.com/theodhorex/metropolix';
 const STEPS = [
   {
     key: 'done', state: 'done',
-    chip: ['Written and tested', 'Sudah ditulis dan diuji'],
-    title: ['A NEAR smart contract in Rust', 'Smart contract NEAR dalam Rust'],
-    text: ['It will hold your city, its ChainPower and your battle results.', 'Nanti menyimpan kotamu, ChainPower-nya, dan hasil pertempuranmu.'],
-    link: { href: `${REPO}/tree/HEAD/contracts/metropolix`, label: ['Read the contract on GitHub', 'Baca kontraknya di GitHub'] },
+    chip: {
+      en: 'Written and tested',
+      id: 'Sudah ditulis dan diuji',
+      ko: '작성 및 테스트 완료',
+      zh: '已完成编写与测试',
+    },
+    title: {
+      en: 'A NEAR smart contract in Rust',
+      id: 'Smart contract NEAR dalam Rust',
+      ko: 'Rust로 작성된 NEAR 스마트 컨트랙트',
+      zh: '基于 Rust 的 NEAR 智能合约',
+    },
+    text: {
+      en: 'It will hold your city, its ChainPower and your battle results.',
+      id: 'Nanti menyimpan kotamu, ChainPower-nya, dan hasil pertempuranmu.',
+      ko: '앞으로 당신의 도시와 ChainPower, 전투 결과를 담게 됩니다.',
+      zh: '它将记录你的城市、ChainPower 以及战斗战果。',
+    },
+    link: {
+      href: `${REPO}/tree/HEAD/contracts/metropolix`,
+      label: {
+        en: 'Read the contract on GitHub',
+        id: 'Baca kontraknya di GitHub',
+        ko: 'GitHub에서 컨트랙트 보기',
+        zh: '在 GitHub 上查看合约代码',
+      },
+    },
   },
   {
     key: 'next', state: 'next',
-    chip: ['Next', 'Berikutnya'],
-    title: ['Deploy to NEAR testnet', 'Pasang di NEAR testnet'],
-    text: ['Then sign in with a NEAR wallet and keep your city on the network instead of this device.', 'Lalu masuk dengan dompet NEAR dan simpan kotamu di jaringan, bukan lagi di perangkat ini.'],
+    chip: {
+      en: 'Next',
+      id: 'Berikutnya',
+      ko: '다음 단계',
+      zh: '下一步',
+    },
+    title: {
+      en: 'Deploy to NEAR testnet',
+      id: 'Pasang di NEAR testnet',
+      ko: 'NEAR testnet 배포',
+      zh: '部署至 NEAR testnet',
+    },
+    text: {
+      en: 'Then sign in with a NEAR wallet and keep your city on the network instead of this device.',
+      id: 'Lalu masuk dengan dompet NEAR dan simpan kotamu di jaringan, bukan lagi di perangkat ini.',
+      ko: '이후 NEAR 지갑으로 로그인하여 로컬 기기 대신 네트워크에 도시를 저장합니다.',
+      zh: '届时可使用 NEAR 钱包登录，将城市保存在网络上而非局限于当前设备。',
+    },
     link: null,
   },
   {
     key: 'plan', state: 'plan',
-    chip: ['Planned', 'Direncanakan'],
-    title: ['A city coin backed by its treasury', 'Koin kota yang dijamin kasnya'],
-    text: ["The coin's value follows the gold in the city's vault, so a successful raid on a city lowers what its coin is backed by.", 'Nilai koin mengikuti emas di kas kota, jadi serbuan yang berhasil ke sebuah kota menurunkan jaminan koinnya.'],
+    chip: {
+      en: 'Planned',
+      id: 'Direncanakan',
+      ko: '예정',
+      zh: '计划中',
+    },
+    title: {
+      en: 'A city coin backed by its treasury',
+      id: 'Koin kota yang didukung kasnya',
+      ko: '국고 기반의 도시 코인',
+      zh: '以城市国库为储备的代币',
+    },
+    text: {
+      en: "The coin's value follows the gold in the city's vault, so a successful raid on a city lowers what its coin is backed by.",
+      id: 'Nilai koin mengikuti emas di kas kota, jadi serbuan yang berhasil ke sebuah kota menurunkan jaminan koinnya.',
+      ko: '코인의 가치는 도시 금고의 골드에 연동되므로, 약탈당하면 코인의 담보 가치도 함께 하락합니다.',
+      zh: '代币价值与城市金库中的金币挂钩，因此城市被成功突袭后，其代币背后的储备也会随之减少。',
+    },
     link: null,
   },
 ];
@@ -91,7 +144,7 @@ export default function OnChain() {
       if (still || isLite() || !fill || !cart) { showAll(); if (fill) fill.style.transform = 'scaleY(1)'; return; }
       const marks = signs.map((s) => s.offsetTop / Math.max(1, stage.offsetHeight));
       const st = ScrollTrigger.create({
-        trigger: stage, start: 'top 70%', end: 'bottom 60%', scrub: 0.6,
+        trigger: stage, start: 'top 75%', end: 'bottom 80%', scrub: 0.6,
         onUpdate: (self) => {
           const p = self.progress;
           fill.style.transform = `scaleY(${p})`;
@@ -136,8 +189,9 @@ export default function OnChain() {
     place(0);
     const st = ScrollTrigger.create({
       trigger: stage,
-      start: 'top 75%',
-      end: 'bottom 55%',
+      // the caravan reaches the last sign while the whole road (and its heading) is still on screen
+      start: 'top 80%',
+      end: 'bottom 85%',
       scrub: 0.8,
       onUpdate: (self) => {
         path.style.strokeDashoffset = `${len * (1 - self.progress)}`;
@@ -152,10 +206,15 @@ export default function OnChain() {
       <div className="pixel-divider -mx-4 -mt-20 mb-16" aria-hidden="true" />
       <div className="mx-auto max-w-6xl">
         <div className="text-center" data-reveal>
-          <div className="mb-3"><span className="landing-pill"><T en="Roadmap" id="Peta jalan" /></span></div>
-          <h2 id="chain-h" data-reveal-words className="landing-h2"><T en="Headed for NEAR" id="Menuju NEAR" /></h2>
+          <div className="mb-3"><span className="landing-pill"><T en="Roadmap" id="Peta jalan" ko="로드맵" zh="路线图" /></span></div>
+          <h2 id="chain-h" data-reveal-words className="landing-h2"><T split en="Headed for NEAR" id="Menuju NEAR" ko="NEAR를 향한 여정" zh="迈向 NEAR" /></h2>
           <p className="road-lead mx-auto mt-4 max-w-prose text-base sm:text-lg">
-            <T en="Until then, the whole game runs in your browser and your city is saved on this device." id="Sampai saat itu, seluruh game berjalan di browsermu dan kotamu disimpan di perangkat ini." />
+            <T
+              en="Until then, the whole game runs in your browser and your city is saved on this device."
+              id="Sampai saat itu, seluruh game berjalan di browsermu dan kotamu disimpan di perangkat ini."
+              ko="그전까지는 게임 전체가 브라우저에서 실행되며 도시는 이 기기에 저장됩니다."
+              zh="在此之前，整款游戏都在你的浏览器中运行，城市数据也保存在当前设备上。"
+            />
           </p>
         </div>
 
@@ -170,13 +229,18 @@ export default function OnChain() {
               <li key={s.key} className="road-sign" data-state={s.state} style={{ ['--i' as string]: i }}>
                 <span className="road-post" aria-hidden="true" />
                 <div className="road-board">
-                  <span className="road-chip font-display"><T en={s.chip[0]} id={s.chip[1]} /></span>
-                  <h3 className="font-serif-display road-title"><T en={s.title[0]} id={s.title[1]} /></h3>
-                  <p className="road-text"><T en={s.text[0]} id={s.text[1]} /></p>
+                  <span className="road-chip font-display"><T {...s.chip} /></span>
+                  <h3 className="font-serif-display road-title"><T {...s.title} /></h3>
+                  <p className="road-text"><T {...s.text} /></p>
                   {s.link && (
                     <a href={s.link.href} target="_blank" rel="noopener noreferrer" className="road-link"
-                      aria-label={tr(`${s.link.label[0]} (opens in a new tab)`, `${s.link.label[1]} (membuka tab baru)`)}>
-                      <T en={s.link.label[0]} id={s.link.label[1]} />
+                      aria-label={tr(
+                        `${s.link.label.en} (opens in a new tab)`,
+                        `${s.link.label.id} (membuka tab baru)`,
+                        `${s.link.label.ko} (새 탭에서 열림)`,
+                        `${s.link.label.zh} (在新标签页中打开)`
+                      )}>
+                      <T {...s.link.label} />
                     </a>
                   )}
                 </div>

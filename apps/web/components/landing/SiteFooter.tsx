@@ -139,7 +139,17 @@ export default function SiteFooter() {
         <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
           {/* Left: Animated Crest + Brand */}
           <div className="flex items-center gap-3">
-            <button type="button" className="crest-btn" onClick={() => replay.current()} aria-label={tr('Rebuild the crest', 'Bangun ulang lambang')}>
+            <button
+              type="button"
+              className="crest-btn"
+              onClick={() => replay.current()}
+              aria-label={tr(
+                'Rebuild the crest',
+                'Bangun ulang lambang',
+                '문장 다시 조립하기',
+                '重组纹章'
+              )}
+            >
               <FooterCrest />
             </button>
             <div>
@@ -147,27 +157,40 @@ export default function SiteFooter() {
                 Metropolix
               </span>
               <p className="footer-muted text-xs">
-                <T en="A pixel fantasy realm, headed for NEAR" id="Negeri fantasi pixel, menuju NEAR" />
+                <T
+                  en="A pixel fantasy realm, headed for NEAR"
+                  id="Negeri fantasi pixel, menuju NEAR"
+                  ko="NEAR를 향한 픽셀 판타지 왕국"
+                  zh="像素风奇幻国度，迈向 NEAR"
+                />
               </p>
             </div>
           </div>
 
           {/* Middle: In-page and External Links */}
-          <nav aria-label={tr('Footer navigation', 'Navigasi bawah')} className="flex justify-start md:justify-center">
+          <nav
+            aria-label={tr(
+              'Footer navigation',
+              'Navigasi bawah',
+              '하단 내비게이션',
+              '页脚导航'
+            )}
+            className="flex justify-start md:justify-center"
+          >
             <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold">
               <li>
                 <a href="#peoples" className="footer-link">
-                  <T en="Peoples" id="Bangsa" />
+                  <T en="Peoples" id="Bangsa" ko="종족" zh="种族" />
                 </a>
               </li>
               <li>
                 <a href="#how" className="footer-link">
-                  <T en="How it plays" id="Cara bermain" />
+                  <T en="How it plays" id="Cara bermain" ko="게임 방법" zh="玩法介绍" />
                 </a>
               </li>
               <li>
                 <a href="#chain" className="footer-link">
-                  <T en="Roadmap" id="Peta jalan" />
+                  <T en="Roadmap" id="Peta jalan" ko="로드맵" zh="路线图" />
                 </a>
               </li>
               <li>
@@ -183,7 +206,14 @@ export default function SiteFooter() {
                   className="footer-link"
                 >
                   GitHub
-                  <span className="sr-only"><T en=" (opens in a new tab)" id=" (membuka tab baru)" /></span>
+                  <span className="sr-only">
+                    <T
+                      en=" (opens in a new tab)"
+                      id=" (membuka tab baru)"
+                      ko=" (새 탭에서 열림)"
+                      zh="（在新标签页中打开）"
+                    />
+                  </span>
                 </a>
               </li>
             </ul>
@@ -195,7 +225,12 @@ export default function SiteFooter() {
               href={GITHUB}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={tr('Metropolix GitHub repository', 'Repositori GitHub Metropolix')}
+              aria-label={tr(
+                'Metropolix GitHub repository',
+                'Repositori GitHub Metropolix',
+                'Metropolix GitHub 저장소',
+                'Metropolix GitHub 代码仓库'
+              )}
               className="footer-gh inline-flex h-9 w-9 items-center justify-center rounded-full"
             >
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -215,7 +250,12 @@ export default function SiteFooter() {
             &copy; 2026 Metropolix.
           </p>
           <p className="footer-muted text-xs">
-            <T en="Pixel art, peoples and world drawn for Metropolix." id="Pixel art, bangsa, dan dunia digambar khusus untuk Metropolix." />
+            <T
+              en="Pixel art, peoples and world drawn for Metropolix."
+              id="Pixel art, bangsa, dan dunia digambar khusus untuk Metropolix."
+              ko="픽셀 아트, 종족, 세계관은 Metropolix를 위해 특별히 제작되었습니다."
+              zh="像素画、种族与世界观均为 Metropolix 原创绘制。"
+            />
           </p>
         </div>
       </div>
