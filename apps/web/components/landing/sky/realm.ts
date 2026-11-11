@@ -212,7 +212,8 @@ void main() {
 
 export function createRealmSky(host: HTMLElement, opts: RealmOptions): RealmSky {
   const lite = opts.lite;
-  const PIX = lite ? 5 : 3; // CSS pixels per sky pixel
+  let PIX = lite ? 5 : 3; // CSS pixels per sky pixel (coarser after a slow-frame downgrade)
+  let slow = lite; // draw at 30 fps
   const renderer = new WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'low-power', preserveDrawingBuffer: false });
   renderer.setPixelRatio(1);
   const canvas = renderer.domElement;
@@ -369,13 +370,22 @@ export function createRealmSky(host: HTMLElement, opts: RealmOptions): RealmSky 
   const ro = new ResizeObserver(fit);
   ro.observe(host);
 
+  let probeT = 0, probeN = 0;
   const frame = (now: number) => {
     raf = requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     if (covered || document.hidden) return;
+    // a full-tier device that keeps missing frames drops to the lite sky by itself (once)
+    if (!slow && dt < 0.25) {
+      probeT += dt; probeN++;
+      if (probeT > 4) {
+        if (probeT / probeN > 0.026) { slow = true; PIX = 5; fit(); }
+        probeT = 0; probeN = 0;
+      }
+    }
     // lite devices draw at 30 fps; the sky moves slowly, so nobody can tell
-    if (lite) { acc += dt; if (acc < 1 / 31) return; acc = 0; }
+    if (slow) { acc += dt; if (acc < 1 / 31) return; acc = 0; }
     time += dt;
     rise = Math.min(1, rise + dt / 2.2);
     prog += (target - prog) * Math.min(1, dt * 6);
