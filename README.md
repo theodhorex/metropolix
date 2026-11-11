@@ -31,7 +31,7 @@ tomorrow.
 
 | Do this | You'll see |
 |---|---|
-| **1.** Run `pnpm install && pnpm dev` and open http://localhost:3000 | **Choose your people**: five portraits with their land, strength profile and trade good. |
+| **1.** Run `pnpm install && pnpm dev`, open http://localhost:3000 and press **Play now** (or go straight to http://localhost:3000/play) | The landing page shows a city building itself from the real simulation. **Play now** opens **Choose your people**: five portraits with their land, strength profile and trade good. |
 | **2.** Pick a people, press **Choose the …**, then **Yes, found my city** | A name prompt with four suggested fantasy names. Roll the dice for more, or type your own. |
 | **3.** Press **Shop**, pick **House**, then tap empty tiles on the map | Houses go up and citizens walk in. The people count in the top bar climbs. |
 | **4.** Build a **Farm** and a **Market Stall** | Jobs fill, and gold per second in the top bar turns positive. |
@@ -219,7 +219,7 @@ from 12,756 DOM nodes to about 1,300.
 
 ```bash
 pnpm install
-pnpm dev                 # http://localhost:3000
+pnpm dev                 # http://localhost:3000 (landing), /play (the game)
 pnpm test                # 80 simulation tests
 pnpm typecheck
 pnpm build && pnpm --filter @metropolix/web exec next start
