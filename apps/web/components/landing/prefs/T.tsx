@@ -1,14 +1,17 @@
 import type { ReactNode } from 'react';
+import { LANGS } from './langs';
 
 /**
- * Bilingual text that works in server and client components alike: both languages are rendered and
- * CSS shows the one that matches <main data-lang>. Use useTr() from ./store for attributes instead.
+ * Text in every landing language that works in server and client components alike: all languages are
+ * rendered and CSS shows the one that matches <main data-lang>. A missing ko/zh falls back to English
+ * (so a half-translated string never shows up blank). Use useTr() from ./store for attributes instead.
  */
-export default function T({ en, id }: { en: ReactNode; id: ReactNode }) {
+export default function T(props: { en: ReactNode; id: ReactNode; ko?: ReactNode; zh?: ReactNode }) {
   return (
     <>
-      <span className="t-en" lang="en">{en}</span>
-      <span className="t-id" lang="id">{id}</span>
+      {LANGS.map(({ code, tag }) => (
+        <span key={code} className={`t-${code}`} lang={tag}>{props[code] ?? props.en}</span>
+      ))}
     </>
   );
 }

@@ -1,6 +1,8 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { PREFS_KEY } from './boot';
+import { isLang, langTag, type Lang } from './langs';
 
 /**
  * Landing preferences: colour theme and language. They live as attributes on
@@ -8,10 +10,9 @@ import { useSyncExternalStore } from 'react';
  * this tiny store mirrors them for client components that need the values (aria labels, alt text).
  */
 export type Theme = 'light' | 'dark';
-export type Lang = 'en' | 'id';
+export type { Lang };
 export interface Prefs { theme: Theme; lang: Lang }
 
-import { PREFS_KEY } from './boot';
 const DEFAULT: Prefs = { theme: 'light', lang: 'en' };
 
 let current: Prefs = DEFAULT;
@@ -25,7 +26,8 @@ function main(): HTMLElement | null {
 function readDom(): Prefs {
   const m = main();
   const theme = m?.dataset.theme === 'dark' ? 'dark' : 'light';
-  const lang = m?.dataset.lang === 'id' ? 'id' : 'en';
+  const lang = isLang(m?.dataset.lang) ? m.dataset.lang : 'en';
+  if (current.theme === theme && current.lang === lang) return current; // keep the snapshot stable
   return { theme, lang };
 }
 
@@ -33,7 +35,7 @@ export function setPrefs(next: Partial<Prefs>) {
   current = { ...readDom(), ...next };
   const m = main();
   if (m) { m.dataset.theme = current.theme; m.dataset.lang = current.lang; }
-  document.documentElement.lang = current.lang;
+  document.documentElement.lang = langTag(current.lang);
   document.documentElement.style.colorScheme = current.theme;
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(current)); } catch { /* private mode: this visit only */ }
   listeners.forEach((l) => l());
@@ -51,8 +53,12 @@ export function usePrefs(): Prefs {
   return useSyncExternalStore(subscribe, snapshot, serverSnapshot);
 }
 
-/** Pick a string for the current language (for attributes; visible text should use <T>). */
+/**
+ * Pick a string for the current language (for attributes and computed text; visible text should use <T>).
+ * Korean and Chinese fall back to English when missing.
+ */
 export function useTr() {
   const { lang } = usePrefs();
-  return (en: string, id: string) => (lang === 'id' ? id : en);
+  return (en: string, id: string, ko?: string, zh?: string) =>
+    lang === 'id' ? id : lang === 'ko' ? (ko ?? en) : lang === 'zh' ? (zh ?? en) : en;
 }
