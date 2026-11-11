@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useFoundRelics, TOTAL_HERO_RELICS } from './hero/relicStore';
 import { useTr } from './prefs/store';
 import T from './prefs/T';
 
@@ -44,8 +43,6 @@ function Crest() {
  */
 export default function SiteNav() {
   const tr = useTr();
-  const foundRelics = useFoundRelics();
-  const relicCount = foundRelics.length;
 
   return (
     <header className="pointer-events-none absolute inset-x-0 top-[22px] z-50 flex justify-center px-4">
@@ -65,31 +62,6 @@ export default function SiteNav() {
             metropolix
           </span>
         </Link>
-
-        {relicCount > 0 && (
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--l-line)] bg-[var(--l-surface-2)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--l-ink)] shadow-xs transition-all animate-fadeIn"
-            aria-label={tr(
-              `${relicCount} of ${TOTAL_HERO_RELICS} relics found`,
-              `${relicCount} dari ${TOTAL_HERO_RELICS} relik ditemukan`,
-              `유물 ${TOTAL_HERO_RELICS}개 중 ${relicCount}개 발견`,
-              `已发现 ${relicCount}/${TOTAL_HERO_RELICS} 个遗物`
-            )}
-          >
-            <span
-              className={`size-1.5 rounded-full ${relicCount === TOTAL_HERO_RELICS ? 'bg-amber-400' : 'bg-[var(--gold,#f2c14e)] animate-pulse'}`}
-              aria-hidden="true"
-            />
-            <span className="font-mono">
-              <T
-                en={`Relics ${relicCount}/${TOTAL_HERO_RELICS}`}
-                id={`Relik ${relicCount}/${TOTAL_HERO_RELICS}`}
-                ko={`유물 ${relicCount}/${TOTAL_HERO_RELICS}`}
-                zh={`遗物 ${relicCount}/${TOTAL_HERO_RELICS}`}
-              />
-            </span>
-          </span>
-        )}
 
         <div className="hidden items-center gap-5 sm:flex">
           <a

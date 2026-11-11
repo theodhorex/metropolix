@@ -1,6 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ArcId } from '@metropolix/sim';
-import RelicTiles from './hero/RelicTiles';
 
 /*
   The hero's own art, all pixel shapes drawn as SVG rects/paths (crispEdges) and CSS motion only.
@@ -182,7 +181,6 @@ export default function Sky({ arc, children }: { arc: ArcId; children: ReactNode
           />
         ))}
       </div>
-      <RelicTiles />
     </>
   );
 }

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
-import { ARCS, type ArcId, type NewsItem } from '@metropolix/sim';
+import { ARCS, type ArcId } from '@metropolix/sim';
 import LiveCity from './LiveCity';
-import NewsTicker from './NewsTicker';
 import Sky from './Sky';
 import T from './prefs/T';
 import { useTr } from './prefs/store';
@@ -32,7 +31,6 @@ const ARC_NAMES: Record<ArcId, { en: string; id: string; ko: string; zh: string 
  */
 export default function Hero() {
   const [arc, setArc] = useState<ArcId>('elf');
-  const [news, setNews] = useState<NewsItem[]>([]);
   const tr = useTr();
   const raw = ARCS.find((a) => a.id === arc)?.accent ?? '#5fc07a';
 
@@ -43,7 +41,7 @@ export default function Hero() {
       style={{ '--accent-text': TEXT_ACCENT[arc], '--accent-raw': raw } as CSSProperties}
     >
       <Sky arc={arc}>
-        <LiveCity arc={arc} onNews={setNews} />
+        <LiveCity arc={arc} />
       </Sky>
 
       <div className="pointer-events-none relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center px-5 pt-[clamp(6.5rem,30svh,32svh)] text-center">
@@ -88,10 +86,6 @@ export default function Hero() {
             zh="下方村庄是真实运行的游戏实况。"
           />
         </p>
-      </div>
-
-      <div className="absolute bottom-4 left-4 z-10 hidden w-72 min-[400px]:block sm:w-80 lg:bottom-6 lg:left-6">
-        <NewsTicker items={news} />
       </div>
     </section>
   );

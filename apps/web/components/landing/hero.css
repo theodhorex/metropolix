@@ -16,17 +16,6 @@
 .sky-bird .bird-up { animation: bird-flap .5s infinite; }
 .sky-bird .bird-down { animation: bird-flap .5s infinite reverse; }
 
-@keyframes hero-flicker { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
-.hero-glass {
-  border-radius: 10px;
-  background: rgb(255 255 255 / .16);
-  border: 1px solid rgb(255 255 255 / .55);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 6px 20px rgb(120 140 190 / .12);
-  animation: hero-flicker 7s ease-in-out infinite;
-}
-
 @keyframes hero-fall {
   0% { transform: translate3d(0, -4vh, 0); opacity: 0; }
   10% { opacity: .9; }
@@ -36,9 +25,8 @@
 .hero-fall { animation: hero-fall 12s linear infinite; image-rendering: pixelated; }
 
 @media (prefers-reduced-motion: reduce) {
-  .sky-drift-a, .sky-drift-b, .sky-bird, .hero-glass { animation: none; }
+  .sky-drift-a, .sky-drift-b, .sky-bird { animation: none; }
   .sky-bird { display: none; }
-  .hero-glass { opacity: .8; }
   .hero-fall { display: none; }
 }
 
@@ -71,28 +59,8 @@ main[data-page='landing'][data-theme='dark'] .sky-drift-b { filter: sepia(1) hue
 .hero-haze { background: linear-gradient(180deg, rgb(255 255 255 / 0), rgb(255 255 255 / .5)); transition: background .8s ease; }
 main[data-page='landing'][data-theme='dark'] .hero-haze { background: linear-gradient(180deg, rgb(28 37 71 / 0), rgb(28 37 71 / .55)); }
 main[data-page='landing'][data-theme='dark'] .sky-bird { display: none; }
-main[data-page='landing'][data-theme='dark'] .hero-glass {
-  background: rgb(160 190 255 / .08); border-color: rgb(190 210 255 / .35);
-  box-shadow: 0 0 16px rgb(140 170 255 / .18);
-}
-
-/* ---------- Hidden relics in the frosted tiles ---------- */
-.hero-glass-shimmer { background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / .55) 50%, transparent 70%); }
-.hero-shard { animation: hero-shard .7s cubic-bezier(.2, .7, .3, 1) forwards; }
-@keyframes hero-shard {
-  from { transform: translate(-50%, -50%) rotate(0); opacity: 1; }
-  to { transform: translate(calc(-50% + var(--sdx)), calc(-50% + var(--sdy))) rotate(var(--srot)); opacity: 0; }
-}
-.hero-relic-card { animation: hero-card-in .25s steps(4) both; }
-@keyframes hero-card-in { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
-.hero-relic-timer { transform-origin: left; animation: hero-timer 3s linear forwards; }
-@keyframes hero-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-.hero-relic-toast { animation: hero-toast-in .35s steps(5) both; }
-@keyframes hero-toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
-
 @media (prefers-reduced-motion: reduce) {
-  .hero-star, .hero-shard, .hero-relic-card, .hero-relic-toast { animation: none; }
-  .hero-relic-timer { animation: none; transform: none; }
+  .hero-star { animation: none; }
   .hero-land, .hero-night { transition: none; }
 }
 
