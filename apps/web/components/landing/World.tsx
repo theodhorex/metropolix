@@ -222,6 +222,7 @@ export default function World() {
               duration: 0.85,
               onUpdate: () => {
                 el.textContent = Math.round(obj.val).toLocaleString() + suffix;
+                el.closest('li')?.classList.toggle('stat-done', Math.round(obj.val) >= target);
               },
             },
             0.1
@@ -291,6 +292,7 @@ export default function World() {
                 ease: 'power2.out',
                 onUpdate: () => {
                   el.textContent = Math.round(obj.val).toLocaleString() + suffix;
+                el.closest('li')?.classList.toggle('stat-done', Math.round(obj.val) >= target);
                 },
               });
             });

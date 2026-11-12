@@ -296,3 +296,35 @@ main[data-page='landing'] :is(div, header):has(> h2.landing-h2, > h2.faq-title):
 @keyframes lightbox-fade { from { opacity: 0; } }
 html.lightbox-lock, html.lightbox-lock body { overflow: hidden !important; }
 .lightbox { overscroll-behavior: contain; }
+
+/* How it plays: giant step numerals. Closed strips show them in full colour with a tight ink shadow
+   (the same treatment as the hero accent); the open panel keeps a faint watermark. */
+.how-num {
+  color: var(--c);
+  opacity: .92;
+  text-shadow: 4px 4px 0 color-mix(in srgb, var(--c) 45%, #1a1030), 8px 8px 0 color-mix(in srgb, var(--c) 18%, transparent);
+  transform: translateY(-10%);
+  transition: opacity .6s ease, transform .9s cubic-bezier(.2, .8, .2, 1), text-shadow .6s ease;
+}
+.how-panel:hover .how-num:not(.how-num-on) { transform: translateY(-14%) rotate(-2deg); }
+.how-num-on { opacity: .09; text-shadow: none; transform: translateY(-6%) scale(1.04); }
+.how-shot { display: inline-block; width: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  .how-panel[aria-selected='true'] .how-shot { animation: how-shot-in .8s cubic-bezier(.2, .8, .2, 1) .15s both; }
+}
+@keyframes how-shot-in { from { opacity: 0; transform: translateY(18px) scale(.97); } }
+
+/* World stats: when a counter lands on its real number, the card pops once and a glint crosses it */
+.stat-banner-pixel { position: relative; overflow: hidden; }
+.stat-banner-pixel::after {
+  content: ''; position: absolute; inset: -20% auto -20% -40%; width: 30%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / .55), transparent);
+  transform: translateX(0) skewX(-12deg); opacity: 0;
+}
+main[data-theme='dark'] .stat-banner-pixel::after { background: linear-gradient(100deg, transparent, rgb(190 200 255 / .22), transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .stat-banner-pixel.stat-done::after { animation: stat-glint .9s cubic-bezier(.3, 0, .2, 1) .05s; }
+  .stat-banner-pixel.stat-done [data-stat-counter] { animation: stat-pop .45s cubic-bezier(.2, .8, .2, 1.4); }
+}
+@keyframes stat-glint { 0% { opacity: 1; transform: translateX(0) skewX(-12deg); } 100% { opacity: 1; transform: translateX(560%) skewX(-12deg); } }
+@keyframes stat-pop { 50% { scale: 1.14; } }
