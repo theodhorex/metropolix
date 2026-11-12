@@ -67,7 +67,7 @@ export default function Hero() {
           />
         </p>
 
-        <div data-hero-rest role="group" aria-label={tr('Choose a people for the floating village', 'Pilih bangsa untuk desa melayang', '떠 있는 마을의 종족 선택', '为浮空村庄选择种族')} className="pointer-events-auto mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
+        <div data-hero-rest role="group" aria-label={tr('Choose a people for the floating village', 'Pilih bangsa untuk desa melayang', '떠 있는 마을의 종족 선택', '为浮空村庄选择种族')} className="pointer-events-auto mt-6 flex flex-wrap justify-center gap-1.5 lg:justify-start">
           {ARCS.map((a) => (
             <button
               key={a.id}
@@ -75,7 +75,7 @@ export default function Hero() {
               aria-pressed={arc === a.id}
               onClick={() => setArc(a.id)}
               style={{ '--pill': a.accent } as CSSProperties}
-              className="font-display inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-[var(--l-surface)] px-4 text-sm font-medium text-[var(--l-ink)] shadow-[0_2px_10px_rgb(40_60_110/0.12)] transition-shadow hover:shadow-[0_3px_14px_rgb(40_60_110/0.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--l-ink)] aria-pressed:font-bold aria-pressed:shadow-[0_0_0_2px_var(--l-ink),0_3px_14px_rgb(40_60_110/0.2)]"
+              className="hero-chip font-display inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--l-surface)] px-3 text-sm font-medium text-[var(--l-ink)] shadow-[0_2px_10px_rgb(40_60_110/0.12)] hover:shadow-[0_3px_14px_rgb(40_60_110/0.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--l-ink)] aria-pressed:font-bold aria-pressed:shadow-[0_0_0_2px_var(--l-ink),0_3px_14px_rgb(40_60_110/0.2)]"
             >
               <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-(--pill) shadow-[inset_0_0_0_1px_rgb(18_21_29/0.25)]" />
               {ARC_NAMES[a.id] ? <T {...ARC_NAMES[a.id]} /> : a.name}

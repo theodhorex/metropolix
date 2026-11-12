@@ -61,3 +61,8 @@ main[data-page='landing'][data-theme='dark'] .news-board { border-color: #6f78c8
 .news-new { animation: news-in .5s cubic-bezier(.2, .9, .3, 1.2) both; }
 @keyframes news-in { from { transform: translateY(-100%); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .news-live, .news-new { animation: none; } }
+
+/* people chips: a small lift on hover, the chosen one tinted with its people's colour */
+.hero-chip { transition: box-shadow .2s, translate .25s cubic-bezier(.2, .8, .2, 1), background-color .3s; }
+.hero-chip[aria-pressed='true'] { background: color-mix(in srgb, var(--pill) 22%, var(--l-surface)); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) { .hero-chip:hover { translate: 0 -2px; } }
