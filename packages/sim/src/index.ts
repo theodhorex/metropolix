@@ -223,6 +223,7 @@ export interface GameState {
   nextRaidTick: number;
   rng: number; // uint32 PRNG state
   arc: ArcId | null;     // chosen once, permanent (one city per player)
+  portrait: number;      // 1..500, drawn once with the people (0 = none yet), see portrait.ts
   wood: number;
   ore: number;
   food: number;
@@ -290,7 +291,7 @@ export function newState(seed = 1): GameState {
     grid: Array.from({ length: GRID }, () => Array<Cell>(GRID).fill(null)),
     log: ['Welcome, mayor. Build houses, then jobs.'], logSeq: 1,
     cooldowns: {}, nextRaidTick: 120, rng: seed >>> 0,
-    arc: null, wood: 60, ore: 40, food: 40, goods: { moonleaf: 0, spice: 0, hides: 0, emberstone: 0, gears: 0 },
+    arc: null, portrait: 0, wood: 60, ore: 40, food: 40, goods: { moonleaf: 0, spice: 0, hides: 0, emberstone: 0, gears: 0 },
     xp: 0, inventory: {}, market: [], nextListingId: 1, nextMarketTick: 30, orders: [], post: freshPost(),
     army: { vanguard: 0, raider: 0, breaker: 0 }, spells: { rage: 0, heal: 0 }, siege: 0, heroes: {}, defPlan: 'balanced', trophies: 0, shieldUntil: 0, raidLog: [],
     vault: freshVault(), displayed: [], finds: 0, lastFind: null, seen: [],
@@ -436,6 +437,7 @@ export function chooseArc(s: GameState, id: ArcId): Result {
   const a = arcDef(id);
   if (!a) return { ok: false, msg: 'Unknown arc' };
   s.arc = a.id;
+  ensurePortrait(s);
   pushLog(s, `You chose the ${a.name}. Welcome, mayor.`);
   return { ok: true };
 }
@@ -725,4 +727,6 @@ import { clearLevel, drillPm, foodTypes, FOOD_VARIETY_PM, weightedCounts } from 
 import { RELICS, RELIC_KINDS, discover, findStep, freshVault, isRelic, relicBonus, type Rarity, type RelicKind } from './vault';
 export * from './names';
 export * from './world';
+export * from './portrait';
+import { ensurePortrait } from './portrait';
 import { MAX_LOOT_PCT, applyRaidOnYou, applyRaidToMayor, findMayor, findRival, initWorld, mayorPower, mayorRival, pickRaider, pushNews, worldStep, type World } from './world';
