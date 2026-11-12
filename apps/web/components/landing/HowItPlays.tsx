@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useLightbox, ZoomButton, type Shot } from './Lightbox';
 import T from './prefs/T';
 import { useTr } from './prefs/store';
 
@@ -199,6 +200,13 @@ const GALLERY = [
 export default function HowItPlays() {
   const [activeStep, setActiveStep] = useState(0);
   const tr = useTr();
+  const lang = (o: { en: string; id: string; ko: string; zh: string }) => tr(o.en, o.id, o.ko, o.zh);
+  // the step screenshots, then the gallery, as one set the lightbox can step through
+  const shots: Shot[] = [
+    ...STEPS.map((s) => ({ src: s.src, w: s.w, h: s.h, alt: lang(s.alt), caption: <><b className="text-[var(--landing-ink)]">{s.num}. {lang(s.title)}.</b> {lang(s.text)}</> })),
+    ...GALLERY.map((g) => ({ src: g.src, w: g.w, h: g.h, alt: lang(g.alt), caption: <><b className="text-[var(--landing-ink)]">{lang(g.title)}.</b> {lang(g.text)}</> })),
+  ];
+  const box = useLightbox(shots);
 
   return (
     <section id="how" aria-labelledby="how-h" className="l-section relative py-20">
@@ -325,14 +333,16 @@ export default function HowItPlays() {
                   {/* Screenshot in soft frame */}
                   <div className="mt-6 flex flex-1 items-center justify-center overflow-hidden">
                     <figure className="shot-light max-h-[460px] w-full max-w-2xl">
-                      <Image
-                        src={s.src}
-                        alt={tr(s.alt.en, s.alt.id, s.alt.ko, s.alt.zh)}
-                        width={s.w}
-                        height={s.h}
-                        className="max-h-[460px] w-full object-contain"
-                        priority={i === 0}
-                      />
+                      <ZoomButton onOpen={() => box.show(i)} label={lang(s.title)}>
+                        <Image
+                          src={s.src}
+                          alt={tr(s.alt.en, s.alt.id, s.alt.ko, s.alt.zh)}
+                          width={s.w}
+                          height={s.h}
+                          className="max-h-[460px] w-full object-contain"
+                          priority={i === 0}
+                        />
+                      </ZoomButton>
                     </figure>
                   </div>
                 </div>
@@ -345,7 +355,7 @@ export default function HowItPlays() {
       {/* Mobile Stacked List (<= 760px) */}
       <div className="mx-auto mt-10 max-w-xl px-4 min-[761px]:hidden">
         <ol className="space-y-12">
-          {STEPS.map((s) => (
+          {STEPS.map((s, i) => (
             <li
               key={s.num}
               className="flex flex-col gap-4 rounded-lg border border-[var(--l-line)] bg-[var(--l-surface)] p-6 shadow-[0_2px_10px_var(--l-shadow)]"
@@ -365,14 +375,16 @@ export default function HowItPlays() {
                 <T {...s.text} />
               </p>
               <figure className="shot-light mt-2">
-                <Image
-                  src={s.src}
-                  alt={tr(s.alt.en, s.alt.id, s.alt.ko, s.alt.zh)}
-                  width={s.w}
-                  height={s.h}
-                  sizes="100vw"
-                  loading="lazy"
-                />
+                <ZoomButton onOpen={() => box.show(i)} label={lang(s.title)}>
+                  <Image
+                    src={s.src}
+                    alt={tr(s.alt.en, s.alt.id, s.alt.ko, s.alt.zh)}
+                    width={s.w}
+                    height={s.h}
+                    sizes="100vw"
+                    loading="lazy"
+                  />
+                </ZoomButton>
               </figure>
             </li>
           ))}
@@ -399,22 +411,24 @@ export default function HowItPlays() {
         </div>
 
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4" data-reveal>
-          {GALLERY.map((g) => (
+          {GALLERY.map((g, gi) => (
             <li
               key={g.title.en}
               className="group flex flex-col overflow-hidden rounded-md border border-[var(--l-line)] bg-[var(--l-surface)] p-3 shadow-[0_2px_10px_var(--l-shadow)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_var(--l-shadow)]"
             >
               <figure className="flex flex-1 flex-col">
                 <div className="shot-light overflow-hidden bg-[var(--l-surface-2)]">
-                  <Image
-                    src={g.src}
-                    alt={tr(g.alt.en, g.alt.id, g.alt.ko, g.alt.zh)}
-                    width={g.w}
-                    height={g.h}
-                    sizes="(min-width: 1024px) 270px, (min-width: 640px) 45vw, 100vw"
-                    loading="lazy"
-                    className="transition-transform duration-300 group-hover:scale-[1.02]"
-                  />
+                  <ZoomButton onOpen={() => box.show(STEPS.length + gi)} label={lang(g.title)}>
+                    <Image
+                      src={g.src}
+                      alt={tr(g.alt.en, g.alt.id, g.alt.ko, g.alt.zh)}
+                      width={g.w}
+                      height={g.h}
+                      sizes="(min-width: 1024px) 270px, (min-width: 640px) 45vw, 100vw"
+                      loading="lazy"
+                      className="transition-transform duration-300 group-hover:scale-[1.02]"
+                    />
+                  </ZoomButton>
                 </div>
                 <figcaption className="mt-3.5 text-xs text-[var(--landing-ink-muted)]">
                   <b className="font-display text-sm font-bold text-[var(--landing-ink)]">
@@ -427,6 +441,7 @@ export default function HowItPlays() {
           ))}
         </ul>
       </div>
+      {box.view}
     </section>
   );
 }

@@ -251,3 +251,48 @@ main[data-page='landing'] :is(div, header):has(> h2.landing-h2, > h2.faq-title):
 /* ---------- World: a scroll track with a sticky stage (see World.tsx) ---------- */
 .world-track[data-track] { height: calc(var(--stage-h, 100vh) + 160vh); }
 .world-track[data-track] > .world-stage { position: sticky; top: var(--stage-top, 0px); }
+
+/* ---------- screenshots open large (Lightbox.tsx) ---------- */
+.zoomable { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; text-align: inherit; }
+.zoomable:focus-visible { outline: 3px solid var(--landing-ink); outline-offset: 3px; }
+.zoomable-hint {
+  position: absolute; right: 8px; bottom: 8px; display: grid; place-items: center; width: 28px; height: 28px;
+  background: var(--l-surface); color: var(--landing-ink); border: 1px solid var(--l-line); border-radius: 4px;
+  box-shadow: 0 2px 8px var(--l-shadow); opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s;
+}
+.zoomable:hover .zoomable-hint, .zoomable:focus-visible .zoomable-hint { opacity: 1; transform: none; }
+@media (hover: none) { .zoomable-hint { opacity: .9; transform: none; } }
+
+.lightbox {
+  position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0;
+  border: 0; background: transparent; color: var(--landing-ink); overflow: hidden;
+}
+.lightbox[open] { display: grid; place-items: center; }
+.lightbox::backdrop { background: rgb(8 10 30 / .78); backdrop-filter: blur(3px); }
+.lightbox-figure {
+  display: flex; flex-direction: column; gap: .6rem; max-width: min(92vw, 1400px); max-height: 90dvh; margin: 0;
+  padding: .6rem; background: var(--l-surface); border: 1px solid var(--l-line); border-radius: 6px;
+  box-shadow: 0 24px 60px rgb(0 0 0 / .45);
+}
+.lightbox-img { display: block; width: auto; height: auto; max-width: calc(min(92vw, 1400px) - 1.2rem); max-height: calc(90dvh - 4rem); object-fit: contain; border-radius: 3px; }
+.lightbox-cap { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 0 .2rem .1rem; font-size: .85rem; color: var(--landing-ink-muted); }
+.lightbox-count { flex: none; font-family: var(--font-pixel), monospace; font-size: .8rem; }
+.lightbox-nav, .lightbox-close {
+  position: fixed; display: grid; place-items: center; width: 44px; height: 44px; padding: 0 0 4px;
+  background: var(--l-surface); color: var(--landing-ink); border: 1px solid var(--l-line); border-radius: 6px;
+  font: 400 1.9rem/1 var(--font-pixel), monospace; cursor: pointer; box-shadow: 0 6px 18px rgb(0 0 0 / .3);
+}
+.lightbox-nav:hover, .lightbox-close:hover { background: var(--l-surface-2); }
+.lightbox-nav:focus-visible, .lightbox-close:focus-visible { outline: 3px solid var(--l-surface); outline-offset: 2px; }
+.lightbox-prev { left: max(12px, 2vw); top: 50%; transform: translateY(-50%); }
+.lightbox-next { right: max(12px, 2vw); top: 50%; transform: translateY(-50%); }
+.lightbox-close { top: max(12px, 2vh); right: max(12px, 2vw); }
+@media (max-width: 640px) { .lightbox-prev, .lightbox-next { top: auto; bottom: 14px; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .lightbox[open] .lightbox-figure { animation: lightbox-in .32s cubic-bezier(.2, .8, .2, 1); }
+  .lightbox[open]::backdrop { animation: lightbox-fade .25s ease-out; }
+}
+@keyframes lightbox-in { from { opacity: 0; transform: scale(.92) translateY(12px); } }
+@keyframes lightbox-fade { from { opacity: 0; } }
+html.lightbox-lock, html.lightbox-lock body { overflow: hidden !important; }
+.lightbox { overscroll-behavior: contain; }
