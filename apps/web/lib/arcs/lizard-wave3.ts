@@ -1480,16 +1480,16 @@ function buildLizardHospital(): HTMLCanvasElement[] {
   isoDiamond(ctx, 32, 48, 29, MUD_DARK, OUT);
   isoDiamond(ctx, 32, 48, 25, BONE_MID, TEAL_MID);
 
-  // Main whitewashed sanatorium hall
+  // Main adobe sanatorium hall
   const fx = 32;
   const fy = 56;
   const wL = 18;
   const wR = 18;
   const wallH = 12;
   isoBox(ctx, fx, fy, wL, wR, wallH, {
-    top: '#ffffff',
-    left: BONE_MID,
-    right: BONE_LIGHT,
+    top: OCHRE_LIGHT,
+    left: TERRA_MID,
+    right: OCHRE_MID,
   });
   leftWallRect(ctx, fx, fy, 1, 9, 16, 2, TEAL_MID);
   rightWallRect(ctx, fx, fy, 1, 9, 16, 2, TEAL_BRIGHT);
@@ -1504,9 +1504,9 @@ function buildLizardHospital(): HTMLCanvasElement[] {
 
   // Stepped upper attic & healing cross
   isoBox(ctx, 32, 44, 12, 12, 5, {
-    top: BONE_LIGHT,
-    left: BONE_DARK,
-    right: '#ffffff',
+    top: REED_LIGHT,
+    left: REED_DARK,
+    right: OCHRE_LIGHT,
   });
   disc(ctx, 36, 36, 5, OUT);
   disc(ctx, 36, 36, 4, '#ffffff');

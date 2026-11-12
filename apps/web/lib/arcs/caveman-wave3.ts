@@ -1354,32 +1354,32 @@ function buildFortress(): HTMLCanvasElement[] {
   // Left Bastion Tower (h=19, rising to y=19)
   isoBox(ctx, 22, 51, 8, 8, 19, { top: BONE_MID, left: FUR_DARK, right: FUR_MID });
   // Battlements on left tower
-  rect(ctx, 15, 17, 3, 3, OUT);
-  rect(ctx, 16, 17, 2, 2, FUR_LIGHT);
-  rect(ctx, 21, 14, 3, 3, OUT);
-  rect(ctx, 22, 14, 2, 2, FUR_LIGHT);
-  rect(ctx, 27, 17, 3, 3, OUT);
-  rect(ctx, 28, 17, 2, 2, FUR_LIGHT);
+  rect(ctx, 15, 25, 3, 3, OUT);
+  rect(ctx, 16, 25, 2, 2, FUR_LIGHT);
+  rect(ctx, 21, 22, 3, 3, OUT);
+  rect(ctx, 22, 22, 2, 2, FUR_LIGHT);
+  rect(ctx, 27, 25, 3, 3, OUT);
+  rect(ctx, 28, 25, 2, 2, FUR_LIGHT);
 
   // Right Bastion Tower (h=19, rising to y=16)
   isoBox(ctx, 42, 44, 8, 8, 19, { top: BONE_MID, left: FUR_DARK, right: FUR_MID });
   // Battlements on right tower
-  rect(ctx, 35, 14, 3, 3, OUT);
-  rect(ctx, 36, 14, 2, 2, FUR_LIGHT);
-  rect(ctx, 41, 11, 3, 3, OUT);
-  rect(ctx, 42, 11, 2, 2, FUR_LIGHT);
-  rect(ctx, 47, 14, 3, 3, OUT);
-  rect(ctx, 48, 14, 2, 2, FUR_LIGHT);
+  rect(ctx, 35, 22, 3, 3, OUT);
+  rect(ctx, 36, 22, 2, 2, FUR_LIGHT);
+  rect(ctx, 41, 19, 3, 3, OUT);
+  rect(ctx, 42, 19, 2, 2, FUR_LIGHT);
+  rect(ctx, 47, 22, 3, 3, OUT);
+  rect(ctx, 48, 22, 2, 2, FUR_LIGHT);
 
   // High fortified rampart connecting the two towers
-  rect(ctx, 27, 28, 10, 2, OUT);
-  rect(ctx, 27, 28, 9, 1, BONE_LIGHT);
+  rect(ctx, 27, 36, 10, 2, OUT);
+  rect(ctx, 27, 36, 9, 1, BONE_LIGHT);
 
   // Skull totems & tribal hide war standards atop towers
-  rect(ctx, 22, 8, 1, 9, OUT);
-  rect(ctx, 20, 9, 3, 3, OCHRE_RED);
-  rect(ctx, 42, 5, 1, 9, OUT);
-  rect(ctx, 43, 6, 3, 3, HIDE_LIGHT);
+  rect(ctx, 22, 16, 1, 9, OUT);
+  rect(ctx, 20, 17, 3, 3, OCHRE_RED);
+  rect(ctx, 42, 13, 1, 9, OUT);
+  rect(ctx, 43, 14, 3, 3, HIDE_LIGHT);
 
   return [canvas];
 }
@@ -1429,16 +1429,18 @@ function buildHedge(): HTMLCanvasElement[] {
   isoDiamond(ctx, 32, 48, 24, DIRT_0, OUT);
   isoDiamond(ctx, 32, 48, 19, DIRT_1, DIRT_DARK);
 
-  // Dense thorny bramble wall running diagonally across the tile
+  // Dense thorny bramble wall running diagonally across the tile: outlines first, then leaves,
+  // so a column's outline never paints over its neighbour's leaves.
+  const hOf = (u: number) => ((u % 3 === 0) ? 9 : (u % 2 === 0) ? 8 : 7);
   for (let u = 0; u < 18; u++) {
-    const x = 23 + u;
-    const yBot = 54 - (u >> 1);
-    const h = (u % 3 === 0) ? 9 : (u % 2 === 0) ? 8 : 7;
-    rect(ctx, x - 2, yBot - h, 4, h, OUT);
-    rect(ctx, x - 1, yBot - h + 1, 3, h - 1, LEAF_DARK);
-    rect(ctx, x - 1, yBot - h + 2, 2, h - 3, LEAF_MID);
-    px(ctx, x, yBot - h, LEAF_LIGHT);
-
+    const x = 23 + u, yBot = 54 - (u >> 1), h = hOf(u);
+    rect(ctx, x - 2, yBot - h - 1, 4, h + 2, OUT);
+  }
+  for (let u = 0; u < 18; u++) {
+    const x = 23 + u, yBot = 54 - (u >> 1), h = hOf(u);
+    rect(ctx, x - 1, yBot - h, 2, h, u % 2 ? LEAF_MID : LEAF_DARK);
+    rect(ctx, x - 1, yBot - h, 2, 3, LEAF_LIGHT);
+    px(ctx, x, yBot - h, '#9fd46a');
     // Tangled wooden willow wattle stakes and red wild thornberries
     if (u % 4 === 1) {
       px(ctx, x, yBot - 3, WOOD_DARK);
