@@ -206,9 +206,10 @@ from 12,756 DOM nodes to about 1,300.
 - The contract bounds what a client may claim (valid grid, troop cap, a ceiling
   on the economy score) but does not yet replay the simulation. Replay is the
   next step, and the integer-only simulation exists to make it possible.
-- The contract knows the first 14 building codes. The client has 23 buildings,
-  so the second wave (row houses, manors, taverns, banks and the rest) needs a
-  contract update before those cities can commit.
+- The contract knows the first 14 building codes. The client has 60 buildings,
+  so everything after the first wave (row houses, taverns, the late-game
+  buildings and the five wonders) needs a contract update before those cities
+  can commit.
 - Rival mayors in the Social drawer are simulated until the game server goes
   live; their profiles say so.
 - `get_leaderboard` walks every city. That is fine for a hackathon and not for
