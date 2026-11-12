@@ -9,13 +9,16 @@ import T from './prefs/T';
 import { useTr } from './prefs/store';
 import './hero.css';
 
-/** Accent colours darkened until they pass AA (4.5:1) as text on the pale sky; the raw accents stay for dots. */
-const TEXT_ACCENT: Record<ArcId, string> = {
-  elf: '#25793f',
-  lizard: '#68750d',
-  caveman: '#9c5a1c',
-  dragon: '#c93d27',
-  goblin: '#527d0e',
+/**
+ * Headline accent per people: a vivid fill, plus a deep ink tone of the same hue drawn as a tight
+ * pixel drop shadow under the letters, which keeps the word readable on the bright day sky.
+ */
+const TEXT_ACCENT: Record<ArcId, { fill: string; ink: string }> = {
+  elf: { fill: '#13b25a', ink: '#0b3d24' },
+  lizard: { fill: '#9fb412', ink: '#3a420a' },
+  caveman: { fill: '#e07a1c', ink: '#4f2a0c' },
+  dragon: { fill: '#f0442c', ink: '#5a140c' },
+  goblin: { fill: '#74b81a', ink: '#27420a' },
 };
 
 const ARC_NAMES: Record<ArcId, { en: string; id: string; ko: string; zh: string }> = {
@@ -40,7 +43,7 @@ export default function Hero() {
     <section
       aria-labelledby="hero-title"
       className="hero-root relative isolate min-h-svh overflow-hidden text-[var(--l-ink)] md:min-h-dvh"
-      style={{ '--accent-text': TEXT_ACCENT[arc], '--accent-raw': raw } as CSSProperties}
+      style={{ '--accent-text': TEXT_ACCENT[arc].fill, '--accent-ink': TEXT_ACCENT[arc].ink, '--accent-raw': raw } as CSSProperties}
     >
       <Sky arc={arc} />
 

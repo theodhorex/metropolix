@@ -29,9 +29,13 @@ main[data-page='landing'][data-theme='dark'] .hero-haze { background: linear-gra
   .hero-land { transition: none; }
 }
 
-/* headline accent: AA-dark tone on the day sky, the raw people colour on the night sky */
-.hero-accent { color: var(--accent-text); transition: color .4s ease; }
-main[data-page='landing'][data-theme='dark'] .hero-accent { color: color-mix(in srgb, var(--accent-raw) 85%, #fff); }
+/* headline accent: a vivid people colour with a tight ink shadow of the same hue (day), the raw colour on the night sky */
+.hero-accent {
+  color: var(--accent-text);
+  text-shadow: 0.035em 0.045em 0 var(--accent-ink), 0 0 0.5em color-mix(in srgb, var(--accent-text) 35%, transparent);
+  transition: color .4s ease, text-shadow .4s ease;
+}
+main[data-page='landing'][data-theme='dark'] .hero-accent { color: color-mix(in srgb, var(--accent-raw) 85%, #fff); text-shadow: 0 0 0.45em color-mix(in srgb, var(--accent-raw) 45%, transparent); }
 
 /* ---------- world news: a pixel notice board under the floating island ---------- */
 .news-board {
