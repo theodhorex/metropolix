@@ -5,7 +5,8 @@ import type { ArcId, GameState, NewsItem } from '@metropolix/sim';
 import { CityRenderer } from '@/lib/renderer';
 import { showcasePlan, createShowcase, fullCity, growStep, idleStep } from '@/lib/landing-city';
 
-const GROW_MS = 600;  // one new building every 0.6 s while the town goes up
+const GROW_MS = 450;  // one new building every 0.45 s while the town goes up
+const HEAD_START = 0.35; // share of the town already standing on the first frame, so the island never shows up bare
 const IDLE_MS = 1000; // afterwards the world just keeps living
 const NARROW_PX = 768;
 const WIDE_PX = 1024;
@@ -116,8 +117,10 @@ export default function LiveCity({ arc, onNews, className = '' }: { arc: ArcId; 
       }
       s = createShowcase(a);
       i = 0;
+      const head = Math.floor(plan.length * HEAD_START);
+      while (i < head) i = growStep(s, plan, i);
       r.setPaused(false);
-      tick(); // first building straight away
+      tick(); // draw the head start (and the next building) straight away
       sync();
     };
 
