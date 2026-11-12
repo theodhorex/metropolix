@@ -3,6 +3,7 @@
 import { ARCS, counts, levelFromXp, pushLog, stats, type ArcId, type BattleRecord, type GameState, type Result } from './index';
 import { fantasyName, FANTASY_NAME_COUNT } from './names';
 import { RELICS, RELIC_KINDS, type RelicKind } from './vault';
+import { cityValue, mayorPortrait, type CityValue } from './portrait';
 
 export interface PlayerRow {
   id: string;
@@ -13,6 +14,7 @@ export interface PlayerRow {
   isYou?: boolean;
   simulated: boolean;
   arc?: ArcId;
+  portrait?: number; // 1..500, see portrait.ts
 }
 
 export type SortKey = 'wealth' | 'chainPower' | 'level' | 'name';
@@ -51,7 +53,7 @@ export function generatePlayers(seed: number, n = 40): PlayerRow[] {
 }
 
 export function myRow(s: GameState, name = 'You'): PlayerRow {
-  return { id: 'you', name, level: levelFromXp(s.xp), wealth: Math.floor(s.gold), chainPower: stats(s).chainPower, isYou: true, simulated: false, arc: s.arc ?? undefined };
+  return { id: 'you', name, level: levelFromXp(s.xp), wealth: Math.floor(s.gold), chainPower: stats(s).chainPower, isYou: true, simulated: false, arc: s.arc ?? undefined, portrait: s.portrait || undefined };
 }
 
 // ---------- names and profiles ----------
@@ -95,6 +97,8 @@ export interface PlayerProfile {
   arc: ArcId | null; level: number; title: string;
   chainPower: number; wealth: number; citizens: number; buildings: number;
   trophies: number; finds: number; displayed: RelicKind[]; record: BattleRecord;
+  portrait: number; // 0 = none yet
+  value?: CityValue; // only your own city: the game knows every building and relic
 }
 
 export function myProfile(s: GameState, name: string): PlayerProfile {
@@ -104,6 +108,7 @@ export function myProfile(s: GameState, name: string): PlayerProfile {
     id: 'you', name, isYou: true, simulated: false, arc: s.arc, level: row.level, title: titleFor(row.level),
     chainPower: row.chainPower, wealth: row.wealth, citizens: s.pop, buildings,
     trophies: s.trophies, finds: s.finds, displayed: [...s.displayed], record: { ...s.record },
+    portrait: s.portrait ?? 0, value: s.arc ? cityValue(s) : undefined,
   };
 }
 
@@ -130,6 +135,7 @@ export function simProfile(p: PlayerRow, s?: GameState): PlayerProfile {
     citizens: Math.floor(lv * 40 + r() * lv * 60), buildings: Math.floor(6 + lv * 5 + r() * lv * 6),
     trophies: live ? live.trophies : Math.floor(lv * 12 + r() * lv * 30), finds: displayed.length + Math.floor(r() * lv * 0.6),
     displayed, record: live ? { ...live.record } : { won, lost: fights - won, held, breached: raided - held },
+    portrait: p.portrait ?? (p.arc ? mayorPortrait({ id: p.id, arc: p.arc }) : 0),
   };
 }
 

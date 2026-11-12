@@ -97,7 +97,8 @@ export function mayorPortrait(m: { id: string; arc: ArcId }): number {
 }
 
 /** In-game worth of a city: buildings (cost x level), relics (vault and display), and the portrait's tier. */
-export function cityValue(s: GameState): { buildings: number; relics: number; portrait: number; total: number } {
+export interface CityValue { buildings: number; relics: number; portrait: number; total: number }
+export function cityValue(s: GameState): CityValue {
   let buildings = 0;
   s.grid.forEach((row, y) => row.forEach((k, x) => { if (k) buildings += BUILDINGS[k].cost * (s.levels?.[levelKey(x, y)] ?? 1); }));
   let relics = 0;

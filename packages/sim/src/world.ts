@@ -6,6 +6,7 @@
 import { ARCS, RIVALS, type ArcId, type BattleRecord, type GameState, type Rival } from './index';
 import { fantasyName, FANTASY_NAME_COUNT } from './names';
 import type { PlayerRow } from './social';
+import { mayorPortrait } from './portrait';
 
 export const WORLD_MAYORS = 40;
 /** The world moves every this many ticks. */
@@ -69,7 +70,7 @@ export const shieldLeft = (s: GameState, m: Mayor) => Math.max(0, m.shieldUntil 
 /** A mayor's row for rankings and profiles. ChainPower mixes strength with a little of the treasury. */
 export function mayorRow(m: Mayor): PlayerRow {
   return {
-    id: m.id, name: m.name, level: m.level, wealth: m.gold, simulated: true, arc: m.arc,
+    id: m.id, name: m.name, level: m.level, wealth: m.gold, simulated: true, arc: m.arc, portrait: mayorPortrait(m),
     chainPower: mayorAttack(m) + Math.floor((mayorDefense(m) * 3) / 2) + Math.floor(m.gold / 10),
   };
 }
