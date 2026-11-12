@@ -59,3 +59,53 @@ export function enterGate(section: HTMLElement, caption: string, go: () => void)
     veil.remove();
   };
 }
+
+/**
+ * The same gold entrance from anywhere on the page (the navbar button): the page leans toward the
+ * button, and the gold tiles spread out from it across the screen before `go()` navigates.
+ * Only transform and opacity animate. Returns a cleanup that removes the overlay.
+ */
+export function enterFrom(button: HTMLElement, caption: string, go: () => void): () => void {
+  const page = document.querySelector<HTMLElement>('main');
+  const b = button.getBoundingClientRect();
+  const bx = b.left + b.width / 2, by = b.top + b.height / 2;
+
+  const veil = document.createElement('div');
+  veil.className = 'enter-veil';
+  veil.setAttribute('aria-hidden', 'true');
+  const grid = document.createElement('div');
+  grid.className = 'enter-tiles';
+  grid.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+  for (let i = 0; i < COLS * ROWS; i++) grid.appendChild(document.createElement('i'));
+  const text = document.createElement('p');
+  text.className = 'enter-caption';
+  text.textContent = caption;
+  veil.append(grid, text);
+  document.body.appendChild(veil);
+
+  // the tile under the button lights first, the rest follow by distance
+  const col = Math.min(COLS - 1, Math.max(0, Math.floor((bx / window.innerWidth) * COLS)));
+  const row = Math.min(ROWS - 1, Math.max(0, Math.floor((by / window.innerHeight) * ROWS)));
+
+  const tl = gsap.timeline({
+    onComplete: () => {
+      try { sessionStorage.setItem(ENTER_FLAG, '1'); } catch { /* private mode: /play just appears */ }
+      go();
+    },
+  });
+  tl.fromTo(button, { scale: 1 }, { scale: 0.92, duration: 0.12, ease: 'power2.out', yoyo: true, repeat: 1 }, 0);
+  if (page) {
+    tl.set(page, { transformOrigin: `${bx}px ${by + window.scrollY}px`, willChange: 'transform' }, 0)
+      .to(page, { scale: 1.06, duration: 0.35, ease: 'power1.out' }, 0.05)
+      .to(page, { scale: 1.6, opacity: 0.6, duration: 0.8, ease: 'power3.in' }, 0.35);
+  }
+  tl.to(grid.children, { opacity: 1, scale: 1, duration: 0.18, ease: 'steps(3)', stagger: { each: 0.028, grid: [ROWS, COLS], from: row * COLS + col } }, 0.3)
+    .to(text, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' }, 0.95)
+    .to({}, { duration: 0.25 });
+
+  return () => {
+    tl.kill();
+    veil.remove();
+    if (page) gsap.set(page, { clearProps: 'transform,opacity,transformOrigin,willChange' });
+  };
+}

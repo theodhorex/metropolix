@@ -1,6 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, type MouseEvent } from 'react';
+import { enterFrom } from '@/components/enter/gateEntrance';
+import '@/components/enter/enter.css';
 import { useTr } from './prefs/store';
 import T from './prefs/T';
 
@@ -43,6 +47,19 @@ function Crest() {
  */
 export default function SiteNav() {
   const tr = useTr();
+  const router = useRouter();
+  const leaving = useRef<(() => void) | null>(null);
+  useEffect(() => () => leaving.current?.(), []);
+
+  /** "Play now" in the bar enters through the same gold light as the button at the end of the page. */
+  const onPlay = (e: MouseEvent<HTMLAnchorElement>) => {
+    // new tab, modified clicks and reduced motion keep the plain link
+    if (leaving.current || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    e.preventDefault();
+    router.prefetch('/play');
+    leaving.current = enterFrom(e.currentTarget, tr('Entering the realm', 'Memasuki negeri', '왕국으로 들어가는 중', '正在进入王国'), () => router.push('/play'));
+  };
 
   return (
     <header className="pointer-events-none absolute inset-x-0 top-[22px] z-50 flex justify-center px-4">
@@ -85,6 +102,7 @@ export default function SiteNav() {
 
         <Link
           href="/play"
+          onClick={onPlay}
           className="inline-flex min-h-9 items-center justify-center rounded-full bg-[var(--l-ink)] px-4 py-1.5 text-[13px] font-semibold text-[var(--l-surface)] shadow-xs transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--l-ink)]"
         >
           <T en="Play now" id="Main sekarang" ko="지금 플레이" zh="立即开玩" />
