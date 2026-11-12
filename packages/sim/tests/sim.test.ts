@@ -738,3 +738,10 @@ describe('third wave buildings', () => {
     expect(sim.upgradeCost('university', 3).needLevel).toBe(sim.MAX_LEVEL);
   });
 });
+
+describe('third wave descriptions', () => {
+  it('level 1 text equals the plain desc, and numbers grow with the level', () => {
+    for (const k of sim.BUILDING_KINDS) expect(sim.describeBuilding(k, 1)).toBe(sim.BUILDINGS[k].desc);
+    expect(sim.describeBuilding('highrise', 3)).not.toBe(sim.BUILDINGS.highrise.desc);
+  });
+});

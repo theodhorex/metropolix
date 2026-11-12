@@ -105,6 +105,21 @@ export function describeBuilding(k: BuildingKind, level = 1): string {
     case 'academy': return `Teaches ${at(b.edu)} citizens`;
     case 'barracks': return `Trains up to ${at(b.troopCap)} troops`;
     case 'tower': return `+${at(b.defense)} defense`;
+    case 'cottage': return `A small first home for ${at(b.housing)} citizens`;
+    case 'longhouse': return `${at(b.housing)} citizens under one long timber roof`;
+    case 'tenement': return `Crams ${at(b.housing)} citizens in, but needs upkeep`;
+    case 'villa': return `Gardens and courtyards for ${at(b.housing)} lucky citizens`;
+    case 'highrise': return `Houses ${at(b.housing)} citizens, the tallest homes in town`;
+    case 'bazaar': return `A crowded market: ${at(b.jobs)} jobs`;
+    case 'fishery': return `Fish for ${at(b.food) * 20} citizens`;
+    case 'garden': return `Flowers that scrub away ${at(b.clean)} smoke`;
+    case 'observatory': return `Teaches ${at(b.edu)} citizens the stars`;
+    case 'university': return `Teaches ${at(b.edu)} citizens`;
+    case 'palisade': return `+${at(b.defense)} defense, cheap sharpened logs`;
+    case 'watchtower': return `+${at(b.defense)} defense, sees raiders coming`;
+    case 'armory': return `+${at(b.atkPm) / 10}% attack and ${at(b.troopCap)} troop beds`;
+    case 'warcamp': return `Tents for ${at(b.troopCap)} troops`;
+    case 'fortress': return `+${at(b.defense)} defense, the last line`;
     default: return b.desc;
   }
 }
