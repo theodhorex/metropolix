@@ -404,3 +404,32 @@ main[data-page='landing'][data-theme='dark'] .people-card-sheen {
   }
 }
 
+
+/* hover: the card lifts a little and the portrait leans in (translate/scale, so the scroll-dealt transform stays intact) */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .people-card-wrapper { transition: translate .45s cubic-bezier(.2, .8, .2, 1); }
+  .people-card-wrapper:hover { translate: 0 -6px; }
+  .people-portrait-frame > svg { transition: scale .6s cubic-bezier(.2, .8, .2, 1); transform-origin: 50% 70%; }
+  .people-card-wrapper:hover .people-portrait-frame > svg { scale: 1.06; }
+}
+
+/* quiz: each question slides in, choices answer the pointer with a gold edge, a pick pops */
+.quiz-choice-card { position: relative; overflow: hidden; }
+.quiz-choice-card::before {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: #f2b630;
+  transform: scaleY(0); transform-origin: 50% 100%; transition: transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+.quiz-choice-card:has(input:checked)::before { transform: scaleY(1); }
+@media (prefers-reduced-motion: no-preference) {
+  .quiz-q > div > .quiz-choice-card { animation: quiz-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+  .quiz-q > div > .quiz-choice-card:nth-child(2) { animation-delay: .07s; }
+  .quiz-q > div > .quiz-choice-card:nth-child(3) { animation-delay: .14s; }
+  .quiz-q > div > .quiz-choice-card:nth-child(4) { animation-delay: .21s; }
+  .quiz-q > legend { animation: quiz-in .45s cubic-bezier(.2, .8, .2, 1) both; }
+  .quiz-choice-card { transition: translate .25s cubic-bezier(.2, .8, .2, 1), border-color .2s, background-color .2s; }
+  .quiz-choice-card:hover { translate: 4px 0; }
+  .quiz-choice-card:hover::before { transform: scaleY(.55); }
+  .quiz-choice-card:has(input:checked) { animation: quiz-pick .35s cubic-bezier(.2, .8, .2, 1); }
+}
+@keyframes quiz-in { from { opacity: 0; transform: translateX(-16px); } }
+@keyframes quiz-pick { 40% { scale: 1.015; } }

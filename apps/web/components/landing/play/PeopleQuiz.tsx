@@ -452,7 +452,7 @@ export default function PeopleQuiz({ onSelectArc }: { onSelectArc?: (arcId: ArcI
           </div>
 
           {/* Question Text */}
-          <fieldset className="my-6">
+          <fieldset key={currentQ.id} className="quiz-q my-6">
             <legend className="mb-4 text-base font-semibold text-[var(--l-ink)] sm:text-lg">
               <T {...currentQ.title} />
             </legend>
