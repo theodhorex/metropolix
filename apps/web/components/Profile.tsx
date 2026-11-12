@@ -2,6 +2,7 @@
 
 import * as sim from '@metropolix/sim';
 import ArcPortrait from './ArcPortrait';
+import Portrait, { TierBadge } from './Portrait';
 import Icon, { type IconName } from './Icon';
 import { RelicThumb } from './ItemThumb';
 import { Modal, SubHead } from './ui';
@@ -40,10 +41,26 @@ export default function Profile({ p, rank, xp, renameCost = 0, onClose, onRename
       <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
         <div>
           <div className="relative border-2 border-[var(--ink)] bg-[var(--slab-lo)]">
-            {p.arc ? <ArcPortrait arc={p.arc} className="block aspect-[6/7] w-full" /> : <div className="grid aspect-[6/7] place-items-center text-sm text-[var(--paper-dim)]">No people yet</div>}
+            {p.portrait ? <Portrait id={p.portrait} className="aspect-[6/7] w-full" />
+              : p.arc ? <ArcPortrait arc={p.arc} className="block aspect-[6/7] w-full" /> : <div className="grid aspect-[6/7] place-items-center text-sm text-[var(--paper-dim)]">No people yet</div>}
             <div className="absolute -bottom-3 -left-2 flex h-12 w-12 items-center justify-center border-2 border-[var(--ink)] bg-[var(--accent)] font-display text-2xl font-bold text-[var(--accent-ink)] [clip-path:polygon(50%_0,100%_22%,100%_70%,50%_100%,0_70%,0_22%)]"
               aria-label={`Level ${p.level}`}>{p.level}</div>
           </div>
+          {p.portrait > 0 && <div className="mt-4 flex justify-center"><TierBadge id={p.portrait} /></div>}
+          {p.value && (
+            <div className="well mt-3 p-2 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-[var(--paper-dim)]"><Icon name="coin" size={16} /> City value</span>
+                <b className="font-display tabular-nums text-[var(--gold)]">{n(p.value.total)}</b>
+              </div>
+              <dl className="mt-1 grid grid-cols-[1fr_auto] gap-x-2 text-xs text-[var(--paper-dim)]">
+                <dt>Buildings (by level)</dt><dd className="tabular-nums">{n(p.value.buildings)}</dd>
+                <dt>Relics</dt><dd className="tabular-nums">{n(p.value.relics)}</dd>
+                <dt>Portrait tier</dt><dd className="tabular-nums">{n(p.value.portrait)}</dd>
+              </dl>
+              <p className="mt-1 text-[11px] leading-snug text-[var(--paper-dim)]">Counted in game gold. Not money, and cities cannot be sold yet.</p>
+            </div>
+          )}
         </div>
 
         <div className="min-w-0">
