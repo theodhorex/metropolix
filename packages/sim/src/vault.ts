@@ -22,12 +22,13 @@ export interface RelicBonus { gold?: number; ore?: number; wood?: number; food?:
 export interface RelicDef { name: string; rarity: Rarity; source: BuildingKind; price: number; desc: string; bonus: RelicBonus }
 
 export const RARITIES: Rarity[] = ['rare', 'epic', 'legendary', 'mythic'];
-export const RARITY: Record<Rarity, { name: string; color: string; per10M: number }> = {
-  // per10M: chance per building per second, out of 10,000,000
-  rare: { name: 'Rare', color: '#4fa3e0', per10M: 2500 },          // about 1 in 4,000
-  epic: { name: 'Epic', color: '#b07cf0', per10M: 600 },           // about 1 in 16,700
-  legendary: { name: 'Legendary', color: '#f2a33a', per10M: 120 }, // about 1 in 83,000
-  mythic: { name: 'Super Legendary', color: '#ff5c8a', per10M: 15 }, // about 1 in 667,000
+export const RARITY: Record<Rarity, { name: string; color: string; per100M: number }> = {
+  // per100M: chance per source building per second, out of 100,000,000. Kept super rare on purpose:
+  // a big city (about 70 buildings) digs up 1 or 2 relics an hour, a legendary about once in 10 hours of play.
+  rare: { name: 'Rare', color: '#4fa3e0', per100M: 1250 },             // about 1 in 80,000
+  epic: { name: 'Epic', color: '#b07cf0', per100M: 300 },              // about 1 in 333,000
+  legendary: { name: 'Legendary', color: '#f2a33a', per100M: 60 },     // about 1 in 1.7 million
+  mythic: { name: 'Super Legendary', color: '#ff5c8a', per100M: 8 },   // about 1 in 12.5 million
 };
 
 export const RELICS: Record<RelicKind, RelicDef> = {
@@ -84,7 +85,7 @@ export function relicBonus(s: GameState): Required<RelicBonus> {
  */
 export function findStep(s: GameState): { kind: RelicKind; source: BuildingKind } | null {
   const w = weightedCounts(s).w; // upgraded buildings dig deeper: a level 3 mine counts as two
-  const roll = rngNext(s) % 10_000_000;
+  const roll = rngNext(s) % 100_000_000;
   let acc = 0;
   for (const rarity of [...RARITIES].reverse()) {
     for (const src of FIND_SOURCES) {
@@ -92,7 +93,7 @@ export function findStep(s: GameState): { kind: RelicKind; source: BuildingKind 
       if (nPm === 0) continue;
       const pool = relicsFrom(src).filter((k) => RELICS[k].rarity === rarity);
       if (pool.length === 0) continue;
-      acc += Math.floor((nPm * RARITY[rarity].per10M) / 1000);
+      acc += Math.floor((nPm * RARITY[rarity].per100M) / 1000);
       if (roll < acc) {
         const kind = pool[rngInt(s, pool.length)]!;
         s.vault[kind] = (s.vault[kind] ?? 0) + 1;

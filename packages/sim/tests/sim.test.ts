@@ -457,14 +457,13 @@ describe('vault and relics', () => {
   it('rarer tiers turn up far less often, at about the stated odds', () => {
     const s = sim.newState(3); mines(s, 25);
     const seen: Record<sim.Rarity, number> = { rare: 0, epic: 0, legendary: 0, mythic: 0 };
-    for (let i = 0; i < 100_000; i++) { const f = sim.findStep(s); if (f) seen[sim.RELICS[f.kind].rarity]++; }
-    // 25 mines: rare 25 x 2500 / 10M per second (625 expected), legendary 25 x 120 (30 expected), mythic 25 x 15 (3.75)
-    expect(seen.rare).toBeGreaterThan(520); expect(seen.rare).toBeLessThan(730);
-    expect(seen.legendary).toBeGreaterThan(10); expect(seen.legendary).toBeLessThan(60);
+    for (let i = 0; i < 1_000_000; i++) { const f = sim.findStep(s); if (f) seen[sim.RELICS[f.kind].rarity]++; }
+    // 25 mines over 1M seconds: rare 25 x 1250 / 100M (312 expected), epic 25 x 300 (75), legendary 25 x 60 (15), mythic 25 x 8 (2)
+    expect(seen.rare).toBeGreaterThan(260); expect(seen.rare).toBeLessThan(365);
+    expect(seen.epic).toBeGreaterThan(45); expect(seen.epic).toBeLessThan(110);
+    expect(seen.legendary).toBeGreaterThan(4); expect(seen.legendary).toBeLessThan(30);
     expect(seen.mythic).toBeLessThan(seen.legendary);
-    // mines: one rare, one epic, two legendary and one mythic treasure; legendary odds are per tier, not per item
-    expect(seen.epic).toBeGreaterThan(100); expect(seen.epic).toBeLessThan(200);
-  });
+  }, 60_000); // a million game seconds: the odds are low on purpose
   it('only 25 of a building count toward the odds', () => {
     const a = sim.newState(5); mines(a, 25);
     const b = sim.newState(5); mines(b, 60);
