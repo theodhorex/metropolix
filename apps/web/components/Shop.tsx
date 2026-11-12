@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BUILDINGS, BUILDING_KINDS, CATEGORIES, RESOURCES, arcDef, levelFromXp, type BuildingKind, type Category, type GameState, type GoodKind } from '@metropolix/sim';
+import { BUILDINGS, BUILDING_KINDS, CATEGORIES, counts, RESOURCES, arcDef, levelFromXp, type BuildingKind, type Category, type GameState, type GoodKind } from '@metropolix/sim';
 import CubeIcon from './CubeIcon';
 import Icon, { type IconName } from './Icon';
 import { CloseX, SECTOR_COLOR } from './ui';
@@ -28,6 +28,8 @@ function effects(k: BuildingKind, good: GoodKind | null): { icon: IconName; text
   if (b.ore) out.push({ icon: 'ore', text: 'Makes ore' });
   if (b.food) out.push({ icon: 'food', text: `Feeds ${b.food * 20} citizens` });
   if (b.goods) out.push({ icon: good ?? 'box', text: good ? `Makes ${RESOURCES[good].name}` : 'Makes your special good' });
+  if (b.atkPm) out.push({ icon: 'swords', text: `+${b.atkPm / 10}% attack` });
+  if (b.clean) out.push({ icon: 'smile', text: `Clears ${b.clean} smoke` });
   if (b.happy) out.push({ icon: 'smile', text: `+${b.happy} happiness` });
   if (b.pollution) out.push({ icon: 'flame', text: `${b.pollution} smoke`, bad: true });
   if (b.upkeep) out.push({ icon: 'coin', text: `${b.upkeep}/s upkeep`, bad: true });
@@ -90,7 +92,8 @@ export default function Shop({ open, s, tool, onSelect, onClose, preview }: Prop
       <div ref={strip} onScroll={onScroll} onWheel={(e) => { if (strip.current && Math.abs(e.deltaY) > Math.abs(e.deltaX)) strip.current.scrollLeft += e.deltaY; }}
         className="relative flex gap-5 overflow-x-auto px-3 pt-2 pb-3">
         {CATEGORIES.map((c) => {
-          const items = BUILDING_KINDS.filter((k) => BUILDINGS[k].category === c.id);
+          // wonders: only your own people's one is shown
+          const items = BUILDING_KINDS.filter((k) => BUILDINGS[k].category === c.id && (!BUILDINGS[k].arc || BUILDINGS[k].arc === s.arc));
           if (items.length === 0) return null;
           return (
             <section key={c.id} ref={(el) => { groups.current[c.id] = el; }} aria-label={c.name} className="shrink-0">
@@ -102,9 +105,10 @@ export default function Shop({ open, s, tool, onSelect, onClose, preview }: Prop
                   const b = BUILDINGS[k];
                   const locked = level < b.unlockLevel;
                   const stock = s.inventory[k] ?? 0;
-                  const noLand = (k === 'lumber' && arc?.woodPm === 0) || (k === 'mine' && arc?.orePm === 0);
+                  const noLand = (!!b.wood && arc?.woodPm === 0) || (!!b.ore && arc?.orePm === 0);
+                  const owned = !!b.limit && stock === 0 && (counts(s)[k] ?? 0) >= b.limit;
                   const lackGold = s.gold < b.cost, lackWood = s.wood < (b.woodCost ?? 0), lackOre = s.ore < (b.oreCost ?? 0);
-                  const blocked = locked || noLand;
+                  const blocked = locked || noLand || owned;
                   const img = open ? preview?.(k) : null;
                   const sel = tool === k;
                   return (
@@ -116,6 +120,7 @@ export default function Shop({ open, s, tool, onSelect, onClose, preview }: Prop
                           // eslint-disable-next-line @next/next/no-img-element
                           ? <img src={img} alt="" width={76} height={76} className={blocked ? 'opacity-40 grayscale' : ''} style={{ imageRendering: 'pixelated' }} />
                           : <span className="self-center"><CubeIcon color={b.color} height={b.height} size={48} /></span>}
+                        {b.arc && <span className="absolute top-1 left-1 border-2 border-[var(--ink)] bg-[var(--gold)] px-1 text-[11px] font-bold text-[#2a1c05]">Wonder</span>}
                         {stock > 0 && <span className="absolute top-1 right-1 border-2 border-[var(--ink)] bg-[var(--good)] px-1 text-[11px] font-bold text-[#0d2106]">x{stock}</span>}
                       </span>
                       <span className="flex flex-1 flex-col px-2 pt-1.5 pb-2">
@@ -126,7 +131,9 @@ export default function Shop({ open, s, tool, onSelect, onClose, preview }: Prop
                           ))}
                         </span>
                         {noLand ? (
-                          <span className="text-xs font-bold text-[var(--bad)]">No {k === 'lumber' ? 'forest' : 'ore'} on your land</span>
+                          <span className="text-xs font-bold text-[var(--bad)]">No {b.wood ? 'forest' : 'ore'} on your land</span>
+                        ) : owned ? (
+                          <span className="text-xs font-bold text-[var(--good)]">Already built</span>
                         ) : locked ? (
                           <span className="flex items-center gap-1 text-xs font-bold text-[var(--paper-dim)]"><Icon name="star" size={12} />Unlocks at level {b.unlockLevel}</span>
                         ) : stock > 0 ? (

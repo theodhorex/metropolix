@@ -16,6 +16,8 @@ export function chips(kind: BuildingKind): string[] {
   if (b.edu) out.push(`educates ${b.edu}`);
   if (b.happy) out.push(`+${b.happy} happy`);
   if (b.pollution) out.push(`-${b.pollution} pollution`);
+  if (b.clean) out.push(`clears ${b.clean} smoke`);
+  if (b.atkPm) out.push(`+${b.atkPm / 10}% attack`);
   if (b.troopCap) out.push(`${b.troopCap} troops`);
   if (b.defense) out.push(`+${b.defense} defense`);
   if (b.wood) out.push('+wood');
