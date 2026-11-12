@@ -94,8 +94,8 @@ export default function Hero() {
         <div className="hero-town relative h-[min(62svh,96vw)] w-full lg:h-[min(86svh,880px)]">
           <LiveCity arc={arc} onNews={setNews} />
         </div>
-        {/* news from the simulated world around the island, pinned under it on the right */}
-        <NewsTicker items={news} className="hero-news relative z-10 mx-auto -mt-2 lg:absolute lg:right-0 lg:bottom-[4%] lg:mt-0" />
+        {/* news from the simulated world around the island: under it, out toward the right edge of the screen */}
+        <NewsTicker items={news} className="hero-news relative z-10 mx-auto -mt-2 lg:absolute lg:right-[min(-1rem,calc((80rem-100vw)/2-1rem))] lg:bottom-[3%] lg:mt-0" />
       </div>
       </div>
     </section>
