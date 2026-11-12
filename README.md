@@ -190,7 +190,7 @@ instead of floats) and a seeded mulberry32 generator, so the same seed and the
 same moves give the same city on every machine. That is what will let the
 contract replay a city later instead of trusting it.
 
-**It is tested like it matters.** 102 tests in the simulation, property tests
+**It is tested like it matters.** 110 tests in the simulation, property tests
 with fast-check among them (economy invariants, raids, trade, the vault, the
 name pool, upgrades), and 22 unit and property tests in the contract, plus a
 `near-workspaces` sandbox test.
@@ -233,7 +233,7 @@ plainly:
   change from the other agents, and ran the tests, builds and browser checks.
 - **Worker agents** run through the Google Antigravity CLI: Gemini 3.8 Flash,
   Gemini 4 Argon and Claude Sonnet. They drew most of the pixel art sprites (the
-  five peoples, the 60 buildings and their level-ups) and some landing page
+  five peoples, the 60 buildings and their level-ups, the 500 mayor portraits) and some landing page
   sections, each from a written task file. Their output was reviewed, fixed
   where needed and committed by hand.
 - The owner set the direction (the game idea, the five peoples, the look),
@@ -259,7 +259,7 @@ plainly:
 ```bash
 pnpm install
 pnpm dev                 # http://localhost:3000 (landing), /play (the game)
-pnpm test                # 102 simulation tests
+pnpm test                # 110 simulation tests
 pnpm typecheck
 pnpm build && pnpm --filter @metropolix/web exec next start
 
