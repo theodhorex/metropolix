@@ -70,7 +70,7 @@ main[data-theme='dark'] .road-link { color: #8fc3ee; }
 .night-img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
 
 /* stone: warm sandstone by day, cold blue stone by night */
-.night-cta { --g-wall: #c9ad86; --g-block: #d8bf98; --g-block-hi: #e6d1ae; --g-block-lo: #bf9f76; --g-ring: #ecdcbc; --g-iron: #3a3330; }
+.night-cta { --g-wall: #a8774a; --g-block: #c8955c; --g-block-hi: #e0b479; --g-block-lo: #9b6b40; --g-ring: #f1d39a; --g-iron: #3a2a26; }
 main[data-page='landing'][data-theme='dark'] .night-cta { --g-wall: #1d2238; --g-block: #2a3050; --g-block-hi: #343c60; --g-block-lo: #222842; --g-ring: #4a5378; --g-iron: #0d0f18; }
 .g-wall { fill: var(--g-wall); }
 .g-block { fill: var(--g-block); }
@@ -143,10 +143,17 @@ main[data-page='landing'][data-theme='dark'] .night-cta { --g-wall: #1d2238; --g
 /* ---------- Footer: crest + a town on the horizon whose windows light up ---------- */
 .site-footer {
   color: var(--l-ink, #12151d);
-  background: linear-gradient(180deg, var(--l-surface-2, #f6f8fb) 0%, color-mix(in srgb, var(--l-sky-top, #dcebfb) 70%, var(--l-bg, #fbfcfe)) 100%);
-  border-top: 1px solid var(--l-line, #e6e9ef);
+  /* by day the page ends at sunset, after the sandstone gate: warm dusk, plum skyline */
+  background: linear-gradient(180deg, #fbe8d2 0%, #f7cfa8 58%, #f0a988 100%);
+  border-top: 1px solid #e3b98f;
   overflow: hidden;
 }
+main[data-page='landing'][data-theme='dark'] .site-footer {
+  background: linear-gradient(180deg, var(--l-surface-2, #1e2352) 0%, color-mix(in srgb, var(--l-sky-top, #0b0f2e) 70%, var(--l-bg, #0b0f2e)) 100%);
+  border-top-color: var(--l-line, #343b78);
+}
+main[data-page='landing']:not([data-theme='dark']) .footer-rule { border-top-color: rgb(110 50 60 / .2); }
+main[data-page='landing']:not([data-theme='dark']) .footer-muted { color: #6b4650; }
 .footer-muted { color: var(--l-muted, #4a5160); }
 .footer-link { color: var(--l-ink, #12151d); transition: color .2s; }
 .footer-link:hover, .footer-link:focus-visible { color: color-mix(in srgb, #3f9a52 80%, var(--l-ink, #12151d)); }
@@ -159,8 +166,8 @@ main[data-page='landing'][data-theme='dark'] .night-cta { --g-wall: #1d2238; --g
 
 .horizon { position: relative; height: clamp(72px, 9.5vw, 132px); margin: 28px -16px 0; }
 .horizon svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.hz-wall { fill: color-mix(in srgb, var(--l-ink, #12151d) 82%, #2a3450); }
-.hz-roof { fill: color-mix(in srgb, var(--l-ink, #12151d) 70%, #6b3a3a); }
+.hz-wall { fill: #4a2a4f; }
+.hz-roof { fill: #7a2f48; }
 .hz-win { fill: #f2c14e; opacity: 0; transition: opacity .5s steps(3); }
 .horizon[data-lit] .hz-win { opacity: 1; }
 .hz-lighter {
@@ -172,7 +179,7 @@ main[data-page='landing'][data-theme='dark'] .night-cta { --g-wall: #1d2238; --g
 @keyframes hz-walk { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 24px)); } }
 main[data-page='landing'][data-theme='dark'] .hz-wall { fill: #05070f; }
 main[data-page='landing'][data-theme='dark'] .hz-roof { fill: #1a1424; }
-.hz-tree { fill: color-mix(in srgb, var(--l-ink, #12151d) 75%, #1f4a2e); }
+.hz-tree { fill: #3b3350; }
 main[data-page='landing'][data-theme='dark'] .hz-tree { fill: #071410; }
 .hz-gate { fill: #f2c14e; opacity: .35; }
 .hz-flag { fill: #c0453a; }
