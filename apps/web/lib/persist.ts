@@ -1,4 +1,4 @@
-import { newState, GRID, ARCS, MAX_MAYOR_LEVEL, NEWS_MAX, type Mayor, type World, RELIC_KINDS, DISPLAY_SLOTS, isRelic, checkName, canUpgrade, MAX_BLD_LEVEL, type GameState } from '@metropolix/sim';
+import { newState, GRID, ARCS, MAX_MAYOR_LEVEL, NEWS_MAX, type Mayor, type World, RELIC_KINDS, DISPLAY_SLOTS, isRelic, checkName, canUpgrade, MAX_BLD_LEVEL, type GameState, tradeKindsFor, isBuilding, type ItemKind } from '@metropolix/sim';
 
 const KEY = 'metropolix-save-v2';
 
@@ -45,6 +45,11 @@ export function loadState(): GameState {
         const merged: GameState = { ...fresh, ...s, grid: padGrid(s.grid), goods: { ...fresh.goods, ...(s.goods ?? {}) }, post: { ...fresh.post, ...(s.post ?? {}) } };
         // listings from before cities had a people are replaced by fresh city offers
         merged.market = merged.market.filter((l) => l.seller === 'you' || l.arc);
+        // other cities no longer trade buildings this land cannot run (Dragonkin: no wood buildings)
+        const usable = new Set<string>(tradeKindsFor(merged));
+        const fits = (k: string) => !isBuilding(k as ItemKind) || usable.has(k);
+        merged.market = merged.market.filter((l) => l.seller === 'you' || fits(l.kind));
+        merged.orders = (merged.orders ?? []).filter((o) => o.buyer === 'you' || fits(o.kind));
         if (merged.market.length < 6) merged.market = [...merged.market, ...fresh.market.map((l) => ({ ...l, id: merged.nextListingId++ }))];
         // the sim never schedules a raid more than 150 ticks ahead; anything further is a broken save
         if (!(merged.nextRaidTick <= merged.tick + 150)) merged.nextRaidTick = merged.tick + 120;
