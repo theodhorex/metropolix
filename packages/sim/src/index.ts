@@ -5,7 +5,14 @@ export const GRID = 40;
 
 export type BuildingKind = 'house' | 'farm' | 'shop' | 'factory' | 'school' | 'park' | 'barracks' | 'tower'
   | 'tree' | 'lamp' | 'fountain' | 'statue' | 'lumber' | 'mine'
-  | 'rowhouse' | 'manor' | 'stall' | 'tavern' | 'bank' | 'library' | 'academy' | 'clinic' | 'workshop';
+  | 'rowhouse' | 'manor' | 'stall' | 'tavern' | 'bank' | 'library' | 'academy' | 'clinic' | 'workshop'
+  | 'cottage' | 'longhouse' | 'tenement' | 'villa' | 'highrise'
+  | 'bakery' | 'teahouse' | 'tailor' | 'bazaar' | 'tradeguild'
+  | 'fishery' | 'windmill' | 'sawmill' | 'smelter' | 'crafthall' | 'foundry'
+  | 'shrine' | 'garden' | 'theater' | 'observatory' | 'hospital' | 'university'
+  | 'palisade' | 'watchtower' | 'armory' | 'warcamp' | 'fortress'
+  | 'flowerbed' | 'hedge' | 'well' | 'pond' | 'arch'
+  | 'moontree' | 'suntemple' | 'stones' | 'emberthrone' | 'scrapspire';
 export type Cell = BuildingKind | null;
 export type Category = 'residential' | 'commerce' | 'industry' | 'services' | 'military' | 'decoration';
 export const CATEGORIES: { id: Category; name: string }[] = [
@@ -41,6 +48,10 @@ export interface BuildingDef {
   food?: number;      // food produced per second at full productivity
   goods?: number;     // this race's special good produced per second (workshop)
   goodsCost?: Partial<Record<GoodKind, number>>; // special goods spent to build
+  clean?: number;     // smoke this building scrubs away (never below zero)
+  atkPm?: number;     // city attack bonus in permille (capped, see BUILD_ATK_CAP_PM)
+  arc?: ArcId;        // a wonder: only this people can build it
+  limit?: number;     // most of this kind one city may own (placed plus in storage)
 }
 
 export const BUILDINGS: Record<BuildingKind, BuildingDef> = {
@@ -68,8 +79,51 @@ export const BUILDINGS: Record<BuildingKind, BuildingDef> = {
   academy:  { name: 'Academy', category: 'services', unlockLevel: 6, oreCost: 12, cost: 900, edu: 120, happy: 2, upkeep: 10, goodsCost: { emberstone: 8 }, color: '#9a7ad8', height: 1.9, desc: 'Teaches 120 citizens' },
   clinic:   { name: 'Clinic', category: 'services', unlockLevel: 4, woodCost: 8, cost: 400, happy: 6, upkeep: 6, goodsCost: { moonleaf: 5 }, color: '#e8e2d0', height: 1.1, desc: 'Healthy citizens are happy citizens' },
   workshop: { name: 'Workshop', category: 'industry', unlockLevel: 2, woodCost: 6, oreCost: 4, cost: 220, jobs: 4, goods: 4, color: '#8a6a9a', height: 1.1, desc: "Makes your people's special good" },
+  // third wave: late-game content, levels 7 to 10, and one wonder per people
+  cottage:    { name: 'Cottage', category: 'residential', unlockLevel: 1, woodCost: 2, cost: 60, housing: 6, color: '#e0b483', height: 0.8, desc: 'A small first home for 6 citizens' },
+  longhouse:  { name: 'Longhouse', category: 'residential', unlockLevel: 4, woodCost: 16, cost: 220, housing: 18, color: '#a8784a', height: 1.0, desc: '18 citizens under one long timber roof' },
+  tenement:   { name: 'Tenement', category: 'residential', unlockLevel: 6, woodCost: 8, oreCost: 14, cost: 560, housing: 40, upkeep: 3, color: '#9a7f6a', height: 1.8, desc: 'Crams 40 citizens in, but needs upkeep' },
+  villa:      { name: 'Villa', category: 'residential', unlockLevel: 7, oreCost: 10, cost: 800, housing: 16, happy: 4, goodsCost: { spice: 6 }, color: '#e8c9a0', height: 1.4, desc: 'Gardens and courtyards for 16 lucky citizens' },
+  highrise:   { name: 'High Rise', category: 'residential', unlockLevel: 9, oreCost: 30, cost: 1400, housing: 60, upkeep: 6, goodsCost: { gears: 8 }, color: '#8fa3b8', height: 2.4, desc: 'Houses 60 citizens, the tallest homes in town' },
+  bakery:     { name: 'Bakery', category: 'commerce', unlockLevel: 2, woodCost: 6, cost: 180, jobs: 4, output: 5, food: 3, color: '#e8b872', height: 1.0, desc: 'Sells bread: jobs and a little food' },
+  teahouse:   { name: 'Teahouse', category: 'commerce', unlockLevel: 3, woodCost: 8, cost: 260, jobs: 4, output: 6, happy: 2, goodsCost: { moonleaf: 3 }, color: '#7fbf9a', height: 1.1, desc: 'Calm cups of moonleaf tea' },
+  tailor:     { name: 'Tailor', category: 'commerce', unlockLevel: 4, woodCost: 6, oreCost: 4, cost: 360, jobs: 5, output: 10, goodsCost: { hides: 4 }, color: '#c27a9a', height: 1.1, desc: 'Fine clothes from traded hides' },
+  bazaar:     { name: 'Bazaar', category: 'commerce', unlockLevel: 5, woodCost: 14, oreCost: 6, cost: 520, jobs: 10, output: 14, color: '#e0904a', height: 1.0, desc: 'A crowded market: 10 jobs' },
+  tradeguild: { name: 'Trade Guild', category: 'commerce', unlockLevel: 8, oreCost: 24, cost: 1300, jobs: 10, output: 30, goodsCost: { emberstone: 8 }, color: '#c9a24a', height: 1.8, desc: 'Merchant princes and their big deals' },
+  fishery:    { name: 'Fishery', category: 'industry', unlockLevel: 2, woodCost: 6, cost: 160, jobs: 4, food: 6, color: '#5f9fc0', height: 0.7, desc: 'Fish for 120 citizens' },
+  windmill:   { name: 'Windmill', category: 'industry', unlockLevel: 3, woodCost: 10, cost: 240, jobs: 2, food: 4, happy: 1, color: '#e8dcc0', height: 1.8, desc: 'Grinds flour without any smoke' },
+  sawmill:    { name: 'Sawmill', category: 'industry', unlockLevel: 4, oreCost: 8, cost: 360, jobs: 6, wood: 8, pollution: 2, color: '#9a6a3a', height: 1.1, desc: 'Twice the wood of a camp, a little smoke' },
+  smelter:    { name: 'Smelter', category: 'industry', unlockLevel: 5, woodCost: 10, cost: 420, jobs: 6, ore: 8, pollution: 4, color: '#7a5a5a', height: 1.3, desc: 'Twice the ore of a mine, smoky' },
+  crafthall:  { name: 'Craft Hall', category: 'industry', unlockLevel: 7, woodCost: 12, oreCost: 12, cost: 900, jobs: 6, goods: 8, color: '#9a7aaa', height: 1.4, desc: "Twice a workshop's special goods" },
+  foundry:    { name: 'Foundry', category: 'industry', unlockLevel: 8, oreCost: 30, cost: 1200, jobs: 12, output: 30, pollution: 10, color: '#6a6a72', height: 1.9, desc: 'Huge output, thick smoke' },
+  shrine:     { name: 'Shrine', category: 'services', unlockLevel: 2, woodCost: 4, cost: 150, happy: 3, upkeep: 1, color: '#d8c8a8', height: 1.0, desc: 'A quiet place to pray' },
+  garden:     { name: 'Garden', category: 'services', unlockLevel: 4, woodCost: 6, cost: 300, happy: 3, clean: 3, upkeep: 1, color: '#5aa860', height: 0.4, desc: 'Flowers that scrub away 3 smoke' },
+  theater:    { name: 'Theater', category: 'services', unlockLevel: 5, woodCost: 12, cost: 600, jobs: 4, happy: 7, upkeep: 4, goodsCost: { spice: 4 }, color: '#b0485a', height: 1.5, desc: 'Plays and music: big cheer' },
+  observatory:{ name: 'Observatory', category: 'services', unlockLevel: 7, oreCost: 16, cost: 1000, edu: 60, upkeep: 6, goodsCost: { gears: 4 }, color: '#5a6aa8', height: 2.0, desc: 'Teaches 60 citizens the stars' },
+  hospital:   { name: 'Hospital', category: 'services', unlockLevel: 8, woodCost: 10, oreCost: 10, cost: 1200, happy: 10, upkeep: 10, goodsCost: { moonleaf: 8 }, color: '#f0ece0', height: 1.6, desc: 'Keeps the whole city healthy' },
+  university: { name: 'University', category: 'services', unlockLevel: 10, oreCost: 24, cost: 2000, edu: 200, happy: 2, upkeep: 14, goodsCost: { emberstone: 10 }, color: '#8a6ac8', height: 2.2, desc: 'Teaches 200 citizens' },
+  palisade:   { name: 'Palisade', category: 'military', unlockLevel: 2, woodCost: 6, cost: 120, defense: 12, color: '#8a6a42', height: 0.8, desc: '+12 defense, cheap sharpened logs' },
+  watchtower: { name: 'Watchtower', category: 'military', unlockLevel: 3, woodCost: 10, cost: 260, defense: 20, upkeep: 2, color: '#7a5a3a', height: 2.0, desc: '+20 defense, sees raiders coming' },
+  armory:     { name: 'Armory', category: 'military', unlockLevel: 5, oreCost: 16, cost: 600, troopCap: 10, atkPm: 40, upkeep: 4, color: '#7a7a8a', height: 1.3, desc: '+4% attack and 10 troop beds' },
+  warcamp:    { name: 'War Camp', category: 'military', unlockLevel: 6, woodCost: 12, oreCost: 12, cost: 900, troopCap: 40, upkeep: 14, color: '#a84a3a', height: 1.0, desc: 'Tents for 40 troops' },
+  fortress:   { name: 'Fortress', category: 'military', unlockLevel: 8, oreCost: 40, cost: 1600, defense: 90, troopCap: 10, upkeep: 12, goodsCost: { hides: 6 }, color: '#7a6a5a', height: 2.3, desc: '+90 defense, the last line' },
+  flowerbed:  { name: 'Flower Bed', category: 'decoration', unlockLevel: 1, woodCost: 1, cost: 40, happy: 1, color: '#e88aa8', height: 0.3, desc: 'A splash of colour' },
+  hedge:      { name: 'Hedge', category: 'decoration', unlockLevel: 1, woodCost: 1, cost: 30, happy: 1, color: '#3a7a3a', height: 0.5, desc: 'Neat green walls' },
+  well:       { name: 'Well', category: 'decoration', unlockLevel: 2, oreCost: 2, cost: 90, happy: 2, color: '#8aa0b0', height: 0.7, desc: 'Fresh water and a meeting spot' },
+  pond:       { name: 'Pond', category: 'decoration', unlockLevel: 3, woodCost: 2, cost: 150, happy: 2, color: '#4fa8d8', height: 0.2, desc: 'Lilies and ducks' },
+  arch:       { name: 'Arch', category: 'decoration', unlockLevel: 5, oreCost: 8, cost: 300, happy: 3, color: '#c8b89a', height: 1.6, desc: 'A grand gateway' },
+  // wonders: one per people, one per city, never traded
+  moontree:   { name: 'Moon Tree', category: 'services', unlockLevel: 8, woodCost: 30, cost: 2500, happy: 12, edu: 60, arc: 'elf', limit: 1, color: '#9fe0c8', height: 2.6, desc: 'Elves only. +12 happiness and 60 school seats' },
+  suntemple:  { name: 'Sunken Temple', category: 'military', unlockLevel: 8, woodCost: 20, oreCost: 10, cost: 2500, happy: 8, troopCap: 30, arc: 'lizard', limit: 1, color: '#7aa860', height: 2.0, desc: 'Lizardfolk only. +8 happiness and 30 troop beds' },
+  stones:     { name: 'Standing Stones', category: 'military', unlockLevel: 8, woodCost: 20, oreCost: 10, cost: 2500, happy: 10, defense: 40, arc: 'caveman', limit: 1, color: '#a8a090', height: 1.8, desc: 'Cavemen only. +10 happiness and +40 defense' },
+  emberthrone:{ name: 'Ember Throne', category: 'commerce', unlockLevel: 8, oreCost: 40, cost: 2500, jobs: 10, output: 40, happy: 4, arc: 'dragon', limit: 1, color: '#e05a3a', height: 2.4, desc: 'Dragonkin only. A hoard that pays: 10 jobs, huge output' },
+  scrapspire: { name: 'Scrap Spire', category: 'industry', unlockLevel: 8, woodCost: 10, oreCost: 30, cost: 2500, jobs: 8, output: 20, troopCap: 15, arc: 'goblin', limit: 1, color: '#9ccc3a', height: 2.6, desc: 'Goblins only. 8 jobs, good output and 15 troop beds' },
 };
 export const BUILDING_KINDS = Object.keys(BUILDINGS) as BuildingKind[];
+/** Kinds other cities buy and sell: everything except the wonders. */
+export const TRADE_KINDS = BUILDING_KINDS.filter((k) => !BUILDINGS[k].arc);
+/** The most attack bonus buildings like the Armory can add. */
+export const BUILD_ATK_CAP_PM = 200;
 
 
 // ---------- arcs: one permanent culture per city ----------
@@ -116,10 +170,16 @@ export function cityMods(s: GameState): ArcMods {
   const m = modsOf(s), rb = relicBonus(s);
   return {
     ...m,
-    attackPm: Math.floor((m.attackPm * (1000 + rb.attack + drillPm(s))) / 1000),
+    attackPm: Math.floor((m.attackPm * (1000 + rb.attack + drillPm(s) + buildAtkPm(s))) / 1000),
     defensePm: Math.floor((m.defensePm * (1000 + rb.defense)) / 1000),
     troopCostPm: Math.floor((m.troopCostPm * (1000 + rb.troopCost)) / 1000),
   };
+}
+/** Attack bonus (permille) from buildings such as the Armory, weighted by level and capped. */
+export function buildAtkPm(s: GameState): number {
+  let pm = 0;
+  for (const [k, w] of Object.entries(weightedCounts(s).w) as [BuildingKind, number][]) pm += Math.floor(((BUILDINGS[k].atkPm ?? 0) * w) / 1000);
+  return Math.min(BUILD_ATK_CAP_PM, pm);
 }
 export const TROOP_ORE_COST = 2; // ore per soldier (weapons), on top of gold
 const pm = (v: number, mod: number) => Math.floor((v * mod) / 1000);
@@ -251,7 +311,7 @@ export function counts(s: GameState): Partial<Record<BuildingKind, number>> {
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 export function stats(s: GameState): Stats {
-  let housing = 0, jobs = 0, edu = 0, parkHappy = 0, pollution = 0, troopCap = 0, towerDef = 0, upkeep = 0, output = 0, food = 0, goods = 0;
+  let housing = 0, jobs = 0, edu = 0, parkHappy = 0, pollution = 0, troopCap = 0, towerDef = 0, upkeep = 0, output = 0, food = 0, goods = 0, wood = 0, ore = 0, clean = 0;
   // upgraded buildings count for more: `w` is each kind's count weighted by level, in permille
   const wc = weightedCounts(s), cts = counts(s);
   const by = (v: number | undefined, wpm: number) => Math.floor(((v ?? 0) * wpm) / 1000);
@@ -262,7 +322,9 @@ export function stats(s: GameState): Stats {
     troopCap += by(b.troopCap, wpm); towerDef += by(b.defense, wpm);
     upkeep += by(b.upkeep, wc.up[k] ?? 0); output += by(b.output, wpm);
     food += by(b.food, wpm); goods += by(b.goods, wpm);
+    wood += by(b.wood, wpm); ore += by(b.ore, wpm); clean += by(b.clean, wpm);
   }
+  pollution = Math.max(0, pollution - clean);
   const rb = relicBonus(s);
   upkeep = Math.floor((upkeep * (1000 + rb.upkeep)) / 1000);
   const foodUse = Math.ceil(s.pop / 20);
@@ -289,8 +351,8 @@ export function stats(s: GameState): Stats {
   const income = Math.floor((gross * s.taxRate) / 10);
   const net = income - upkeep;
   const abundance = arcDef(s.arc);
-  const woodRate = Math.floor((Math.floor((Math.floor(((wc.w.lumber ?? 0) * 4) / 1000) * (abundance?.woodPm ?? 1000) * productivityPm) / 1_000_000) * (1000 + rb.wood)) / 1000);
-  const oreRate = Math.floor((Math.floor((Math.floor(((wc.w.mine ?? 0) * 4) / 1000) * (abundance?.orePm ?? 1000) * productivityPm) / 1_000_000) * (1000 + rb.ore)) / 1000);
+  const woodRate = Math.floor((Math.floor((wood * (abundance?.woodPm ?? 1000) * productivityPm) / 1_000_000) * (1000 + rb.wood)) / 1000);
+  const oreRate = Math.floor((Math.floor((ore * (abundance?.orePm ?? 1000) * productivityPm) / 1_000_000) * (1000 + rb.ore)) / 1000);
   const foodRate = Math.floor((Math.floor((food * productivityPm) / 1000) * (1000 + rb.food)) / 1000);
   const goodsRate = Math.floor((goods * productivityPm) / 1000);
   const hungry = (s.food ?? 0) <= 0 && foodRate < foodUse;
@@ -322,8 +384,10 @@ export function buildBlocker(s: GameState, x: number, y: number, kind: BuildingK
   if (s.grid[y]![x]) return 'Tile occupied';
   if (levelFromXp(s.xp) < b.unlockLevel) return `${b.name} unlocks at level ${b.unlockLevel}`;
   const arc = arcDef(s.arc);
-  if (kind === 'lumber' && arc && arc.woodPm === 0) return `The ${arc.name} have no forests: buy wood on the market`;
-  if (kind === 'mine' && arc && arc.orePm === 0) return `The ${arc.name} have no ore`;
+  if (b.wood && arc && arc.woodPm === 0) return `The ${arc.name} have no forests: buy wood on the market`;
+  if (b.ore && arc && arc.orePm === 0) return `The ${arc.name} have no ore`;
+  if (b.arc && s.arc !== b.arc) return `Only the ${arcDef(b.arc)!.name} can build the ${b.name}`;
+  if (b.limit && !((s.inventory[kind] ?? 0) > 0) && (counts(s)[kind] ?? 0) >= b.limit) return `Your city already has a ${b.name}`;
   if ((s.inventory[kind] ?? 0) > 0) return null;
   const wc = b.woodCost ?? 0, oc = b.oreCost ?? 0;
   if (s.gold < b.cost) return 'Not enough gold';
@@ -457,7 +521,7 @@ function npcOffer(s: GameState, arc: ArcDef): ItemKind {
   if (r < 45) return arc.good;
   if (r < 60) return 'food';
   if (r < 75) return arc.orePm >= arc.woodPm ? 'ore' : 'wood';
-  return BUILDING_KINDS[rngInt(s, BUILDING_KINDS.length)]!;
+  return TRADE_KINDS[rngInt(s, TRADE_KINDS.length)]!;
 }
 /** What another city asks for: special goods it cannot make, or what its land lacks. */
 function npcNeed(s: GameState, arc: ArcDef): ItemKind {
@@ -465,7 +529,7 @@ function npcNeed(s: GameState, arc: ArcDef): ItemKind {
   if (r < 55) { const others = GOOD_KINDS.filter((g) => g !== arc.good); return others[rngInt(s, others.length)]!; }
   if (r < 70) return 'food';
   if (r < 88) return arc.woodPm <= arc.orePm ? 'wood' : 'ore';
-  return BUILDING_KINDS[rngInt(s, BUILDING_KINDS.length)]!;
+  return TRADE_KINDS[rngInt(s, TRADE_KINDS.length)]!;
 }
 
 /** A relic another city might trade: mostly rare, sometimes epic, seldom legendary, never super legendary. */
@@ -518,6 +582,7 @@ export function addStock(s: GameState, k: ItemKind, n: number) {
 export function listForSale(s: GameState, kind: ItemKind, qty: number, price: number): Result {
   if (!Number.isInteger(qty) || qty < 1) return { ok: false, msg: 'Invalid quantity' };
   if (!Number.isInteger(price) || price < 1 || price > fairPrice(kind) * 10) return { ok: false, msg: 'Invalid price' };
+  if (isBuilding(kind) && BUILDINGS[kind].arc) return { ok: false, msg: 'Wonders cannot be sold' };
   if (stockOf(s, kind) < qty) return { ok: false, msg: 'Not enough in stock' };
   addStock(s, kind, -qty);
   s.market.push({ id: s.nextListingId++, seller: YOU, kind, qty, price });

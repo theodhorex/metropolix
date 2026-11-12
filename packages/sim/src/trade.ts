@@ -51,6 +51,7 @@ export function postSell(s: GameState, k: ResourceKind, n: number): Result {
 export function placeOrder(s: GameState, k: ItemKind, qty: number, price: number): Result {
   if (!whole(qty) || !whole(price)) return { ok: false, msg: 'Invalid order' };
   if (price > fairPrice(k) * 10) return { ok: false, msg: 'Price is too high' };
+  if (isBuilding(k) && BUILDINGS[k].arc) return { ok: false, msg: 'Wonders cannot be bought' };
   if (s.orders.filter((o) => o.buyer === YOU).length >= 8) return { ok: false, msg: 'You can have 8 open orders at most' };
   const escrow = qty * price;
   if (s.gold < escrow) return { ok: false, msg: `Not enough gold to back this order (need ${escrow})` };

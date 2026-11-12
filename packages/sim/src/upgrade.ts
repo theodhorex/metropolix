@@ -22,7 +22,7 @@ export const DRILL_CAP_PM = 360;
 export const FOOD_VARIETY_PM = 40;
 
 export const levelKey = (x: number, y: number) => `${x},${y}`;
-export const canUpgrade = (k: BuildingKind) => BUILDINGS[k].category !== 'decoration';
+export const canUpgrade = (k: BuildingKind) => BUILDINGS[k].category !== 'decoration' && !BUILDINGS[k].arc;
 
 /** Level of the building on a tile: 0 for an empty tile, else 1..3. */
 export function buildingLevel(s: GameState, x: number, y: number): number {
@@ -69,7 +69,7 @@ export function upgradeCost(k: BuildingKind, toLevel: number) {
   const f = toLevel === 2 ? 2 : 4;
   return {
     gold: b.cost * f, wood: (b.woodCost ?? 0) * f, ore: (b.oreCost ?? 0) * f,
-    needLevel: toLevel === 2 ? Math.max(2, b.unlockLevel + 1) : Math.min(MAX_LEVEL, b.unlockLevel + 3),
+    needLevel: toLevel === 2 ? Math.min(MAX_LEVEL, Math.max(2, b.unlockLevel + 1)) : Math.min(MAX_LEVEL, b.unlockLevel + 3),
   };
 }
 
