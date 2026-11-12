@@ -1,277 +1,146 @@
-<img src="docs/screenshots/city.jpg" alt="An elven city in Metropolix: tree houses, fountains, farms and barracks on a pixel isometric map">
+<h1 align="center">Metropolix</h1>
 
-# Metropolix
+<p align="center"><b>A pixel fantasy city builder you can learn in ten minutes and keep coming back to.</b></p>
 
-**Ten minutes is all it takes to feel what it is like to rule a fantasy realm.**
+<p align="center">
+  <img alt="NEAR testnet" src="https://img.shields.io/badge/NEAR-HEADED%20FOR%20TESTNET-000000?style=flat-square&labelColor=555555">
+  <img alt="Tests" src="https://img.shields.io/badge/TESTS-110%20SIM%20%2B%2022%20CONTRACT-16A34A?style=flat-square&labelColor=555555">
+  <img alt="Next.js" src="https://img.shields.io/badge/NEXT.JS-16-000000?style=flat-square&labelColor=555555">
+  <img alt="PixiJS" src="https://img.shields.io/badge/PIXIJS-8-8B5CF6?style=flat-square&labelColor=555555">
+  <img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-F4B728?style=flat-square&labelColor=555555">
+</p>
 
-We built Metropolix because we wanted to play it. Somewhere past midnight on a
-long week of work, we started sketching a little kingdom: elves in tree houses,
-lizardfolk trading spice across a swamp, dragonkin digging ore out of a volcano,
-and goblins who would steal the boots off your guards if you let them. We kept
-adding things because they made us grin. A lumber camp that once in a long
-while splits a log of real gold. A mayor's profile you can show off to your
-rivals. A barracks that, upgraded, marches fresh recruits out onto the streets.
+<img src="docs/screenshots/city.jpg" width="1440" alt="An elven city in Metropolix: tree houses, fountains, farms and barracks on a pixel isometric map">
 
-Then we put the city on a blockchain, so it belongs to you.
+Pick one of five peoples, raise a city tile by tile, balance taxes against
+happiness, dig up rare treasures and raid rival mayors. It all runs in the
+browser with no sign-up. The NEAR contract that will hold your city and your
+battles is written and tested, and moves to testnet once the game is ready.
 
-**Headed for NEAR testnet.** Right now the whole game plays in your browser,
-with no sign-up and no download. The contract that will hold your city, its
-ChainPower and every battle you win is written and tested in
-[`contracts/metropolix/`](contracts/metropolix/). We move the game onto testnet
-once it is mature enough, and this README will link the live contract then.
-
-**Play for your coffee.** That is where we are going: once Metropolix is on
-chain, playing should earn you coffee money for free, with nothing to put in
-but your time. It won't take long.
-
-**In ten minutes** you will have chosen your people, raised your first houses,
-watched your citizens find jobs, upgraded a building and probably sent an army
-at someone. Try it once, and see whether you want to come back to your city
-tomorrow.
-
-| Do this | You'll see |
-|---|---|
-| **1.** Run `pnpm install && pnpm dev`, open http://localhost:3000 and press **Play now** (or go straight to http://localhost:3000/play) | The landing page shows a city building itself from the real simulation. **Play now** opens **Choose your people**: five portraits with their land, strength profile and trade good. |
-| **2.** Pick a people, press **Choose the …**, then **Yes, found my city** | A name prompt with four suggested fantasy names. Roll the dice for more, or type your own. |
-| **3.** Press **Shop**, pick **House**, then tap empty tiles on the map | Houses go up and citizens walk in. The people count in the top bar climbs. |
-| **4.** Build a **Farm** and a **Market Stall** | Jobs fill, and gold per second in the top bar turns positive. |
-| **5.** Hover the happiness chip in the top bar | A breakdown of what raises and lowers happiness, with live numbers. |
-| **6.** Once your card shows level 2, tap a house and press **Upgrade to level 2** | The panel shows now versus next; the house on the map takes a new shape. If you are not there yet, the button tells you what is missing. |
-| **7.** At level 3, build a **Barracks**, press **Open war room**, train a few troops, then **Pick a target** | A battle result in the log, and your record on your profile. |
-| **8.** Press **City**, then **Economy** | Income, upkeep, and a table of every tax rate with its effect on happiness. |
-| **9.** Click your card at the top left | Your mayor profile. **Change name** is free once; after that it costs gold. |
-
-| What | Where |
-|---|---|
-| **The world**: deterministic, integer-only city simulation, 80 tests | [`packages/sim/`](packages/sim/) |
-| **The game**: Next.js 16, React 19 and PixiJS 8 pixel isometric client | [`apps/web/`](apps/web/) |
-| **The chain**: Rust NEAR contract for cities, snapshots and battles, 22 tests | [`contracts/metropolix/`](contracts/metropolix/) |
+> **What you get in one sitting**
+> - **5 peoples** on different land: the dragonkin have no forests and buy every plank.
+> - **60 buildings**, each drawn for your people, each up to level 3.
+> - **500 mayor portraits** in six tiers. Yours is drawn once. Only two are Super Legendary.
+> - **40 rival mayors** with real treasuries to scout and raid. They raid you back.
+> - **A city that explains itself**: every number on screen opens into what moved it.
 
 ---
 
-## Three things we wanted from a city game
-
-**1. A city that answers back.** Every number on screen is something you can
-open and read. Hover the happiness meter and it tells you which parks, taxes
-and empty stomachs moved it. Open the City panel and it shows you, for every
-tax rate from 0% to 30%, what you would earn per second and how happy your
-people would be. A good city game should explain itself, and this one tries.
-
-**2. Peoples who need each other.** Each of the five peoples makes one trade
-good nobody else can make. Elves grow moonleaf, lizardfolk cure spice, cavemen
-tan hides, dragonkin mine emberstone and goblins build gears. Your clinic needs
-moonleaf. Your bank needs gears. So you trade, or you raid, and either way
-you end up dealing with your neighbours.
-
-**3. Treasure you cannot look up.** Mines, lumber camps, farms, workshops,
-barracks and taverns can turn up a treasure while they work: a log with grain
-of real gold, the skull of an ancient goblin king, a pearl that glows on moonless
-nights. The game never tells you how many exist. Your chronicle only records
-what you have dug up yourself, and the old maps say there are more than a
-hundred. Some scholars swear there are a thousand.
-
----
-
-## Choose your people
-
-<img src="docs/screenshots/choose-people.png" width="720" alt="The race picker showing the Dragonkin: no forests, double ore, strong attack, weak economy">
-
-You get one city, and the choice is permanent. Every people plays differently
-because the land under them differs, and the numbers below are what the
-simulation actually uses.
-
-| People | Land | Plays like | Trade good |
-|---|---|---|---|
-| **Elves** | 160% forests, 40% ore | Strong defense (+20%), better economy (+10%), weaker attack | Moonleaf |
-| **Lizardfolk** | 110% forests, 70% ore | Cheap soldiers (-10%), good loot (+10%), balanced | Spice |
-| **Cavemen** | 130% forests, 60% ore | Very cheap soldiers (-30%), strong attack, poor economy | Hides |
-| **Dragonkin** | **no forests at all**, 200% ore | Devastating attack (+25%), expensive soldiers, buy every plank | Emberstone |
-| **Goblins** | 60% forests, 150% ore | Best loot (+30%), cheap soldiers, fragile walls | Gears |
-
-The dragonkin are our favourite argument for a market: a people with no trees
-has to buy wood from somebody, every single time.
-
-## Building up, not just out
-
-<img src="docs/screenshots/building-upgrade.png" width="520" alt="The barracks panel: level 2 now, level 3 next, 10 fresh recruits will join">
-
-Tap any building and it opens. You see what it does now, what the next level
-adds, and what that costs. Most buildings go up to level 3, and each level
-changes how the city plays rather than only adding a percentage:
-
-- An upgraded **barracks** drills the whole city (+6% attack per level, up to
-  36%) and marches out fresh recruits: 5 at level 2, 10 more at level 3.
-- An upgraded **farm** grows new kinds of food. Grain first, then fruit, then
-  cheese, and every new kind on the table makes your citizens happier.
-- **Houses** hold more families, **shops** earn more, **towers** hold the wall
-  harder. Upkeep rises with each level, so growth always costs you something.
-
-You pick your city's name the first time you play, or roll one of 5,472
-fantasy names. The first rename is free; after that it costs 1,000 gold, so
-choose a name you like.
-
-## The vault and the chronicle
-
-<img src="docs/screenshots/vault.png" width="640" alt="The vault with Gilded Timber and Moonwell Pearl on display and four more treasures inside">
-
-Treasures come in four rarities, and each one does something. Put up to three
-on display and your city gets their bonus: Gilded Timber gives +25% wood and +5%
-gold income, a Runed Whetstone sharpens every blade for +5% attack. Or sell one
-to the crown for gold right away. Or list it on the market and see what another
-mayor will pay for it.
-
-<img src="docs/screenshots/chronicle.png" width="640" alt="The chronicle: a lore passage about the lost treasures and six pages written">
-
-The chronicle is a book that only fills as you dig. It never shows the blank
-pages ahead.
-
-## The war room
-
-<img src="docs/screenshots/war-room.png" width="640" alt="The war room: heroes, three troop roles, spells and siege rams">
-
-Train three kinds of troops (a steady vanguard, raiders who loot hard and
-die fast, breakers who ignore half a tower's defense), brew rage and heal
-spells, build rams, and send a hero along. Then pick a target. Rival cities
-raid you back on their own schedule, and when you lose, a shield goes up so
-you have time to rebuild.
-
-## The market
-
-<img src="docs/screenshots/market.png" width="640" alt="The marketplace trading post with the five special goods and raw materials">
-
-The trading post deals right away at a stiff price: it charges 160% of the fair
-price and pays you 60%. Other cities sell cheaper, post buy orders you can fill
-from your storehouse, and fill your own orders if your price is fair. A
-lowball order never fills.
-
-## Your profile
-
-<img src="docs/screenshots/profile.png" width="600" alt="A mayor profile: Pippa Westerly, Archduke of the Elves, rank 1 of 41 by ChainPower">
-
-Every mayor has a card: title, people, level, rank by ChainPower, battle record
-and the treasures on their pedestals. Click any rival in the Social drawer and
-you see theirs.
-
-## A city panel that explains itself
-
-<img src="docs/screenshots/economy.png" width="640" alt="The economy tab: income, upkeep, net gold per second, and a table of every tax rate with its effect on happiness">
-
-Overview, demand, economy, happiness, education, military, resources and
-progress, each one a page. The tax table above is what convinced us this was
-worth building: you can see the trade-off before you make it.
-
----
-
-## On-chain
-
-The simulation runs in your browser. The contract keeps what has to be shared
-and trusted: who owns which city, the snapshot you committed, ChainPower, and
-the result of every battle. It is not deployed yet; until then the NEAR panel
-in the game says so and the city plays offline.
-
-| Method | Who | What |
-|---|---|---|
-| `mint_city()` | any account, once | creates an empty 40×40 city |
-| `commit_snapshot(grid, troops, tick, econ_score)` | owner | stores your city after checking the grid, a rising tick, the troop cap and an upper bound on the economy score |
-| `attack(target)` | owner | resolves against the target's committed defense, 60 s cooldown per target, random factor 0.85 to 1.15 from `env::random_seed()` |
-| `claim_loot()` | owner | pays out and zeroes your claimable loot |
-| `get_city`, `get_leaderboard`, `get_constants` | anyone | ChainPower, attack and defense are computed on read |
-
-Events follow NEP-297 (`metropolix` 1.0.0): `city_minted`,
-`snapshot_committed`, `battle_resolved`. The wallet layer uses
-`@hot-labs/near-connect`, and its 87 KB (gzip) of NEAR code loads only when the
-browser is idle or when you press Connect, so the city is playable before any of
-it arrives.
-
-## How it is built
-
-**The world is deterministic.** `packages/sim` uses integers only (permille
-instead of floats) and a seeded mulberry32 generator, so the same seed and the
-same moves give the same city on every machine. That is what will let the
-contract replay a city later instead of trusting it.
-
-**It is tested like it matters.** 110 tests in the simulation, property tests
-with fast-check among them (economy invariants, raids, trade, the vault, the
-name pool, upgrades), and 22 unit and property tests in the contract, plus a
-`near-workspaces` sandbox test.
-
-**It runs on modest machines.** On a production build: first paint in about
-500 ms, 56 FPS with a p95 frame of 19 ms, and no long tasks while you play. The
-renderer has an HD and a Lite mode and drops to Lite on its own when frames run
-slow. Every icon is pixel art compiled once to SVG paths, which took the page
-from 12,756 DOM nodes to about 1,300.
-
-## Built with
-
-Everything in this repository was written for the hackathon, starting
-10 November 2026. No starter template or boilerplate was used, and there is no
-third-party art: every building, citizen, tile and icon is pixel art drawn in
-code (`apps/web/lib/sprites*.ts`, `apps/web/lib/arcs/`).
-
-**Libraries**
-
-| Where | Library | Used for |
-|---|---|---|
-| Web | [Next.js](https://nextjs.org) 16, [React](https://react.dev) 19 | the app and the landing page |
-| Web | [PixiJS](https://pixijs.com) 8 | the isometric city renderer |
-| Web | [three.js](https://threejs.org) | the landing page sky |
-| Web | [GSAP](https://gsap.com) 3 with ScrollTrigger, [Lenis](https://lenis.darkroom.engineering) | landing page scroll animation and smooth scrolling |
-| Web | [Tailwind CSS](https://tailwindcss.com) 4 | styling |
-| Web | [near-api-js](https://github.com/near/near-api-js), [@hot-labs/near-connect](https://github.com/hot-dao/near-connect) | NEAR wallet sign-in and contract calls |
-| Web | Google Fonts through `next/font`: Pixelify Sans, Atkinson Hyperlegible, Fraunces | type |
-| Simulation | [Vitest](https://vitest.dev), [fast-check](https://fast-check.dev) | unit and property tests |
-| Contract | [near-sdk](https://github.com/near/near-sdk-rs) 5 | the Rust smart contract |
-| Contract | [near-workspaces](https://github.com/near/near-workspaces-rs), [proptest](https://proptest-rs.github.io/proptest/), tokio, serde_json | sandbox, unit and property tests |
-
-**AI tools**
-
-This project was built with heavy AI assistance, and we would rather say so
-plainly:
-
-- **Claude Code** (Anthropic, Claude Opus) planned the work, wrote most of the
-  simulation, the contract, the game UI and the landing page, reviewed every
-  change from the other agents, and ran the tests, builds and browser checks.
-- **Worker agents** run through the Google Antigravity CLI: Gemini 3.8 Flash,
-  Gemini 4 Argon and Claude Sonnet. They drew most of the pixel art sprites (the
-  five peoples, the 60 buildings and their level-ups, the 500 mayor portraits) and some landing page
-  sections, each from a written task file. Their output was reviewed, fixed
-  where needed and committed by hand.
-- The owner set the direction (the game idea, the five peoples, the look),
-  played every build and decided what shipped.
-
-## Read the rest honestly
-
-- The contract bounds what a client may claim (valid grid, troop cap, a ceiling
-  on the economy score) but does not yet replay the simulation. Replay is the
-  next step, and the integer-only simulation exists to make it possible.
-- The contract knows the first 14 building codes. The client has 60 buildings,
-  so everything after the first wave (row houses, taverns, the late-game
-  buildings and the five wonders) needs a contract update before those cities
-  can commit.
-- Rival mayors in the Social drawer are simulated until the game server goes
-  live; their profiles say so.
-- `get_leaderboard` walks every city. That is fine for a hackathon and not for
-  a million players.
-- Desktop only for now.
-
-## Reproducing any of it
+## Play it
 
 ```bash
 pnpm install
-pnpm dev                 # http://localhost:3000 (landing), /play (the game)
-pnpm test                # 110 simulation tests
+pnpm dev        # http://localhost:3000 is the landing page, /play is the game
+```
+
+| Do this | You'll see |
+|---|---|
+| **1.** Press **Play now** and choose a people | Five portraits with their land, strengths and trade good. Then name your city. |
+| **2.** **Shop → House**, tap empty tiles, then add a **Farm** and a **Market Stall** | Citizens walk in, jobs fill, gold per second turns positive. |
+| **3.** Hover the happiness chip, then open **City → Economy** | What raises and lowers happiness, and every tax rate with its cost before you pick it. |
+| **4.** Tap a building and press **Upgrade** | Now versus next, and the building changes shape on the map. |
+| **5.** Build a **Barracks**, **Open war room**, pick a target | The expected loot before you attack, the result in the log, your record on your profile. |
+| **6.** Click your card at the top left | Your portrait and its tier, your rank and your city's value. |
+
+---
+
+## Why it is fun
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/choose-people.png" alt="The people picker showing the Dragonkin: no forests, double ore, strong attack"><br><b>Peoples who need each other.</b> Each makes one trade good the others need. Your clinic wants moonleaf, your bank wants gears.</td>
+<td width="50%"><img src="docs/screenshots/shop.jpg" alt="The elven city with the shop open on the Services row"><br><b>Sixty buildings.</b> Houses bring citizens, jobs bring gold. A level 3 farm grows cheese; an upgraded barracks marches out recruits.</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/war-room.png" alt="The war room attack tab with rival mayors, a map of the target and the expected loot"><br><b>Raid with your eyes open.</b> Scout the target's defense and treasury, aim for gold or trophies, bring rage, heal or a ram. Lose, and a shield buys you time.</td>
+<td><img src="docs/screenshots/vault.png" alt="The vault with a relic on display and four treasures inside"><br><b>Treasure you cannot look up.</b> Mines and mills dig up relics, rarely: one or two an hour in a big city. Display three for a bonus, sell to the crown, or list on the market.</td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/profile.png" alt="A mayor profile with a Legendary portrait, rank, battle record and city value"><br><b>A profile worth showing.</b> Portrait and tier, rank by ChainPower, battle record, treasures on display and a city value counted in game gold.</td>
+<td><img src="docs/screenshots/economy.png" alt="The economy tab with a table of every tax rate and its effect on happiness"><br><b>No hidden math.</b> The tax table shows what every rate earns and what it costs in happiness, before you choose.</td>
+</tr>
+</table>
+
+<img src="docs/screenshots/portraits.png" width="1200" alt="Twenty mayor portraits from all five peoples, from Common to Super Legendary">
+
+**500 portraits, six tiers** (250 Common down to 2 Super Legendary), all drawn
+in code from layered traits. Yours is picked once, when you found your city,
+and never re-rolled.
+
+| People | Land | Plays like | Trade good |
+|---|---|---|---|
+| **Elves** | 160% forests, 40% ore | Strong defense, better economy | Moonleaf |
+| **Lizardfolk** | 110% forests, 70% ore | Cheap soldiers, good loot, balanced | Spice |
+| **Cavemen** | 130% forests, 60% ore | Very cheap soldiers, poor economy | Hides |
+| **Dragonkin** | no forests, 200% ore | Devastating attack, buy every plank | Emberstone |
+| **Goblins** | 60% forests, 150% ore | Best loot, fragile walls | Gears |
+
+---
+
+## On chain
+
+The game runs in your browser; the contract keeps what has to be shared and
+trusted. It is written and tested but **not deployed yet**, and the NEAR panel
+in the game says so.
+
+| Method | What it does |
+|---|---|
+| `mint_city()` | one empty 40×40 city per account |
+| `commit_snapshot(grid, troops, tick, econ_score)` | stores your city after checking the grid, a rising tick, the troop cap and a ceiling on the economy score |
+| `attack(target)` | resolves against the target's committed defense, 60 s cooldown per target, luck from `env::random_seed()` |
+| `claim_loot()`, `get_city`, `get_leaderboard` | pay out loot; read ChainPower, attack and defense |
+
+Events follow NEP-297 (`city_minted`, `snapshot_committed`, `battle_resolved`).
+The wallet layer is `@hot-labs/near-connect`, loaded only when the browser is
+idle or you press Connect, so the city is playable first.
+
+## How it is built
+
+| Part | What | Where |
+|---|---|---|
+| **The world** | Integer-only, seeded, deterministic simulation: the same seed and moves give the same city on every machine, so the contract can replay it later. 110 tests, property tests with fast-check among them. | [`packages/sim/`](packages/sim/) |
+| **The game** | Next.js 16, React 19, PixiJS 8 isometric renderer with HD and Lite modes. Every sprite, tile, icon and portrait is pixel art drawn in code; no third-party art. | [`apps/web/`](apps/web/) |
+| **The chain** | Rust NEAR contract (near-sdk 5), 22 unit and property tests plus a `near-workspaces` sandbox test. | [`contracts/metropolix/`](contracts/metropolix/) |
+
+On a production build the city paints in about half a second and holds around
+56 FPS with no long tasks while you play.
+
+**Libraries:** Next.js, React, PixiJS, three.js, GSAP, Lenis, Tailwind CSS,
+near-api-js, @hot-labs/near-connect, Vitest, fast-check, near-sdk,
+near-workspaces, proptest.
+
+**Built with AI, said plainly.** Claude Code planned the work, wrote most of
+the simulation, contract, game UI and landing page, and reviewed every change.
+Worker agents (Gemini and Claude Sonnet through the Antigravity CLI) drew most
+of the sprites and the portrait generator from written task files; their output
+was reviewed and fixed by hand. The owner set the idea, the peoples and the
+look, played every build and decided what shipped. Everything here was written
+for the hackathon, starting 10 November 2026, with no starter template.
+
+## Limits, stated plainly
+
+- Not on testnet yet. Nothing in the game is money; city value is game gold only.
+- Rival mayors are simulated until a game server exists, and their profiles say so.
+- The contract bounds what a client may claim but does not replay the simulation yet.
+- The contract knows the first 14 building codes; the other 46 need a contract update.
+- `get_leaderboard` walks every city: fine for a hackathon, not for a million players.
+- Desktop only for now.
+
+## Commands
+
+```bash
+pnpm test        # 110 simulation tests
 pnpm typecheck
 pnpm build && pnpm --filter @metropolix/web exec next start
 
 cd contracts/metropolix
-cargo test                                              # 22 unit and property tests
+cargo test                                          # 22 unit and property tests
 cargo build --target wasm32-unknown-unknown --release
-cargo test --test workspaces -- --ignored               # sandbox end-to-end, needs network once
+cargo test --test workspaces -- --ignored           # sandbox end-to-end, needs network once
 ```
-
-Screenshots in [`docs/screenshots/`](docs/screenshots/) come from a production
-build of this repo and are temporary until the final art pass.
 
 ## License
 
 [MIT](LICENSE).
+
+> Build a city, find something rare, and see whether you want to come back tomorrow.
