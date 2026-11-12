@@ -515,13 +515,20 @@ export const NPC_CITIES: { name: string; mayor: string; arc: ArcId }[] = [
 ];
 export const cityOf = (name: string) => NPC_CITIES.find((c) => c.name === name);
 
+/** Buildings worth trading with this player: none that their land cannot run (no forests = no wood buildings). */
+export function tradeKindsFor(s: { arc: ArcId | null }): BuildingKind[] {
+  const a = arcDef(s.arc);
+  if (!a || (a.woodPm > 0 && a.orePm > 0)) return TRADE_KINDS;
+  return TRADE_KINDS.filter((k) => !(a.woodPm === 0 && BUILDINGS[k].wood) && !(a.orePm === 0 && BUILDINGS[k].ore));
+}
 /** What another city puts up for sale: mostly its own special good and what its land is rich in. */
 function npcOffer(s: GameState, arc: ArcDef): ItemKind {
   const r = rngInt(s, 100);
   if (r < 45) return arc.good;
   if (r < 60) return 'food';
   if (r < 75) return arc.orePm >= arc.woodPm ? 'ore' : 'wood';
-  return TRADE_KINDS[rngInt(s, TRADE_KINDS.length)]!;
+  const kinds = tradeKindsFor(s);
+  return kinds[rngInt(s, kinds.length)]!;
 }
 /** What another city asks for: special goods it cannot make, or what its land lacks. */
 function npcNeed(s: GameState, arc: ArcDef): ItemKind {
@@ -529,7 +536,8 @@ function npcNeed(s: GameState, arc: ArcDef): ItemKind {
   if (r < 55) { const others = GOOD_KINDS.filter((g) => g !== arc.good); return others[rngInt(s, others.length)]!; }
   if (r < 70) return 'food';
   if (r < 88) return arc.woodPm <= arc.orePm ? 'wood' : 'ore';
-  return TRADE_KINDS[rngInt(s, TRADE_KINDS.length)]!;
+  const kinds = tradeKindsFor(s);
+  return kinds[rngInt(s, kinds.length)]!;
 }
 
 /** A relic another city might trade: mostly rare, sometimes epic, seldom legendary, never super legendary. */

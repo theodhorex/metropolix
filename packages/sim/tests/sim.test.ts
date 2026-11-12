@@ -745,3 +745,22 @@ describe('third wave descriptions', () => {
     expect(sim.describeBuilding('highrise', 3)).not.toBe(sim.BUILDINGS.highrise.desc);
   });
 });
+
+describe('market fits the land', () => {
+  const woodKinds = sim.TRADE_KINDS.filter((k) => sim.BUILDINGS[k].wood);
+  it('Dragonkin (no forests) are never offered or asked for wood buildings', () => {
+    const s = sim.newState(7); sim.chooseArc(s, 'dragon');
+    s.market = []; s.orders = [];
+    for (let i = 0; i < 600; i++) { sim.addNpcListing(s); sim.addNpcOrder(s); s.market = []; s.orders = s.orders.slice(-1); }
+    const seen: string[] = [];
+    for (let i = 0; i < 600; i++) { sim.addNpcListing(s); sim.addNpcOrder(s); seen.push(s.market.at(-1)!.kind, s.orders.at(-1)!.kind); }
+    expect(seen.some((k) => woodKinds.includes(k as sim.BuildingKind))).toBe(false);
+    expect(sim.tradeKindsFor(s).length).toBe(sim.TRADE_KINDS.length - woodKinds.length);
+  });
+  it('peoples with forests still trade them', () => {
+    const s = sim.newState(7); sim.chooseArc(s, 'elf');
+    expect(sim.tradeKindsFor(s)).toEqual(sim.TRADE_KINDS);
+    expect(woodKinds).toContain('sawmill');
+    expect(woodKinds).toContain('lumber');
+  });
+});
