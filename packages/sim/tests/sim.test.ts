@@ -674,3 +674,67 @@ describe('name changes', () => {
     expect(s.name).toBe('Mira Duskvale'); expect(s.gold).toBe(500);
   });
 });
+
+describe('third wave buildings', () => {
+  const rich = (arc: sim.ArcId = 'elf') => {
+    const s = sim.newState(7); sim.chooseArc(s, arc);
+    s.xp = 99_999; s.gold = 1e7; s.wood = 1e5; s.ore = 1e5;
+    for (const g of sim.GOOD_KINDS) s.goods[g] = 1000;
+    return s;
+  };
+  it('appends new kinds after the old 23 so chain codes stay stable', () => {
+    expect(sim.BUILDING_KINDS.length).toBe(60);
+    expect(sim.BUILDING_KINDS[22]).toBe('workshop');
+    expect(new Set(sim.BUILDING_KINDS.map((k) => sim.BUILDINGS[k].name)).size).toBe(60);
+  });
+  it('every special good is needed by exactly three buildings', () => {
+    for (const g of sim.GOOD_KINDS) expect(sim.BUILDING_KINDS.filter((k) => sim.BUILDINGS[k].goodsCost?.[g]).length).toBe(3);
+  });
+  it('a sawmill makes wood the same way lumber camps do, and dragons cannot build one', () => {
+    const a = rich(), b = rich();
+    expect(sim.build(a, 0, 0, 'lumber').ok).toBe(true); expect(sim.build(a, 1, 0, 'lumber').ok).toBe(true);
+    expect(sim.build(b, 0, 0, 'sawmill').ok).toBe(true);
+    // equal raw wood (2 camps x 4 = 1 sawmill x 8): rates differ only by productivity (smoke)
+    expect(sim.stats(b).woodRate).toBeGreaterThan(0);
+    const d = rich('dragon');
+    expect(sim.buildBlocker(d, 0, 0, 'sawmill')).toMatch(/no forests/);
+    expect(sim.build(d, 0, 0, 'smelter').ok).toBe(true);
+    expect(sim.stats(d).oreRate).toBeGreaterThan(0);
+  });
+  it('a garden scrubs smoke but never below zero', () => {
+    const s = rich();
+    sim.build(s, 0, 0, 'factory');
+    const before = sim.stats(s).pollution;
+    sim.build(s, 1, 0, 'garden');
+    expect(sim.stats(s).pollution).toBe(Math.max(0, before - 3));
+    sim.build(s, 2, 0, 'garden'); sim.build(s, 3, 0, 'garden');
+    expect(sim.stats(s).pollution).toBe(0);
+  });
+  it('armories raise attack, capped', () => {
+    const s = rich();
+    s.troops = 100;
+    const base = sim.stats(s).attack;
+    sim.build(s, 0, 0, 'armory');
+    expect(sim.buildAtkPm(s)).toBe(40);
+    expect(sim.stats(s).attack).toBeGreaterThan(base);
+    for (let x = 1; x < 12; x++) sim.build(s, x, 0, 'armory');
+    expect(sim.buildAtkPm(s)).toBe(sim.BUILD_ATK_CAP_PM);
+  });
+  it('wonders: own people only, one per city, never traded or upgraded', () => {
+    const s = rich('elf');
+    expect(sim.buildBlocker(s, 0, 0, 'stones')).toMatch(/Only the Cavemen/);
+    expect(sim.build(s, 0, 0, 'moontree').ok).toBe(true);
+    expect(sim.buildBlocker(s, 1, 0, 'moontree')).toMatch(/already has/);
+    expect(sim.packUp(s, 0, 0).ok).toBe(true);
+    expect(sim.buildBlocker(s, 1, 0, 'moontree')).toBeNull(); // the stored one can go back down
+    expect(sim.listForSale(s, 'moontree', 1, 100).ok).toBe(false);
+    expect(sim.placeOrder(s, 'stones', 1, 100).ok).toBe(false);
+    expect(sim.canUpgrade('moontree')).toBe(false);
+    for (let i = 0; i < 400; i++) { sim.addNpcListing(s); sim.addNpcOrder(s); }
+    expect([...s.market, ...s.orders].some((l) => sim.isBuilding(l.kind) && sim.BUILDINGS[l.kind].arc)).toBe(false);
+  });
+  it('level 10 buildings can still be upgraded at the top player level', () => {
+    expect(sim.upgradeCost('university', 2).needLevel).toBe(sim.MAX_LEVEL);
+    expect(sim.upgradeCost('university', 3).needLevel).toBe(sim.MAX_LEVEL);
+  });
+});
