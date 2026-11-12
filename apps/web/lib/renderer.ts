@@ -872,14 +872,23 @@ export class CityRenderer {
    */
   private warmPreviews() {
     const bank = this.bank;
-    if (!bank) return;
-    for (const kind of Object.keys(bank.buildings)) {
-      if (this.previews.has(kind)) continue;
-      this.previewCanvas(kind)?.toBlob((b) => {
-        if (!b || this.bank !== bank || this.previews.has(kind)) return;
-        this.previews.set(kind, URL.createObjectURL(b));
-      });
-    }
+    // the landing island has no shop, so it never needs previews; the game warms them while the browser is idle,
+    // a few at a time, so drawing 60 buildings does not hold up the first frame
+    if (!bank || this.options.island) return;
+    const kinds = Object.keys(bank.buildings).filter((k) => !this.previews.has(k));
+    const idle = (fn: () => void) => { if (typeof requestIdleCallback === 'function') requestIdleCallback(() => fn(), { timeout: 2000 }); else setTimeout(fn, 50); };
+    const step = () => {
+      if (this.bank !== bank || this.destroyed) return;
+      for (const kind of kinds.splice(0, 4)) {
+        if (this.previews.has(kind)) continue;
+        this.previewCanvas(kind)?.toBlob((b) => {
+          if (!b || this.bank !== bank || this.previews.has(kind)) return;
+          this.previews.set(kind, URL.createObjectURL(b));
+        });
+      }
+      if (kinds.length) idle(step);
+    };
+    idle(step);
   }
 
   private clearPreviews() {

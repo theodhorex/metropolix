@@ -46,7 +46,9 @@ export interface ArcArt {
 export interface SpriteBank {
   ground: Texture[][]; // [parity 0..1][variant 0..3]
   foundation: Texture; // lighter ground pad under buildings
-  buildings: Record<BuildingKind, Texture[]>; // 1+ animation frames per building
+  buildings: Record<BuildingKind, Texture[]>; // 1+ animation frames per building, drawn on first access
+  /** The building textures drawn so far (only these need destroying). */
+  built: Map<BuildingKind, Texture[]>;
   citizens: Texture[][][]; // [sub-species][view 0 front, 1 back][frame 0..3 walk, 4 idle]
   badges: [Texture, Texture]; // [level 2 badge, level 3 badge]
   soldiers: Texture[][]; // [view 0 front, 1 back][frame 0..3 walk, 4 idle]
@@ -1239,10 +1241,20 @@ export function buildSpriteBank(arc: ArcId | null): SpriteBank {
       ],
       ...wave3Shared(),
     };
+    // Buildings are drawn on first use, not all 60 up front: the landing island needs only a few dozen
+    // and the first frame no longer waits for the rest. The people's colour filter is reapplied for each one.
+    const filter = themeFilter;
+    const made = new Map<BuildingKind, Texture[]>();
+    const make = (k: BuildingKind): Texture[] => {
+      const keep = themeFilter; themeFilter = filter;
+      try { const custom = art.buildings?.[k]; return custom ? custom().map(raw) : shared[k](); } finally { themeFilter = keep; }
+    };
     const buildings = {} as Record<BuildingKind, Texture[]>;
     for (const k of BUILDING_KINDS) {
-      const custom = art.buildings?.[k];
-      buildings[k] = custom ? custom().map(raw) : shared[k]();
+      Object.defineProperty(buildings, k, {
+        enumerable: true,
+        get: () => { let t = made.get(k); if (!t) { t = make(k); made.set(k, t); } return t; },
+      });
     }
     const citizens = Array.from({ length: SPECIES_COUNT }, (_, v) =>
       (['front', 'back'] as const).map((view) => Array.from({ length: WALK_FRAMES + 1 }, (_, f) => raw(drawCitizen(arc, v, view, f)))));
@@ -1263,7 +1275,7 @@ export function buildSpriteBank(arc: ArcId | null): SpriteBank {
       levelCache.set(key, frames);
       return frames;
     };
-    return { ground, foundation, buildings, citizens, badges, soldiers, levelFrames, levelCache };
+    return { ground, foundation, buildings, built: made, citizens, badges, soldiers, levelFrames, levelCache };
   } finally {
     themeFilter = null;
   }
@@ -1274,7 +1286,8 @@ export function destroySpriteBank(bank: SpriteBank): void {
   // Source: https://pixijs.download/v8.22.0/docs/rendering.Texture.html#destroy
   for (const row of bank.ground) for (const tex of row) tex.destroy(true);
   bank.foundation.destroy(true);
-  for (const k of BUILDING_KINDS) for (const tex of bank.buildings[k]) tex.destroy(true);
+  for (const frames of bank.built.values()) for (const tex of frames) tex.destroy(true);
+  bank.built.clear();
   for (const frames of bank.levelCache.values()) for (const tex of frames) tex.destroy(true);
   bank.levelCache.clear();
   for (const sp of bank.citizens) for (const view of sp) for (const tex of view) tex.destroy(true);
