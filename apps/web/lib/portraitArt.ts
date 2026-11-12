@@ -1535,25 +1535,34 @@ function drawCavemanHeadwear(g: CanvasRenderingContext2D, headwearIdx: number): 
   switch (headwearIdx) {
     case 0: // None
       break;
-    case 1: // Wolf skull helm
-      rect(g, 16, 10, 16, 7, '#f5efe2');
-      // Eye sockets
-      px(g, 20, 14, '#1f1410');
-      px(g, 27, 14, '#1f1410');
-      // Sharp fangs
-      px(g, 18, 17, '#ffffff');
-      px(g, 29, 17, '#ffffff');
-      hLine(g, 17, 30, 10, '#ffffff');
+    case 1: { // Wolf skull helm: a shaped, shaded skull with ears, sockets and a row of teeth
+      const bone = '#ebe1cc', boneHi = '#fbf6ea', boneLo = '#c2b393', o = '#1f1410';
+      const rows: [number, number, number][] = [[9, 19, 28], [10, 17, 30], [11, 16, 31], [12, 16, 31], [13, 16, 31], [14, 16, 31], [15, 17, 30]];
+      for (const [y, a, b] of rows) rect(g, a - 1, y - 1, b - a + 3, 3, o);
+      px(g, 16, 7, o); px(g, 17, 7, o); px(g, 31, 7, o); px(g, 30, 7, o); // ear tips
+      for (const [y, a, b] of rows) { hLine(g, a, b, y, bone); px(g, b, y, boneLo); }
+      px(g, 17, 8, bone); px(g, 30, 8, boneLo); // ears
+      hLine(g, 20, 26, 9, boneHi); hLine(g, 18, 22, 10, boneHi); // light from the top-left
+      rect(g, 19, 12, 2, 2, o); rect(g, 27, 12, 2, 2, o); // eye sockets
+      px(g, 19, 12, '#5a3a24'); px(g, 27, 12, '#5a3a24');
+      px(g, 23, 14, o); px(g, 24, 14, o); // nose
+      for (let x = 17; x <= 30; x++) px(g, x, 16, x % 2 ? boneHi : o); // teeth
       break;
-    case 2: // Sabertooth pelt cowl
-      rect(g, 15, 11, 18, 7, '#d89b52');
-      rect(g, 13, 16, 4, 14, '#d89b52');
-      rect(g, 31, 16, 4, 14, '#b57435');
-      // Tiger stripes
-      px(g, 18, 13, '#1f1410');
-      px(g, 24, 12, '#1f1410');
-      px(g, 29, 13, '#1f1410');
+    }
+    case 2: { // Sabertooth pelt cowl: a rounded hood with ears, stripes and fangs, draping to the shoulders
+      const fur = '#d89b52', furHi = '#f0bd74', furLo = '#a8692c', o = '#1f1410';
+      const rows: [number, number, number][] = [[9, 19, 28], [10, 17, 30], [11, 16, 31], [12, 15, 32], [13, 15, 32], [14, 14, 16], [15, 14, 16], [16, 13, 16], [17, 13, 16],
+        [14, 31, 33], [15, 31, 33], [16, 31, 34], [17, 31, 34]];
+      for (const [y, a, b] of rows) rect(g, a - 1, y - 1, b - a + 3, 3, o);
+      rect(g, 16, 6, 3, 3, o); rect(g, 29, 6, 3, 3, o); // ears
+      for (const [y, a, b] of rows) { hLine(g, a, b, y, fur); px(g, b, y, furLo); }
+      px(g, 17, 7, fur); px(g, 30, 7, furLo); px(g, 17, 8, fur); px(g, 30, 8, fur);
+      hLine(g, 20, 26, 9, furHi); hLine(g, 18, 21, 10, furHi);
+      for (const x of [18, 23, 28]) { px(g, x, 10, o); px(g, x + 1, 11, o); } // stripes
+      px(g, 14, 15, o); px(g, 33, 15, o);
+      px(g, 19, 14, '#ffffff'); px(g, 28, 14, '#ffffff'); px(g, 19, 15, '#ffffff'); px(g, 28, 15, '#ffffff'); // fangs over the brow
       break;
+    }
     case 3: // Feather & bone warband
       hLine(g, 17, 30, 18, '#4d2a13');
       // Tall raptor feathers
@@ -1794,106 +1803,72 @@ function drawDragon(g: CanvasRenderingContext2D, t: PortraitTraits, frameIdx: nu
   drawDragonAccessory(g, t.accessory % 6);
 }
 
-function drawDragonHorns(g: CanvasRenderingContext2D, hornIdx: number): void {
-  const hornLight = '#efe0b8';
-  const hornShadow = '#b89c64';
-  const hornOut = '#3a2a14';
+/** Pixels on a straight line (Bresenham), used to walk a horn from base to tip. */
+function linePts(x0: number, y0: number, x1: number, y1: number): [number, number][] {
+  const out: [number, number][] = [];
+  const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy, x = x0, y = y0;
+  for (;;) {
+    out.push([x, y]); if (x === x1 && y === y1) break;
+    const e2 = 2 * err; if (e2 >= dy) { err += dy; x += sx; } if (e2 <= dx) { err += dx; y += sy; }
+  }
+  return out;
+}
+/**
+ * A tapered horn through control points (base first), outlined, lit on the left, shaded on the right.
+ * Drawn for the left side, and mirrored onto the right side of the face when `both` is set.
+ */
+function horn(g: CanvasRenderingContext2D, ctrl: [number, number][], w0: number, both = true): void {
+  const light = '#efe0b8', shadow = '#b89c64', out = '#3a2a14';
+  const pts: [number, number][] = [];
+  for (let i = 0; i < ctrl.length - 1; i++) { const seg = linePts(...ctrl[i]!, ...ctrl[i + 1]!); pts.push(...(i ? seg.slice(1) : seg)); }
+  const n = pts.length;
+  const ws = pts.map((_, i) => Math.max(1, Math.round(w0 - ((w0 - 1) * i) / Math.max(1, n - 1))));
+  const sides = both ? [false, true] : [false];
+  const at = (x: number, w: number, m: boolean) => (m ? PORTRAIT_W - 1 - x - (w - 1) : x);
+  for (const m of sides) pts.forEach(([x, y], i) => { const w = ws[i]!; rect(g, at(x, w, m) - 1, y - 1, w + 2, w + 2, out); });
+  for (const m of sides) pts.forEach(([x, y], i) => {
+    const w = ws[i]!, X = at(x, w, m);
+    rect(g, X, y, w, w, light);
+    if (w > 1) { vLine(g, X + w - 1, y, y + w - 1, shadow); hLine(g, X, X + w - 1, y + w - 1, shadow); }
+  });
+  for (const m of sides) { const [x, y] = pts[n - 1]!; px(g, at(x, 1, m), y, '#ffffff'); }
+}
 
+function drawDragonHorns(g: CanvasRenderingContext2D, hornIdx: number): void {
   switch (hornIdx) {
     case 0: // Massive curved swept-back horns
-      // Left horn: curves from (16, 18) -> (12, 12) -> (8, 6)
-      vLine(g, 16, 15, 18, hornLight);
-      vLine(g, 14, 12, 16, hornLight);
-      vLine(g, 11, 9, 13, hornLight);
-      vLine(g, 8, 6, 10, hornLight);
-      px(g, 7, 5, '#ffffff'); // tip
-      vLine(g, 17, 16, 19, hornShadow);
-      vLine(g, 15, 13, 16, hornShadow);
-      vLine(g, 12, 10, 13, hornShadow);
-      vLine(g, 9, 7, 10, hornShadow);
-      vLine(g, 7, 6, 10, hornOut);
-      // Right horn: curves from (31, 18) -> (35, 12) -> (39, 6)
-      vLine(g, 31, 15, 18, hornLight);
-      vLine(g, 33, 12, 16, hornLight);
-      vLine(g, 36, 9, 13, hornLight);
-      vLine(g, 39, 6, 10, hornLight);
-      px(g, 40, 5, '#ffffff'); // tip
-      vLine(g, 32, 16, 19, hornShadow);
-      vLine(g, 34, 13, 16, hornShadow);
-      vLine(g, 37, 10, 13, hornShadow);
-      vLine(g, 40, 7, 10, hornShadow);
-      vLine(g, 41, 6, 10, hornOut);
+      horn(g, [[14, 16], [11, 11], [8, 7], [6, 3]], 4);
       break;
-
     case 1: // Spiked crown of horns (5 spikes)
-      vLine(g, 16, 11, 17, hornLight);
-      vLine(g, 20, 8, 17, hornLight);
-      vLine(g, 24, 6, 17, hornLight);
-      vLine(g, 28, 8, 17, hornLight);
-      vLine(g, 31, 11, 17, hornLight);
-      px(g, 24, 5, '#ffffff');
+      for (const [x, top] of [[16, 11], [20, 8], [27, 8]] as const) horn(g, [[x, 17], [x, top]], 2, false);
+      horn(g, [[23, 17], [23, 5]], 3, false);
+      horn(g, [[31, 17], [31, 11]], 2, false);
       break;
-
     case 2: // Curled ram horns
-      // Left curl
-      rect(g, 12, 14, 4, 3, hornLight);
-      rect(g, 9, 17, 3, 5, hornLight);
-      rect(g, 12, 22, 4, 3, hornShadow);
-      // Right curl
-      rect(g, 32, 14, 4, 3, hornLight);
-      rect(g, 36, 17, 3, 5, hornLight);
-      rect(g, 32, 22, 4, 3, hornShadow);
+      horn(g, [[15, 14], [11, 13], [9, 16], [10, 20], [13, 21]], 4);
       break;
-
     case 3: // Tall dorsal fin crest
       for (let y = 6; y <= 16; y += 2) {
+        rect(g, 22, y, 4, 2, '#3a0d0b');
         rect(g, 23, y, 2, 2, '#8f1d18');
         px(g, 24, y - 1, '#ff6d00'); // fiery fin tip
       }
       break;
-
     case 4: // Forward-swept war horns
-      // Left horn
-      vLine(g, 15, 12, 18, hornLight);
-      hLine(g, 11, 15, 12, hornLight);
-      px(g, 10, 12, '#ffffff');
-      // Right horn
-      vLine(g, 32, 12, 18, hornLight);
-      hLine(g, 32, 36, 12, hornLight);
-      px(g, 37, 12, '#ffffff');
+      horn(g, [[15, 17], [14, 13], [11, 11], [8, 11]], 3);
       break;
-
     case 5: // Jagged lightning horns
-      vLine(g, 15, 14, 18, hornLight);
-      hLine(g, 11, 15, 14, hornLight);
-      vLine(g, 11, 8, 14, hornLight);
-      px(g, 11, 7, '#ffffff');
-      vLine(g, 32, 14, 18, hornLight);
-      hLine(g, 32, 36, 14, hornLight);
-      vLine(g, 36, 8, 14, hornLight);
-      px(g, 36, 7, '#ffffff');
+      horn(g, [[15, 17], [14, 14], [11, 13], [11, 7]], 3);
       break;
-
     case 6: // Multi-tined branching horns
-      vLine(g, 15, 8, 18, hornLight);
-      hLine(g, 10, 15, 12, hornLight);
-      px(g, 10, 11, '#ffffff');
-      vLine(g, 32, 8, 18, hornLight);
-      hLine(g, 32, 37, 12, hornLight);
-      px(g, 37, 11, '#ffffff');
+      horn(g, [[13, 12], [9, 10]], 2);
+      horn(g, [[15, 17], [14, 6]], 3);
       break;
-
     case 7: // Great Wyrm horns & cheek spurs
     default:
-      vLine(g, 14, 6, 18, hornLight);
-      vLine(g, 33, 6, 18, hornLight);
-      px(g, 14, 5, '#ffffff');
-      px(g, 33, 5, '#ffffff');
-      // Cheek horn spurs
-      px(g, 12, 26, hornLight);
-      px(g, 13, 26, hornShadow);
-      px(g, 35, 26, hornLight);
-      px(g, 34, 26, hornShadow);
+      horn(g, [[15, 17], [13, 9], [13, 4]], 4);
+      horn(g, [[13, 26], [10, 24]], 2);
       break;
   }
 }
