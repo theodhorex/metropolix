@@ -190,7 +190,7 @@ instead of floats) and a seeded mulberry32 generator, so the same seed and the
 same moves give the same city on every machine. That is what will let the
 contract replay a city later instead of trusting it.
 
-**It is tested like it matters.** 80 tests in the simulation, property tests
+**It is tested like it matters.** 102 tests in the simulation, property tests
 with fast-check among them (economy invariants, raids, trade, the vault, the
 name pool, upgrades), and 22 unit and property tests in the contract, plus a
 `near-workspaces` sandbox test.
@@ -200,6 +200,44 @@ name pool, upgrades), and 22 unit and property tests in the contract, plus a
 renderer has an HD and a Lite mode and drops to Lite on its own when frames run
 slow. Every icon is pixel art compiled once to SVG paths, which took the page
 from 12,756 DOM nodes to about 1,300.
+
+## Built with
+
+Everything in this repository was written for the hackathon, starting
+10 November 2026. No starter template or boilerplate was used, and there is no
+third-party art: every building, citizen, tile and icon is pixel art drawn in
+code (`apps/web/lib/sprites*.ts`, `apps/web/lib/arcs/`).
+
+**Libraries**
+
+| Where | Library | Used for |
+|---|---|---|
+| Web | [Next.js](https://nextjs.org) 16, [React](https://react.dev) 19 | the app and the landing page |
+| Web | [PixiJS](https://pixijs.com) 8 | the isometric city renderer |
+| Web | [three.js](https://threejs.org) | the landing page sky |
+| Web | [GSAP](https://gsap.com) 3 with ScrollTrigger, [Lenis](https://lenis.darkroom.engineering) | landing page scroll animation and smooth scrolling |
+| Web | [Tailwind CSS](https://tailwindcss.com) 4 | styling |
+| Web | [near-api-js](https://github.com/near/near-api-js), [@hot-labs/near-connect](https://github.com/hot-dao/near-connect) | NEAR wallet sign-in and contract calls |
+| Web | Google Fonts through `next/font`: Pixelify Sans, Atkinson Hyperlegible, Fraunces | type |
+| Simulation | [Vitest](https://vitest.dev), [fast-check](https://fast-check.dev) | unit and property tests |
+| Contract | [near-sdk](https://github.com/near/near-sdk-rs) 5 | the Rust smart contract |
+| Contract | [near-workspaces](https://github.com/near/near-workspaces-rs), [proptest](https://proptest-rs.github.io/proptest/), tokio, serde_json | sandbox, unit and property tests |
+
+**AI tools**
+
+This project was built with heavy AI assistance, and we would rather say so
+plainly:
+
+- **Claude Code** (Anthropic, Claude Opus) planned the work, wrote most of the
+  simulation, the contract, the game UI and the landing page, reviewed every
+  change from the other agents, and ran the tests, builds and browser checks.
+- **Worker agents** run through the Google Antigravity CLI: Gemini 3.8 Flash,
+  Gemini 4 Argon and Claude Sonnet. They drew most of the pixel art sprites (the
+  five peoples, the 60 buildings and their level-ups) and some landing page
+  sections, each from a written task file. Their output was reviewed, fixed
+  where needed and committed by hand.
+- The owner set the direction (the game idea, the five peoples, the look),
+  played every build and decided what shipped.
 
 ## Read the rest honestly
 
@@ -221,7 +259,7 @@ from 12,756 DOM nodes to about 1,300.
 ```bash
 pnpm install
 pnpm dev                 # http://localhost:3000 (landing), /play (the game)
-pnpm test                # 80 simulation tests
+pnpm test                # 102 simulation tests
 pnpm typecheck
 pnpm build && pnpm --filter @metropolix/web exec next start
 
@@ -233,3 +271,7 @@ cargo test --test workspaces -- --ignored               # sandbox end-to-end, ne
 
 Screenshots in [`docs/screenshots/`](docs/screenshots/) come from a production
 build of this repo and are temporary until the final art pass.
+
+## License
+
+[MIT](LICENSE).
