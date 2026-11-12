@@ -206,7 +206,7 @@ function TradeGood({ arc }: { arc: ArcDef }) {
         <span className="flex h-12 w-12 shrink-0 items-center justify-center border-2 border-[var(--ink)] bg-[var(--slab)]"><Icon name={own} size={34} /></span>
         <div className="min-w-0">
           <h3 className="font-display text-lg leading-tight font-bold">Your trade good: {RESOURCES[own].name}</h3>
-          <p className="text-sm text-[var(--paper-dim)]">Only your Workshops make it. Every city needs it to build {usedBy(own).map((n) => `${/^[AEIOU]/.test(n) ? 'an' : 'a'} ${n}`).join(' or ')}, so it sells well.</p>
+          <p className="text-sm text-[var(--paper-dim)]">Only your Workshops and Craft Halls make it. Every city needs it to build {usedBy(own).map((n) => `${/^([AEIO]|U(?!ni))/.test(n) ? 'an' : 'a'} ${n}`).join(' or ')}, so it sells well.</p>
         </div>
       </div>
       <div className="text-sm">
