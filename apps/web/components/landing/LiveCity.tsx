@@ -3,14 +3,14 @@
 import { useEffect, useRef } from 'react';
 import type { ArcId, GameState, NewsItem } from '@metropolix/sim';
 import { CityRenderer } from '@/lib/renderer';
-import { SHOWCASE_PLAN, createShowcase, fullCity, growStep, idleStep } from '@/lib/landing-city';
+import { showcasePlan, createShowcase, fullCity, growStep, idleStep } from '@/lib/landing-city';
 
 const GROW_MS = 600;  // one new building every 0.6 s while the town goes up
 const IDLE_MS = 1000; // afterwards the world just keeps living
 const NARROW_PX = 768;
 const WIDE_PX = 1024;
 
-// The showcase town covers tiles 14..25 (see SHOWCASE_PLAN); the island keeps one tile of meadow around it.
+// The showcase town covers tiles 14..25 (see showcasePlan in lib/landing-city.ts); the island keeps one tile of meadow around it.
 const ISLAND = { x0: 13, y0: 13, x1: 26, y1: 26 } as const;
 // night grading for the island (multiplied into every sprite, free on the GPU)
 const NIGHT_TINT = 0xb6c0ea;
@@ -40,6 +40,7 @@ export default function LiveCity({ arc, onNews, className = '' }: { arc: ArcId; 
     let reduced = motion.matches;
     let s: GameState | null = null;
     let i = 0;
+    let plan = showcasePlan(arcRef.current);
     let lastNews = -1;
     let ready = false;
     let cancelled = false;
@@ -78,9 +79,9 @@ export default function LiveCity({ arc, onNews, className = '' }: { arc: ArcId; 
 
     const tick = () => {
       if (!s) return;
-      if (i < SHOWCASE_PLAN.length) {
-        i = growStep(s, SHOWCASE_PLAN, i);
-        if (i >= SHOWCASE_PLAN.length) sync(); // town finished: slow the clock to the idle pace
+      if (i < plan.length) {
+        i = growStep(s, plan, i);
+        if (i >= plan.length) sync(); // town finished: slow the clock to the idle pace
       } else {
         idleStep(s);
       }
@@ -95,16 +96,17 @@ export default function LiveCity({ arc, onNews, className = '' }: { arc: ArcId; 
       if (!ready || reduced) return;
       const on = onScreen && !document.hidden;
       r.setPaused(!on);
-      if (on) timer = window.setInterval(tick, i < SHOWCASE_PLAN.length ? GROW_MS : IDLE_MS);
+      if (on) timer = window.setInterval(tick, i < plan.length ? GROW_MS : IDLE_MS);
     }
 
     const rebuild = (a: ArcId) => {
+      plan = showcasePlan(a);
       reduced = motion.matches;
       r.setArc(a);
       lastNews = -1;
       if (reduced) {
         s = fullCity(a);
-        i = SHOWCASE_PLAN.length;
+        i = plan.length;
         r.draw(s);
         emitNews();
         window.clearInterval(timer);
