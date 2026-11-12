@@ -86,6 +86,7 @@ export default function LandingMotion() {
       // ---------- section heads drift a little slower than the page (scrubbed depth) ----------
       if (!lite) {
         document.querySelectorAll<HTMLElement>('main section :is(div, header):not(.night-card):has(> h2[data-reveal-words])').forEach((head) => {
+          if (head.closest('#world')) return; // that head sits on a sticky stage: it must stay put
           gsap.fromTo(head, { y: 46 }, {
             y: -46, ease: 'none',
             scrollTrigger: { trigger: head, start: 'top bottom', end: 'bottom top', scrub: true },
@@ -125,6 +126,19 @@ export default function LandingMotion() {
     const onLoad = () => ScrollTrigger.refresh();
     addEventListener('load', onLoad);
 
+    // anything above a trigger that changes height (images arriving, the quiz moving to its next step, an
+    // FAQ opening) would leave every later start and end stale: re-measure once the page settles
+    let lastH = 0, refreshT = 0;
+    const pageRo = new ResizeObserver(() => {
+      const h = document.documentElement.scrollHeight;
+      if (Math.abs(h - lastH) < 2) return;
+      lastH = h;
+      clearTimeout(refreshT);
+      refreshT = window.setTimeout(() => ScrollTrigger.refresh(), 250);
+    });
+    const mainEl = document.querySelector('main');
+    if (mainEl) pageRo.observe(mainEl);
+
     // pause CSS loops while the tab is hidden
     const onVis = () => { document.documentElement.dataset.pageHidden = document.hidden ? 'true' : 'false'; };
     document.addEventListener('visibilitychange', onVis);
@@ -133,6 +147,8 @@ export default function LandingMotion() {
       document.removeEventListener('click', onAnchor);
       document.removeEventListener('visibilitychange', onVis);
       removeEventListener('load', onLoad);
+      pageRo.disconnect();
+      clearTimeout(refreshT);
       ctx.revert();
       if (tick) gsap.ticker.remove(tick);
       lenis?.destroy();
