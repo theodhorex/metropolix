@@ -19,6 +19,7 @@ import Marketplace from './Marketplace';
 import Vault from './Vault';
 import FindReveal from './FindReveal';
 import Profile from './Profile';
+import Portrait from './Portrait';
 import { CloseX } from './ui';
 import BuildingPanel from './BuildingPanel';
 import NamePrompt from './NamePrompt';
@@ -368,6 +369,7 @@ export default function Game() {
                     const sh = sim.shieldLeft(s, m);
                     return (
                       <li key={m.id} className="well flex items-center gap-2 px-2 py-1.5 text-sm">
+                        <Portrait id={sim.mayorPortrait(m)} className="h-9 w-8 shrink-0 border border-[var(--ink)]" title="" />
                         <div className="min-w-0 flex-1"><b className="block truncate">{m.name}</b>
                           <span className="flex gap-2.5 text-xs text-[var(--paper-dim)] tabular-nums">
                             <span className="flex items-center gap-0.5" title="Defense"><Icon name="shield" size={11} />{sim.mayorDefense(m)}</span>
