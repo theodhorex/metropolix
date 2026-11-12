@@ -2,6 +2,9 @@ import { CanvasSource, Texture } from 'pixi.js';
 import { BUILDING_KINDS, canUpgrade, type ArcId, type BuildingKind } from '@metropolix/sim';
 import { ARC_ART } from './arcs';
 import { buildLevelCanvas } from './sprites-levels';
+import { art3a } from './sprites-wave3a';
+import { art3b } from './sprites-wave3b';
+import { art3c } from './sprites-wave3c';
 
 // Sprite dimensions: 64x32 isometric ground diamond; 64x64 building sprite canvas
 // where the ground diamond occupies y = 32..63 (top vertex at (32, 32)).
@@ -1165,6 +1168,39 @@ function buildMineTexture(frame: number): Texture {
 }
 
 /** Build a complete sprite bank for an arc (null = default look). The caller owns it and must destroy it. */
+/**
+ * Third-wave buildings: art from lib/sprites-wave3{a,b,c}.ts; any kind not drawn there yet
+ * borrows the nearest existing sprite.
+ */
+function wave3Shared(): Record<Exclude<BuildingKind, BaseKind>, () => Texture[]> {
+  const like = (f: () => Texture[]) => f;
+  const house = () => [buildHouseTexture()], shop = () => [buildShopTexture()], farm = () => [buildFarmTexture()];
+  const factory = () => [buildFactoryTexture(0), buildFactoryTexture(1), buildFactoryTexture(2)];
+  const park = () => [buildParkTexture(0), buildParkTexture(1)], tower = () => [buildTowerTexture()];
+  const barracks = () => [buildBarracksTexture(0), buildBarracksTexture(1)], statue = () => [buildStatueTexture()];
+  const tree = () => [buildTreeTexture(0), buildTreeTexture(1)], fountain = () => [buildFountainTexture(0), buildFountainTexture(1)];
+  const school = () => [buildSchoolTexture(0), buildSchoolTexture(1)];
+  const c = (b: () => HTMLCanvasElement) => () => [canvasToTexture(b())];
+  const fallback: Record<Exclude<BuildingKind, BaseKind>, () => Texture[]> = {
+    cottage: like(house), longhouse: c(buildRowhouseTexture), tenement: c(buildRowhouseTexture), villa: c(buildManorTexture), highrise: c(buildBankTexture),
+    bakery: c(buildStallTexture), teahouse: like(shop), tailor: like(shop), bazaar: c(buildStallTexture), tradeguild: c(buildBankTexture),
+    fishery: like(farm), windmill: like(farm), sawmill: () => [buildLumberTexture(0), buildLumberTexture(1)], smelter: () => [buildMineTexture(0), buildMineTexture(1)],
+    crafthall: () => [canvasToTexture(buildWorkshopTexture(0))], foundry: like(factory),
+    shrine: c(buildLibraryTexture), garden: like(park), theater: c(buildLibraryTexture), observatory: like(school), hospital: c(buildClinicTexture), university: () => [canvasToTexture(buildAcademyTexture(0))],
+    palisade: like(barracks), watchtower: like(tower), armory: like(barracks), warcamp: like(barracks), fortress: like(tower),
+    flowerbed: like(tree), hedge: like(tree), well: like(fountain), pond: like(fountain), arch: like(statue),
+    moontree: like(tree), suntemple: like(statue), stones: like(statue), emberthrone: like(statue), scrapspire: like(tower),
+  };
+  const drawn = { ...art3a, ...art3b, ...art3c };
+  for (const k of Object.keys(fallback) as Exclude<BuildingKind, BaseKind>[]) {
+    const f = drawn[k];
+    if (f) fallback[k] = () => f().map(canvasToTexture);
+  }
+  return fallback;
+}
+type BaseKind = 'house' | 'farm' | 'shop' | 'factory' | 'school' | 'park' | 'barracks' | 'tower' | 'tree' | 'lamp' | 'fountain' | 'statue' | 'lumber' | 'mine'
+  | 'rowhouse' | 'manor' | 'stall' | 'tavern' | 'bank' | 'library' | 'academy' | 'clinic' | 'workshop';
+
 export function buildSpriteBank(arc: ArcId | null): SpriteBank {
   const art: ArcArt = (arc && ARC_ART[arc]) || {};
   const raw = (c: HTMLCanvasElement) => { const keep = themeFilter; themeFilter = null; try { return canvasToTexture(c); } finally { themeFilter = keep; } };
@@ -1201,6 +1237,7 @@ export function buildSpriteBank(arc: ArcId | null): SpriteBank {
         canvasToTexture(buildWorkshopTexture(1)),
         canvasToTexture(buildWorkshopTexture(2)),
       ],
+      ...wave3Shared(),
     };
     const buildings = {} as Record<BuildingKind, Texture[]>;
     for (const k of BUILDING_KINDS) {

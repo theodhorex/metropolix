@@ -1,3 +1,6 @@
+import { addons3a } from './sprites-wave3a';
+import { addons3b } from './sprites-wave3b';
+import { addons3c } from './sprites-wave3c';
 import { canUpgrade, type BuildingKind } from '@metropolix/sim';
 import {
   OUT,
@@ -984,6 +987,19 @@ function drawTowerAddon(ctx: CanvasRenderingContext2D, level: 2 | 3, frame: numb
   drawBanner(ctx, 31, 2, 16, 12, 6, '#b71c1c', '#ffd54f', frame);
 }
 
+/**
+ * Fallback add-on for any upgradable kind without its own (task t27 replaces this with a
+ * proper per-sector design): a small pennant on the roofline, a second one at level 3.
+ */
+export function drawGenericAddon(ctx: CanvasRenderingContext2D, _kind: BuildingKind, level: 2 | 3, frame: number): void {
+  const flag = (x: number, y: number) => {
+    ctx.fillStyle = '#141820'; ctx.fillRect(x, y, 1, 8);
+    ctx.fillStyle = frame % 2 ? '#e8c050' : '#d4a838'; ctx.fillRect(x + 1, y, 4, 3);
+  };
+  flag(40, 14);
+  if (level === 3) flag(22, 12);
+}
+
 /** Dispatch the procedural level 2 or level 3 silhouette add-on for an upgradable building kind. */
 export function drawLevelAddon(
   ctx: CanvasRenderingContext2D,
@@ -1050,6 +1066,11 @@ export function drawLevelAddon(
     case 'tower':
       drawTowerAddon(ctx, level, frame);
       break;
+    default: {
+      const own = addons3a[kind] ?? addons3b[kind] ?? addons3c[kind];
+      if (own) own(ctx, level, frame);
+      else drawGenericAddon(ctx, kind, level, frame);
+    }
   }
 }
 
