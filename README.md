@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.svg" width="112" height="112" alt="Metropolix logo: a gold pixel castle gate"></p>
+
 <h1 align="center">Metropolix</h1>
 
 <p align="center"><b>A pixel fantasy city builder you can learn in ten minutes and keep coming back to.</b></p>
