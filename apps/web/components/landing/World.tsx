@@ -63,6 +63,7 @@ export default function World() {
   const sectionRef = useRef<HTMLElement>(null);
   const castleContainerRef = useRef<HTMLDivElement>(null);
   const statsContainerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -100,22 +101,36 @@ export default function World() {
       return;
     }
 
+    let trackCleanup = () => {};
     const ctx = gsap.context(() => {
-      // FULL tier (desktop with fine pointer, >4 cores): Pin section & scrub assemble
+      // FULL tier: the stage sticks while scrolling builds the castle
       if (!lite) {
         // Initial state
         gsap.set(blocks, { y: -220, opacity: 0 });
         gsap.set(banners, { scaleY: 0, transformOrigin: 'top center' });
         gsap.set(castleEl, { yPercent: 18, opacity: 0.4 });
 
+        // the section becomes a scroll track 1.6 screens longer than the stage; the stage sticks
+        section.setAttribute('data-track', '');
+        const stage = stageRef.current;
+        const measure = () => {
+          if (!stage) return;
+          section.style.setProperty('--stage-h', `${stage.offsetHeight}px`);
+          // a stage taller than the screen sticks with its bottom edge in view instead of its top
+          section.style.setProperty('--stage-top', `${Math.min(0, innerHeight - stage.offsetHeight)}px`);
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        if (stage) ro.observe(stage);
+        addEventListener('resize', measure);
+        trackCleanup = () => { ro.disconnect(); removeEventListener('resize', measure); section.removeAttribute('data-track'); };
+
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
             start: 'top top',
-            end: '+=160%',
-            pin: true,
+            end: 'bottom bottom',
             scrub: 0.8,
-            anticipatePin: 1,
           },
         });
 
@@ -198,6 +213,7 @@ export default function World() {
           const target = parseFloat(el.getAttribute('data-to') || '0');
           const suffix = el.getAttribute('data-suffix') || '';
           const obj = { val: 0 };
+          el.textContent = `0${suffix}`; // counts up with the build, not shown finished before it
           tl.to(
             obj,
             {
@@ -221,7 +237,7 @@ export default function World() {
         const yQuick2 = layer2 ? gsap.quickTo(layer2, 'y', { duration: 0.4, ease: 'power2.out' }) : null;
 
         const onMouseMove = (e: MouseEvent) => {
-          const rect = section.getBoundingClientRect();
+          const rect = (stageRef.current ?? section).getBoundingClientRect();
           const relX = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
           const relY = (e.clientY - rect.top) / rect.height - 0.5;
 
@@ -283,7 +299,7 @@ export default function World() {
       }
     }, section);
 
-    return () => ctx.revert();
+    return () => { ctx.revert(); trackCleanup(); };
   }, []);
 
   return (
@@ -291,8 +307,11 @@ export default function World() {
       ref={sectionRef}
       id="world"
       aria-labelledby="world-h"
-      className="l-section relative flex min-h-[92vh] flex-col justify-between overflow-hidden px-4 py-20"
+      className="l-section world-track relative"
     >
+      {/* the stage: on capable devices the section is a tall scroll track and this stage sticks to the
+          screen while the castle builds (CSS sticky, so the browser holds it: no pin jump) */}
+      <div ref={stageRef} className="world-stage relative flex min-h-[92vh] flex-col justify-between overflow-hidden px-4 py-20">
       <div className="landing-grid-faint" aria-hidden="true" />
 
       {/* Pixel wipe section divider connecting sections */}
@@ -351,6 +370,7 @@ export default function World() {
         className="world-castle pointer-events-none relative z-0 mx-auto mt-10 flex w-full max-w-3xl justify-center"
       >
         <CastleBuild />
+      </div>
       </div>
     </section>
   );

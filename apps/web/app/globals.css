@@ -32,9 +32,12 @@ body[data-arc='goblin']  { --accent: #a6cf3f; --accent-ink: #1a2205; }
 html, body { height: 100%; }
 body { background: var(--night); color: var(--paper); font-family: var(--font-body), system-ui, sans-serif; overflow: hidden; }
 /* the game owns the whole viewport; the landing page scrolls like a document */
-html:has(main[data-page='landing']), html:has(main[data-page='landing']) body { height: auto; overflow: auto; }
+/* (the viewport is the only scroller, so position: sticky works; clip trims sideways overflow without
+   turning body into a scroll container) */
+html:has(main[data-page='landing']) { height: auto; overflow: visible; }
+html:has(main[data-page='landing']) body { height: auto; overflow: visible; overflow-x: clip; }
 /* the landing is a light page; the game stays dark */
-html:has(main[data-page='landing']) body { background: #fbfcfe; color: var(--ink); overflow-x: hidden; }
+html:has(main[data-page='landing']) body { background: #fbfcfe; color: var(--ink); }
 .font-display { font-family: var(--font-display), var(--font-body), sans-serif; letter-spacing: .02em; }
 .font-serif-display { font-family: var(--font-serif), Georgia, serif; }
 

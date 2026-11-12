@@ -247,3 +247,7 @@ main[data-page='landing'] :is(div, header):has(> h2.landing-h2, > h2.faq-title):
   content: ''; position: absolute; z-index: -1; inset: -48px -12%; pointer-events: none;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--l-bg) 78%, transparent) 0%, color-mix(in srgb, var(--l-bg) 42%, transparent) 55%, transparent 100%);
 }
+
+/* ---------- World: a scroll track with a sticky stage (see World.tsx) ---------- */
+.world-track[data-track] { height: calc(var(--stage-h, 100vh) + 160vh); }
+.world-track[data-track] > .world-stage { position: sticky; top: var(--stage-top, 0px); }
