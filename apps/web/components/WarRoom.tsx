@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import * as sim from '@metropolix/sim';
 import { arcDef, type GameState } from '@metropolix/sim';
 import Icon, { type IconName } from './Icon';
+import Portrait from './Portrait';
 import { Modal, StatRow, SubHead, type TabDef } from './ui';
 
 type TabId = 'army' | 'recipes' | 'attack' | 'defense';
@@ -190,12 +191,15 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
                   return (
                     <li key={m.id}>
                       <button onClick={() => { setTarget(m.id); setReport(null); }} aria-pressed={sel}
-                        className={`target w-full px-2.5 py-1.5 text-left ${sel ? 'target-on' : ''}`}>
+                        className={`target flex w-full items-center gap-2 px-2.5 py-1.5 text-left ${sel ? 'target-on' : ''}`}>
+                        <Portrait id={sim.mayorPortrait(m)} className="h-9 w-8 shrink-0 border border-[var(--ink)]" title="" />
+                        <span className="min-w-0 flex-1">
                         <span className="flex items-baseline justify-between gap-2"><b className="truncate">{m.name}</b><span className="text-xs text-[var(--paper-dim)]">Lv {m.level}</span></span>
                         <span className="flex justify-between text-xs text-[var(--paper-dim)] tabular-nums">
                           <span className="flex items-center gap-0.5 text-[var(--gold)]"><Icon name="coin" size={10} />{m.gold}</span>
                           <span>Pow {sim.mayorPower(m)}</span>
                           <span className={sh > 0 ? 'text-[var(--bad)]' : c > 0 ? '' : 'text-[var(--good)]'}>{sh > 0 ? `shield ${sh}s` : c > 0 ? `${c}s` : 'ready'}</span>
+                        </span>
                         </span>
                       </button>
                     </li>

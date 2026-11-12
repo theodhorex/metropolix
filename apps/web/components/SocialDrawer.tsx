@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as sim from '@metropolix/sim';
+import Portrait from './Portrait';
 import Icon from './Icon';
 import { CloseX } from './ui';
 import { useEscape } from '@/lib/escape';
@@ -54,7 +55,7 @@ export default function SocialDrawer({ open, onClose, s, act, playerName, player
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
         {/* Chat stays mounted so bots keep talking while other tabs are open */}
-        <div className={tab === 'chat' ? 'h-full' : 'hidden'}>{chatPlayers.length > 0 && <Chat players={chatPlayers} name={playerName} />}</div>
+        <div className={tab === 'chat' ? 'h-full' : 'hidden'}>{chatPlayers.length > 0 && <Chat players={chatPlayers} name={playerName} me={s?.portrait} />}</div>
         {tab === 'news' && s && <News s={s} />}
         {tab === 'board' && s && <Board s={s} players={sim_players} name={playerName} onProfile={onProfile} />}
         {tab === 'players' && s && <Players s={s} players={sim_players} name={playerName} onProfile={onProfile} />}
@@ -67,7 +68,8 @@ export default function SocialDrawer({ open, onClose, s, act, playerName, player
 }
 
 /* ---------------- Chat ---------------- */
-function Chat({ players, name }: { players: sim.PlayerRow[]; name: string }) {
+function Chat({ players, name, me }: { players: sim.PlayerRow[]; name: string; me?: number }) {
+  const faceOf = (m: sim.ChatMessage) => (m.you ? me : players.find((p) => p.name === m.from)?.portrait);
   const [msgs, setMsgs] = useState<sim.ChatMessage[]>(() => Array.from({ length: 5 }, (_, i) => sim.botMessage(PLAYER_SEED, i, players)));
   const [text, setText] = useState('');
   const n = useRef(100);
@@ -96,7 +98,9 @@ function Chat({ players, name }: { players: sim.PlayerRow[]; name: string }) {
       <div className="flex-1 space-y-1 overflow-y-auto p-3 text-sm">
         {msgs.map((m) => (
           <div key={m.id} className={m.you ? 'text-right' : ''}>
-            <span className={`block text-xs font-bold ${m.you ? 'text-[var(--gold)]' : 'text-[var(--accent)]'}`}>{m.from}</span>
+            <span className={`flex items-center gap-1 text-xs font-bold ${m.you ? 'flex-row-reverse text-[var(--gold)]' : 'text-[var(--accent)]'}`}>
+              {faceOf(m) ? <Portrait id={faceOf(m)!} className="h-5 w-[18px] border border-[var(--ink)]" title="" /> : null}{m.from}
+            </span>
             <div className={`inline-block max-w-[85%] border-2 border-[var(--ink)] px-2 py-1 ${m.you ? 'bg-[var(--accent)] text-[var(--accent-ink)]' : 'bg-[var(--slab-lo)]'}`}>{m.text}</div>
           </div>
         ))}
@@ -142,6 +146,7 @@ function Board({ s, players, name, onProfile }: { s: sim.GameState; players: sim
   const Row = ({ r }: { r: (typeof rows)[number] }) => (
     <button onClick={() => onProfile(r)} title={`Open ${r.isYou ? 'your' : `${r.name}'s`} profile`} className={`player-row flex w-full items-center gap-2 border-2 px-2 py-1 text-left text-sm ${r.isYou ? 'border-[var(--accent)] bg-[var(--slab-hi)]' : 'border-transparent bg-[var(--slab-lo)]'}`}>
       <span className={`w-6 text-right font-bold tabular-nums ${r.rank <= 3 ? 'text-[var(--gold)]' : 'text-[var(--paper-dim)]'}`}>{r.rank}</span>
+      {r.portrait ? <Portrait id={r.portrait} className="h-7 w-6 shrink-0 border border-[var(--ink)]" title="" /> : <span className="h-7 w-6 shrink-0" />}
       <span className="min-w-0 flex-1 truncate">{r.name}{r.isYou && ' (you)'}</span>
       <span className="text-xs text-[var(--paper-dim)]">Lv {r.level}</span>
       <span className="w-16 text-right font-bold tabular-nums">{r[metric]}</span>
@@ -189,7 +194,8 @@ function Players({ s, players, name, onProfile }: { s: sim.GameState; players: s
       </div>
       <div className="flex-1 space-y-1 overflow-y-auto p-2 pt-0">
         {rows.map((p) => (
-          <button key={p.id} onClick={() => onProfile(p)} title={`Open ${p.isYou ? 'your' : `${p.name}'s`} profile`} className={`player-row grid w-full grid-cols-[1fr_auto_auto_auto] items-center gap-2 border-2 px-2 py-1 text-left text-sm ${p.isYou ? 'border-[var(--accent)] bg-[var(--slab-hi)]' : 'border-transparent bg-[var(--slab-lo)]'}`}>
+          <button key={p.id} onClick={() => onProfile(p)} title={`Open ${p.isYou ? 'your' : `${p.name}'s`} profile`} className={`player-row grid w-full grid-cols-[auto_1fr_auto_auto_auto] items-center gap-2 border-2 px-2 py-1 text-left text-sm ${p.isYou ? 'border-[var(--accent)] bg-[var(--slab-hi)]' : 'border-transparent bg-[var(--slab-lo)]'}`}>
+            {p.portrait ? <Portrait id={p.portrait} className="h-7 w-6 border border-[var(--ink)]" title="" /> : <span className="h-7 w-6" />}
             <span className="truncate">{p.name}{p.isYou && ' (you)'}</span>
             <span className="text-xs text-[var(--paper-dim)]">Lv {p.level}</span>
             <span className="w-14 text-right text-xs text-[var(--accent)] tabular-nums" title="ChainPower">{p.chainPower}</span>
