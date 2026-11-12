@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import Image from 'next/image';
 import { useLightbox, ZoomButton, type Shot } from './Lightbox';
 import T from './prefs/T';
@@ -276,14 +276,8 @@ export default function HowItPlays() {
                 {/* Giant Numeral clipped in collapsed strip */}
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-2 select-none font-display font-bold leading-none"
-                  style={{
-                    color: s.color,
-                    fontSize: 'clamp(170px, 36vh, 380px)',
-                    opacity: isActive ? 0.12 : 0.38,
-                    transform: 'translateY(-10%)',
-                    transition: 'opacity 0.6s ease',
-                  }}
+                  className={`how-num pointer-events-none absolute left-3 top-2 select-none font-display font-bold leading-none ${isActive ? 'how-num-on' : ''}`}
+                  style={{ '--c': s.color, fontSize: 'clamp(170px, 36vh, 380px)' } as CSSProperties}
                 >
                   {s.num}
                 </div>
@@ -332,14 +326,14 @@ export default function HowItPlays() {
 
                   {/* Screenshot in soft frame */}
                   <div className="mt-6 flex flex-1 items-center justify-center overflow-hidden">
-                    <figure className="shot-light max-h-[460px] w-full max-w-2xl">
-                      <ZoomButton onOpen={() => box.show(i)} label={lang(s.title)}>
+                    <figure className="how-shot shot-light max-h-[460px] max-w-full">
+                      <ZoomButton onOpen={() => box.show(i)} label={lang(s.title)} className="!w-auto">
                         <Image
                           src={s.src}
                           alt={tr(s.alt.en, s.alt.id, s.alt.ko, s.alt.zh)}
                           width={s.w}
                           height={s.h}
-                          className="max-h-[460px] w-full object-contain"
+                          className="!h-auto max-h-[460px] !w-auto max-w-full"
                           priority={i === 0}
                         />
                       </ZoomButton>
