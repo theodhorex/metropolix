@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { ARCS, BUILDING_KINDS, GRID, WORLD_MAYORS } from '@metropolix/sim';
+import { ARCS, BUILDING_KINDS, PORTRAIT_COUNT, WORLD_MAYORS } from '@metropolix/sim';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import CastleBuild from './fx/CastleBuild';
@@ -46,13 +46,13 @@ const STATS = [
     accent: '#e5594a',
   },
   {
-    to: GRID * GRID,
+    to: PORTRAIT_COUNT,
     suffix: '',
     label: {
-      en: 'tiles on the map',
-      id: 'petak di peta',
-      ko: '지도 위 타일',
-      zh: '地图地块',
+      en: 'mayor portraits to draw',
+      id: 'potret wali kota untuk diundi',
+      ko: '뽑을 수 있는 시장 초상화',
+      zh: '可抽取的城主头像',
     },
     accent: '#4fc3f7',
   },

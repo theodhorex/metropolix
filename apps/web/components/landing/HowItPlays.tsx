@@ -10,189 +10,139 @@ const STEPS = [
   {
     num: '1',
     color: '#5fc07a', // Elf accent
-    arcName: {
-      en: 'Elf Realm',
-      id: 'Kerajaan Elf',
-      ko: '엘프 왕국',
-      zh: '精灵王国',
-    },
-    title: {
-      en: 'Build',
-      id: 'Bangun',
-      ko: '건설',
-      zh: '建设',
-    },
+    arcName: { en: 'Elf Realm', id: 'Kerajaan Elf', ko: '엘프 왕국', zh: '精灵王国' },
+    title: { en: 'Build', id: 'Bangun', ko: '건설', zh: '建设' },
     text: {
-      en: 'Houses bring citizens, jobs bring gold. Upgrades change how a building looks and what it does.',
-      id: 'Rumah mendatangkan warga, pekerjaan menghasilkan emas. Peningkatan mengubah rupa dan fungsi bangunan.',
-      ko: '집은 시민을 모으고 일자리는 골드를 창출합니다. 업그레이드를 통해 건물의 외형과 기능이 달라집니다.',
-      zh: '房屋迎来居民，就业带来金币。升级不仅改变建筑外观，还会解锁更强功效。',
+      en: 'Sixty buildings, drawn for your people, each up to level 3. Houses bring citizens, jobs bring gold, and every upgrade shows on the map.',
+      id: 'Enam puluh bangunan, digambar khusus untuk bangsamu, masing-masing sampai level 3. Rumah mendatangkan warga, pekerjaan menghasilkan emas, dan setiap peningkatan terlihat di peta.',
+      ko: '종족마다 따로 그려진 60종의 건물, 각각 레벨 3까지. 집은 시민을, 일자리는 골드를 부르고, 모든 업그레이드는 지도에 그대로 보입니다.',
+      zh: '六十种建筑，皆按你的种族专门绘制，每座最高3级。房屋迎来居民，就业带来金币，每次升级都会在地图上显现。',
     },
-    src: '/landing/building-upgrade.png',
-    w: 624,
-    h: 600,
+    src: '/landing/shop.jpg',
+    w: 1600,
+    h: 950,
     alt: {
-      en: 'The barracks window showing level 2, what level 3 would add (more troop room, higher upkeep), and a gold Upgrade button.',
-      id: 'Jendela barak menampilkan level 2, manfaat level 3 (kapasitas pasukan bertambah, biaya rawat naik), dan tombol Tingkatkan warna emas.',
-      ko: '레벨 2 병영 창에서 레벨 3 추가 효과(병력 수용량 증가, 유지비 상승)와 황금색 업그레이드 버튼을 보여줍니다.',
-      zh: '兵营窗口展示当前为2级，以及升级至3级的增益（增加兵力容量、提高维护成本）与金色升级按钮。',
+      en: 'An elven city on the isometric map with the shop open on the Services row: school, park, library, academy, clinic, shrine and garden with their costs.',
+      id: 'Kota elf di peta isometrik dengan toko terbuka di baris Layanan: sekolah, taman, perpustakaan, akademi, klinik, kuil, dan kebun beserta harganya.',
+      ko: '아이소메트릭 지도 위의 엘프 도시와 서비스 탭이 열린 상점: 학교, 공원, 도서관, 아카데미, 진료소, 사당, 정원과 각 비용.',
+      zh: '等距地图上的精灵城市，商店打开在服务类：学校、公园、图书馆、学院、诊所、神龛与花园及其价格。',
     },
   },
   {
     num: '2',
     color: '#e8a13a', // Lizard accent
-    arcName: {
-      en: 'Lizard Dune',
-      id: 'Bukit Kadal',
-      ko: '리저드 사구',
-      zh: '蜥蜴沙丘',
-    },
-    title: {
-      en: 'Balance',
-      id: 'Seimbangkan',
-      ko: '균형',
-      zh: '平衡',
-    },
+    arcName: { en: 'Lizard Dune', id: 'Bukit Kadal', ko: '리저드 사구', zh: '蜥蜴沙丘' },
+    title: { en: 'Balance', id: 'Seimbangkan', ko: '균형', zh: '平衡' },
     text: {
-      en: 'Tax against happiness. Keep food flowing, build schools and parks, and watch the gold in your vault.',
-      id: 'Atur pajak demi kebahagiaan. Pastikan pasokan makanan lancar, bangun sekolah dan taman, serta pantau emas di brankasmu.',
-      ko: '세금과 행복도의 균형을 맞추세요. 식량을 공급하고 학교와 공원을 지으며 금고 속 골드를 살피세요.',
-      zh: '在税收与幸福度之间谋求平衡。保障粮食供给，建造学校与公园，时刻留意金库中的金币。',
+      en: 'Every tax rate shows its price in happiness before you choose it. Feed them, school them, and the gold keeps coming.',
+      id: 'Setiap tarif pajak menunjukkan harganya dalam kebahagiaan sebelum kamu memilih. Beri makan, beri sekolah, dan emas terus mengalir.',
+      ko: '모든 세율은 고르기 전에 행복도로 치를 대가를 보여 줍니다. 먹이고 가르치면 골드는 계속 들어옵니다.',
+      zh: '每个税率在你选择之前就标明了它的幸福代价。让百姓吃饱、读书，金币便源源不断。',
     },
     src: '/landing/economy.png',
-    w: 892,
-    h: 652,
+    w: 896,
+    h: 656,
     alt: {
-      en: 'The economy window with a tax rate slider and a table showing net gold per second and happiness at each tax rate.',
-      id: 'Jendela ekonomi dengan penggeser tarif pajak dan tabel yang menunjukkan pendapatan bersih emas per detik serta kebahagiaan di tiap tarif pajak.',
-      ko: '경제 창에서 세율 슬라이더와 세율별 초당 순수 골드 수익 및 행복도를 표로 보여줍니다.',
-      zh: '经济窗口包含税率滑块，以及显示各税率下每秒净金币收益和幸福度的表格。',
+      en: 'The economy window: income, upkeep and net gold per second, and a table of every tax rate with its net gold and happiness.',
+      id: 'Jendela ekonomi: pemasukan, biaya rawat, dan emas bersih per detik, serta tabel setiap tarif pajak dengan emas bersih dan kebahagiaannya.',
+      ko: '경제 창: 수입, 유지비, 초당 순 골드, 그리고 세율별 순 골드와 행복도 표.',
+      zh: '经济窗口：收入、维护费与每秒净金币，以及每档税率对应的净金币与幸福度表格。',
     },
   },
   {
     num: '3',
     color: '#e5594a', // Dragon accent
-    arcName: {
-      en: 'Dragon Spire',
-      id: 'Menara Naga',
-      ko: '드래곤 첨탑',
-      zh: '龙裔尖塔',
-    },
-    title: {
-      en: 'Raid',
-      id: 'Serbu',
-      ko: '약탈',
-      zh: '突袭',
-    },
+    arcName: { en: 'Dragon Spire', id: 'Menara Naga', ko: '드래곤 첨탑', zh: '龙裔尖塔' },
+    title: { en: 'Raid', id: 'Serbu', ko: '약탈', zh: '突袭' },
     text: {
-      en: "Train troops in the war room and raid rival mayors' treasuries. They raid you back.",
-      id: 'Latih pasukan di ruang perang dan serbu kas wali kota rival. Mereka juga akan membalas serbuanmu.',
-      ko: '작전실에서 군대를 훈련시키고 라이벌 시장의 보물고를 약탈하세요. 적들도 보복에 나섭니다.',
-      zh: '在作战室训练部队并突袭敌对城主的国库。他们同样会实施反击。',
+      en: 'Forty rival mayors keep real treasuries. Scout one, see the likely loot before you strike. Lose, and a shield buys you time.',
+      id: 'Empat puluh wali kota rival menyimpan kas sungguhan. Intai satu, lihat perkiraan jarahan sebelum menyerang. Kalah? Perisai memberimu waktu.',
+      ko: '40명의 라이벌 시장이 실제 금고를 지킵니다. 정찰하고, 공격 전에 예상 약탈량을 확인하세요. 지면 방패가 시간을 벌어 줍니다.',
+      zh: '四十位敌对城主守着真实的金库。先侦察，出手前就能看到预计战利品。战败了，护盾会为你争取时间。',
     },
     src: '/landing/war-room.png',
-    w: 1018,
-    h: 790,
+    w: 1024,
+    h: 836,
     alt: {
-      en: 'The war room window with heroes, archer troop types, spells, siege and a Pick a target button.',
-      id: 'Jendela ruang perang berisi pahlawan, jenis pasukan pemanah, sihir, senjata kepung, dan tombol Pilih target.',
-      ko: '작전실 창에서 영웅, 궁병 부대 유형, 마법, 공성 병기와 목표 선택 버튼을 보여줍니다.',
-      zh: '作战室窗口展示英雄、弓箭兵种、法术、攻城兵器以及“选择目标”按钮。',
+      en: 'The war room attack tab: rival mayors with portraits and treasuries, a map of the target city, and the expected loot before you attack.',
+      id: 'Tab serangan ruang perang: wali kota rival dengan potret dan kasnya, peta kota sasaran, dan perkiraan jarahan sebelum menyerang.',
+      ko: '작전실 공격 탭: 초상화와 금고가 표시된 라이벌 시장들, 목표 도시 지도, 공격 전 예상 약탈량.',
+      zh: '作战室进攻页：带头像与金库的敌对城主、目标城市地图，以及进攻前的预计战利品。',
     },
   },
 ];
 
 const GALLERY = [
   {
-    title: {
-      en: 'Market',
-      id: 'Pasar',
-      ko: '시장',
-      zh: '集市',
-    },
+    title: { en: 'Mayor portraits', id: 'Potret wali kota', ko: '시장 초상화', zh: '城主头像' },
     text: {
-      en: 'A market of simulated traders.',
-      id: 'Pasar dengan pedagang simulasi.',
-      ko: '시뮬레이션 상인들이 모인 시장.',
-      zh: '由模拟商人组成的集市。',
+      en: '500 portraits in six tiers. Yours is drawn once, when your city is founded. Only two are Super Legendary.',
+      id: '500 potret dalam enam tingkat. Milikmu diundi sekali, saat kotamu berdiri. Hanya dua yang Super Legendary.',
+      ko: '6개 등급의 초상화 500장. 도시를 세울 때 단 한 번 뽑힙니다. 슈퍼 레전더리는 단 두 장.',
+      zh: '六个稀有度共500幅头像。建城时只抽一次。超级传说仅有两幅。',
     },
-    src: '/landing/market.png',
-    w: 1018,
-    h: 790,
+    src: '/landing/portraits.png',
+    w: 1200,
+    h: 357,
     alt: {
-      en: 'The marketplace window listing special goods and materials with buy and sell buttons.',
-      id: 'Jendela pasar yang memuat daftar barang dan material khusus dengan tombol beli dan jual.',
-      ko: '특수 상품 및 자재 목록과 구매/판매 버튼이 있는 상점 창.',
-      zh: '集市窗口列出了特色商品与原料，并配有购买与出售按钮。',
+      en: 'Twenty pixel portraits of mayors from all five peoples, from Common to Super Legendary, with tier-coloured frames.',
+      id: 'Dua puluh potret piksel wali kota dari kelima bangsa, dari Common sampai Super Legendary, dengan bingkai berwarna sesuai tingkat.',
+      ko: '다섯 종족 시장의 픽셀 초상화 20장, 커먼부터 슈퍼 레전더리까지 등급별 테두리.',
+      zh: '五个种族的二十幅城主像素头像，从普通到超级传说，边框颜色对应稀有度。',
     },
   },
   {
-    title: {
-      en: 'Vault',
-      id: 'Brankas',
-      ko: '금고',
-      zh: '金库',
-    },
+    title: { en: 'Your profile', id: 'Profilmu', ko: '내 프로필', zh: '你的档案' },
     text: {
-      en: 'The vault of rare treasures found in your city.',
-      id: 'Brankas harta langka yang ditemukan di kotamu.',
-      ko: '도시에서 발견된 희귀 보물이 보관된 금고.',
-      zh: '存放城市中发现的珍稀宝藏的金库。',
-    },
-    src: '/landing/vault.png',
-    w: 892,
-    h: 790,
-    alt: {
-      en: 'The vault window with treasures on display and a list of rare finds.',
-      id: 'Jendela brankas yang memajang harta berharga beserta daftar temuan langka.',
-      ko: '보물이 전시되고 희귀 발견품 목록이 표시된 금고 창.',
-      zh: '展示各种珍宝及稀有发掘品列表的金库窗口。',
-    },
-  },
-  {
-    title: {
-      en: 'Chronicle',
-      id: 'Kronik',
-      ko: '연대기',
-      zh: '编年史',
-    },
-    text: {
-      en: 'The chronicle of your reign.',
-      id: 'Kronik perjalanan masa pemerintahanmu.',
-      ko: '통치 여정을 기록한 연대기.',
-      zh: '记录你统治历程的编年史。',
-    },
-    src: '/landing/chronicle.png',
-    w: 892,
-    h: 790,
-    alt: {
-      en: 'The chronicle page listing each treasure your city has dug up.',
-      id: 'Halaman kronik yang mencatat setiap harta karun yang digali di kotamu.',
-      ko: '도시에서 발굴한 각 보물이 기록된 연대기 페이지.',
-      zh: '记录着城市挖掘出的每一件宝藏的编年史页面。',
-    },
-  },
-  {
-    title: {
-      en: 'Mayor profile',
-      id: 'Profil wali kota',
-      ko: '시장 프로필',
-      zh: '城主档案',
-    },
-    text: {
-      en: 'Your mayor profile.',
-      id: 'Profil wali kotamu.',
-      ko: '당신의 시장 프로필.',
-      zh: '你的城主档案。',
+      en: 'Rank, battle record, treasures on display and a city value counted in game gold.',
+      id: 'Peringkat, rekor perang, harta yang dipajang, dan nilai kota dalam emas game.',
+      ko: '순위, 전투 기록, 전시한 보물, 게임 골드로 매긴 도시 가치.',
+      zh: '排名、战绩、陈列的宝物，以及以游戏金币计算的城市价值。',
     },
     src: '/landing/profile.png',
-    w: 764,
-    h: 593,
+    w: 768,
+    h: 600,
     alt: {
-      en: 'A mayor profile with portrait, level, ChainPower, gold, citizens and battle record.',
-      id: 'Profil wali kota lengkap dengan potret, level, ChainPower, emas, jumlah warga, dan rekor pertempuran.',
-      ko: '초상화, 레벨, ChainPower, 골드, 시민 수, 전투 기록이 담긴 시장 프로필.',
-      zh: '包含头像、等级、ChainPower、金币、居民数以及战绩的城主档案。',
+      en: 'A mayor profile with a Legendary portrait, level 10, ChainPower, battle record, a relic on display and the city value breakdown.',
+      id: 'Profil wali kota dengan potret Legendary, level 10, ChainPower, rekor perang, relik yang dipajang, dan rincian nilai kota.',
+      ko: '레전더리 초상화, 레벨 10, ChainPower, 전투 기록, 전시 유물, 도시 가치 내역이 담긴 시장 프로필.',
+      zh: '城主档案：传说级头像、10级、ChainPower、战绩、陈列的遗物与城市价值明细。',
+    },
+  },
+  {
+    title: { en: 'Vault', id: 'Brankas', ko: '금고', zh: '金库' },
+    text: {
+      en: 'Mines and mills dig up relics, rarely. Show three for their bonus, or sell them.',
+      id: 'Tambang dan penggilingan kadang menggali relik, jarang sekali. Pajang tiga untuk bonusnya, atau jual.',
+      ko: '광산과 제재소에서 드물게 유물이 나옵니다. 세 개를 전시해 보너스를 받거나 팔 수 있습니다.',
+      zh: '矿场与工坊偶尔挖出遗物，极为罕见。陈列三件获得加成，或将其出售。',
+    },
+    src: '/landing/vault.png',
+    w: 896,
+    h: 836,
+    alt: {
+      en: 'The vault: a relic on display with its bonus, and rare and epic relics that can be displayed, sold to the crown or listed on the market.',
+      id: 'Brankas: relik yang dipajang beserta bonusnya, serta relik rare dan epic yang bisa dipajang, dijual ke istana, atau dipasang di pasar.',
+      ko: '금고: 보너스와 함께 전시된 유물, 그리고 전시·왕실 판매·시장 등록이 가능한 레어와 에픽 유물.',
+      zh: '金库：陈列中的遗物及其加成，以及可陈列、卖给王室或挂到集市的稀有与史诗遗物。',
+    },
+  },
+  {
+    title: { en: 'Market', id: 'Pasar', ko: '시장', zh: '集市' },
+    text: {
+      en: 'Each people makes one good the others need. No forests? Buy every plank.',
+      id: 'Tiap bangsa membuat satu barang yang dibutuhkan bangsa lain. Tak punya hutan? Beli setiap papan.',
+      ko: '종족마다 다른 종족에게 필요한 특산품이 하나씩 있습니다. 숲이 없다면? 판자 하나까지 사야 합니다.',
+      zh: '每个种族都产出一种别人需要的特产。没有森林？每块木板都得买。',
+    },
+    src: '/landing/market.png',
+    w: 1024,
+    h: 836,
+    alt: {
+      en: 'The trading post listing the five special goods and raw materials with buy and sell prices.',
+      id: 'Pos dagang yang memuat lima barang khas dan bahan mentah dengan harga beli dan jual.',
+      ko: '다섯 가지 특산품과 원자재의 매매 가격이 나열된 교역소.',
+      zh: '交易站列出五种特产与原材料的买卖价格。',
     },
   },
 ];
@@ -404,11 +354,11 @@ export default function HowItPlays() {
           </p>
         </div>
 
-        <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4" data-reveal>
+        <ul className="grid grid-cols-1 gap-6 sm:grid-cols-3" data-reveal>
           {GALLERY.map((g, gi) => (
             <li
               key={g.title.en}
-              className="group flex flex-col overflow-hidden rounded-md border border-[var(--l-line)] bg-[var(--l-surface)] p-3 shadow-[0_2px_10px_var(--l-shadow)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_var(--l-shadow)]"
+              className={`${gi === 0 ? 'sm:col-span-3 ' : ''}group flex flex-col overflow-hidden rounded-md border border-[var(--l-line)] bg-[var(--l-surface)] p-3 shadow-[0_2px_10px_var(--l-shadow)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_var(--l-shadow)]`}
             >
               <figure className="flex flex-1 flex-col">
                 <div className="shot-light overflow-hidden bg-[var(--l-surface-2)]">
@@ -418,7 +368,7 @@ export default function HowItPlays() {
                       alt={tr(g.alt.en, g.alt.id, g.alt.ko, g.alt.zh)}
                       width={g.w}
                       height={g.h}
-                      sizes="(min-width: 1024px) 270px, (min-width: 640px) 45vw, 100vw"
+                      sizes={gi === 0 ? '(min-width: 1152px) 1100px, 100vw' : '(min-width: 1152px) 360px, (min-width: 640px) 31vw, 100vw'}
                       loading="lazy"
                       className="transition-transform duration-300 group-hover:scale-[1.02]"
                     />
