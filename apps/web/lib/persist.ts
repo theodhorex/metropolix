@@ -1,4 +1,4 @@
-import { newState, GRID, ARCS, MAX_MAYOR_LEVEL, NEWS_MAX, type Mayor, type World, RELIC_KINDS, DISPLAY_SLOTS, isRelic, checkName, canUpgrade, MAX_BLD_LEVEL, type GameState, tradeKindsFor, isBuilding, type ItemKind } from '@metropolix/sim';
+import { newState, GRID, ARCS, MAX_MAYOR_LEVEL, NEWS_MAX, type Mayor, type World, RELIC_KINDS, DISPLAY_SLOTS, isRelic, checkName, canUpgrade, MAX_BLD_LEVEL, type GameState, tradeKindsFor, isBuilding, type ItemKind, validPortrait, portraitArc, ensurePortrait } from '@metropolix/sim';
 
 const KEY = 'metropolix-save-v2';
 
@@ -79,6 +79,9 @@ export function loadState(): GameState {
         merged.record = { won: 0, lost: 0, held: 0, breached: 0 };
         for (const k of ['won', 'lost', 'held', 'breached'] as const) { const v = rec[k]; if (typeof v === 'number' && v >= 0) merged.record[k] = Math.floor(v); }
         merged.world = cleanWorld(s.world, fresh.world);
+        // saves from before portraits (or with a broken one): draw it now, once, from the save's own seed
+        if (!validPortrait(merged.portrait) || portraitArc(merged.portrait) !== merged.arc) merged.portrait = 0;
+        ensurePortrait(merged);
         return merged;
       }
     }
