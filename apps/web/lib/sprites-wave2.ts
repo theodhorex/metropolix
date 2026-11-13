@@ -1017,44 +1017,27 @@ export const BADGE_H = 10;
  */
 export function buildBadgeTexture(level: 2 | 3): HTMLCanvasElement {
   const [canvas, ctx] = makeCanvas(BADGE_W, BADGE_H);
-
-  // 1px dark outline plate with bevelled corners
-  rect(ctx, 1, 1, 18, 8, OUT);
-  rect(ctx, 2, 0, 16, 10, OUT);
-  rect(ctx, 2, 1, 16, 8, '#1a202c');
-  rect(ctx, 2, 1, 16, 1, '#333e54'); // top-left highlight bevel
-  rect(ctx, 2, 8, 16, 1, '#10141d'); // bottom shadow bevel
-
+  // Rank pips, no plate: level 2 shows two gold diamonds, level 3 three (the middle one larger and brighter).
+  // (The old dark plate with two gold blobs read as a pair of eyes at a glance.)
+  const pip = (cx: number, cy: number, r: number, bright: boolean) => {
+    for (let dy = -r - 1; dy <= r + 1; dy++) {
+      const w = r + 1 - Math.abs(dy);
+      rect(ctx, cx - w, cy + dy, w * 2 + 1, 1, OUT);
+    }
+    for (let dy = -r; dy <= r; dy++) {
+      const w = r - Math.abs(dy);
+      rect(ctx, cx - w, cy + dy, w * 2 + 1, 1, dy < 0 ? (bright ? '#fff3c4' : '#ffe082') : dy === 0 ? '#ffd54f' : '#e0a020');
+    }
+    px(ctx, cx - (r > 1 ? 1 : 0), cy - r + 1, '#ffffff');
+  };
   if (level === 2) {
-    for (const cx of [5, 11]) {
-      rect(ctx, cx + 1, 2, 2, 1, '#fff8e1');
-      rect(ctx, cx, 3, 4, 3, '#ffd54f');
-      px(ctx, cx, 3, '#fff8e1');
-      px(ctx, cx + 3, 5, '#d99016');
-      rect(ctx, cx + 1, 6, 2, 1, '#c97a10');
-    }
+    pip(6, 5, 2, false);
+    pip(13, 5, 2, false);
   } else {
-    // Gold corner studs on the level-3 banner plate
-    px(ctx, 2, 1, '#f59e0b');
-    px(ctx, 17, 1, '#f59e0b');
-    // Flanking gold pips
-    for (const cx of [3, 14]) {
-      rect(ctx, cx, 3, 3, 3, '#ffd54f');
-      px(ctx, cx, 3, '#fff8e1');
-      rect(ctx, cx, 6, 3, 1, '#c97a10');
-    }
-    // Bright central 5-point star (x = 7..12, y = 1..7)
-    rect(ctx, 9, 1, 2, 2, '#ffffff');
-    rect(ctx, 7, 3, 6, 2, '#ffd54f');
-    rect(ctx, 8, 3, 4, 2, '#fff8e1');
-    px(ctx, 9, 3, '#ffffff');
-    rect(ctx, 8, 5, 4, 1, '#ffd54f');
-    rect(ctx, 7, 6, 2, 2, '#f59e0b');
-    rect(ctx, 11, 6, 2, 2, '#f59e0b');
-    px(ctx, 8, 6, '#ffd54f');
-    px(ctx, 11, 6, '#ffd54f');
+    pip(3, 5, 2, false);
+    pip(16, 5, 2, false);
+    pip(10, 5, 3, true);
   }
-
   return canvas;
 }
 
