@@ -10,21 +10,9 @@ import { art as industryA } from './industry-a';
 import { art as industryB } from './industry-b';
 import { art as servicesA } from './services-a';
 import { art as servicesB } from './services-b';
-import type { BuildingKind } from '@metropolix/sim';
-import { paintedArt, paintedNames } from '../../painted';
 
 export const goblinHD: ArcArt = {
   ground: pmGround,
   foundation: pmFoundation,
-  buildings: withPainted({ ...residential, ...decoration, ...commerce, ...military, ...industryA, ...industryB, ...servicesA, ...servicesB, ...pmBuildings }),
+  buildings: { ...residential, ...decoration, ...commerce, ...military, ...industryA, ...industryB, ...servicesA, ...servicesB, ...pmBuildings },
 };
-
-/** A painted picture (public/art/goblin/<kind>.png) wins over the drawn art when it is loaded. */
-function withPainted(drawn: NonNullable<ArcArt['buildings']>): NonNullable<ArcArt['buildings']> {
-  const out: NonNullable<ArcArt['buildings']> = { ...drawn };
-  for (const kind of paintedNames('goblin') as BuildingKind[]) {
-    const fallback = drawn[kind];
-    out[kind] = () => { const p = paintedArt('goblin', kind); return p ? [p] : fallback ? fallback() : []; };
-  }
-  return out;
-}

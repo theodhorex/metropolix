@@ -1,5 +1,6 @@
 import {
   Application,
+  CanvasSource,
   Container,
   Graphics,
   Sprite,
@@ -209,7 +210,8 @@ export class CityRenderer {
       this.app.destroy(true);
       return;
     }
-    await preloadPaintedArt(); // painted building art (PNG) must be in memory before the bank is built
+    // this people's rendered art must be in memory before the bank is built (re-check: the arc may change meanwhile)
+    for (let a = this.arc; ; a = this.arc) { await preloadPaintedArt(a); if (a === this.arc || this.destroyed) break; }
     if (this.destroyed) { this.app.destroy(true); return; }
     this.bank = buildSpriteBank(this.arc);
     host.appendChild(this.app.canvas);
@@ -698,7 +700,11 @@ export class CityRenderer {
     this.ambience = null;
     const theme: WildTheme = wildTheme(this.arc);
     if (!this.options.transparent) this.app.renderer.background.color = theme.backdrop;
-    const toTex = (c: HTMLCanvasElement) => { const t = Texture.from(c); t.source.scaleMode = 'nearest'; return t; };
+    const toTex = (c: HTMLCanvasElement) => {
+      // rendered (Blender) scenery is smooth art, sampled like the rendered buildings; the pixel drawings stay crisp
+      if (c.dataset.smooth === '1') return new Texture({ source: new CanvasSource({ resource: c, scaleMode: 'linear', autoGenerateMipmaps: true }) });
+      const t = Texture.from(c); t.source.scaleMode = 'nearest'; return t;
+    };
     this.wildTex = theme.props.map((p) => p.frames.map(toTex));
     this.theme = theme;
     this.propTex = this.wildTex.slice(0, theme.props.length);
@@ -1139,6 +1145,12 @@ export class CityRenderer {
     this.arc = arc;
     this.clearPreviews();
     if (!this.ready) return;
+    // load the new people's art first; a newer switch or a destroyed view wins over this one
+    void preloadPaintedArt(arc).then(() => { if (arc === this.arc && !this.destroyed) this.rebuildBank(); });
+  }
+
+  private rebuildBank() {
+    const arc = this.arc;
     const old = this.bank;
     this.bank = buildSpriteBank(arc);
     this.drawGround();

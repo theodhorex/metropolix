@@ -1,6 +1,7 @@
 import { CanvasSource, Texture } from 'pixi.js';
 import { BUILDING_KINDS, canUpgrade, type ArcId, type BuildingKind } from '@metropolix/sim';
 import { ARC_ART } from './arcs';
+import { paintedFrames } from './painted';
 import { buildLevelCanvas } from './sprites-levels';
 import { art3a } from './sprites-wave3a';
 import { art3b } from './sprites-wave3b';
@@ -1249,7 +1250,13 @@ export function buildSpriteBank(arc: ArcId | null): SpriteBank {
     const made = new Map<BuildingKind, Texture[]>();
     const make = (k: BuildingKind): Texture[] => {
       const keep = themeFilter; themeFilter = filter;
-      try { const custom = art.buildings?.[k]; return custom ? custom().map(raw) : shared[k](); } finally { themeFilter = keep; }
+      try {
+        // rendered art (tools/blender, public/art) wins over the drawings when this people has it
+        const rendered = arc ? paintedFrames(arc, k) : undefined;
+        if (rendered) return rendered.map(raw);
+        const custom = art.buildings?.[k];
+        return custom ? custom().map(raw) : shared[k]();
+      } finally { themeFilter = keep; }
     };
     const buildings = {} as Record<BuildingKind, Texture[]>;
     for (const k of BUILDING_KINDS) {
@@ -1267,6 +1274,10 @@ export function buildSpriteBank(arc: ArcId | null): SpriteBank {
     const levelCache = new Map<string, Texture[]>();
     const levelFrames = (kind: BuildingKind, level: number): Texture[] => {
       if (level <= 1 || !canUpgrade(kind)) return buildings[kind];
+      // rendered (Blender) art keeps its look at every level: the pixel add-ons clash with it, and the
+      // gold level pips already say the level
+      const base = buildings[kind];
+      if ((base[0]?.source.resource as HTMLCanvasElement | undefined)?.dataset?.smooth === '1') return base;
       const lv: 2 | 3 = level >= 3 ? 3 : 2;
       const key = `${kind}@${lv}`;
       const hit = levelCache.get(key);

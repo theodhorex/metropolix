@@ -5,6 +5,7 @@
 import type { ArcId } from '@metropolix/sim';
 import { goblinPlace, goblinWildArt, type Placement } from './wilds-goblin';
 import { disc, isoDiamond, makeCanvas, OUT, px, rect, tileHash } from './sprites';
+import { paintedWild } from './painted';
 
 /** Prop canvases are 64 px wide; the ground diamond's centre sits at (32, H - 16). */
 export const PROP_W = 64;
@@ -359,10 +360,21 @@ function groundTile(pal: [string, string, string, string], variant: number): HTM
 export function wildTheme(arc: ArcId | null): WildTheme {
   if (arc === 'goblin') return goblinTheme();
   const t = THEMES[arc ?? 'none'];
+  const props = bakeAll(t.recipes);
+  if (arc) {
+    for (let p = 0; p < props.length; p++) {
+      const i = Math.floor(p / 2);
+      const v = p % 2;
+      const rendered = paintedWild(arc, i, v);
+      if (rendered && rendered.length > 0) {
+        props[p]!.frames = rendered;
+      }
+    }
+  }
   return {
     backdrop: mulColor(hex(t.ground[0]), WILD_FLOOR),
     ground: [0, 1, 2, 3].map((v) => groundTile(t.ground, v)),
-    props: bakeAll(t.recipes),
+    props,
   };
 }
 
@@ -405,6 +417,11 @@ function goblinTheme(): WildTheme {
     frames: p.sway && p.frames.length === 1 ? SWAY_STEPS.map((k) => (k === 0 ? p.frames[0]! : bend(p.frames[0]!, k * p.sway!))) : p.frames,
     tall: p.tall, water: p.water, glow: p.glow,
   }));
+  // the first ten props (5 tall, 5 low) each have a Blender piece, one copy: wild_<prop>_0
+  for (let p = 0; p < 10; p++) {
+    const rendered = paintedWild('goblin', p, 0);
+    if (rendered && props[p]) props[p]!.frames = rendered;
+  }
   return {
     backdrop: 0x4f7d34, ground: a.ground, water: a.water, props, day: true,
     place: (x, y, ring) => goblinPlace(a, x, y, ring),
