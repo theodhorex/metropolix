@@ -9,7 +9,11 @@ import {
   type Ticker,
 } from 'pixi.js';
 import { buildingLevel, GRID, type ArcId, type BuildingKind, type GameState } from '@metropolix/sim';
-import { BADGE_H, BADGE_W, buildSpriteBank, destroySpriteBank, SPRITE_H, SPRITE_W, TILE_H, tileHash, type SpriteBank } from './sprites';
+import { Ambience, type LightSpot, type WaterSpot } from './ambience';
+import { preloadPaintedArt } from './painted';
+import { pickProp, ringShade, WILD_RINGS, wildTheme, type WildTheme } from './wilds';
+import { GLOW_SCALE, MAP_H, MAP_W, occupancyKey, paintGlow, paintPatches, paintPaths, shadowCanvas, TERRAIN_SCALE, terrainLook, vignetteCanvas } from './terrain';
+import { BADGE_H, BADGE_W, buildSpriteBank, destroySpriteBank, SPRITE_W, TILE_H, tileHash, type SpriteBank } from './sprites';
 
 export const TW = 64; // tile width in world px
 export const TH = 32; // tile height
@@ -45,6 +49,12 @@ interface Walker {
   id: number;
   ax?: number;
   ay?: number;
+}
+
+/** Art drawn at 2x (128 px wide) is shown at half scale, so every sprite covers one 64 px tile. */
+function fitTile(sp: Sprite) {
+  const k = SPRITE_W / (sp.texture.width || SPRITE_W);
+  if (sp.scale.x !== k) sp.scale.set(k);
 }
 
 export const tileToWorld = (x: number, y: number) => ({ x: ((x - y) * TW) / 2, y: ((x + y) * TH) / 2 });
@@ -104,6 +114,36 @@ export class CityRenderer {
   private barracksAnchors: Tile[] = [];
   private walkLayer = new Container();
   private underside = new Container();
+  // the wilds around the map (game only): ground, scenery behind and in front of the city, then the air
+  private wildGround = new Container();
+  private wildBack = new Container();
+  private wildFront = new Container();
+  private skyLayer = new Container();
+  private airLayer = new Container();
+  private wildTex: Texture[][] = [];
+  // game only: painted ground patches, worn paths, warm light, building shadows and a screen vignette
+  private terrain = new Container();
+  private shadows = new Container();
+  private shadowPool: Sprite[] = [];
+  private shadowTex: Texture | null = null;
+  private patchTex: Texture | null = null;
+  private pathCanvas: HTMLCanvasElement | null = null;
+  private pathTex: Texture | null = null;
+  private glowCanvas: HTMLCanvasElement | null = null;
+  private glowTex: Texture | null = null;
+  private occKey = '';
+  // game only: wild props (trees, rocks, bushes) standing on open map tiles; cleared where you build
+  private theme: WildTheme | null = null;
+  private propTex: Texture[][] = [];
+  private decor: Int16Array | null = null;
+  private decorKey = '';
+  private vignette: Sprite | null = null;
+  private framed = false;
+  private wildAnims: AnimEntry[] = [];
+  private wildMs = 0;
+  private wildTick = 0;
+  private ambience: Ambience | null = null;
+  private readonly calm = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   private rocks: { g: Graphics; y: number; phase: number }[] = [];
   private falls: TilingSprite[] = [];
   private waterTex: Texture | null = null;
@@ -169,6 +209,8 @@ export class CityRenderer {
       this.app.destroy(true);
       return;
     }
+    await preloadPaintedArt(); // painted building art (PNG) must be in memory before the bank is built
+    if (this.destroyed) { this.app.destroy(true); return; }
     this.bank = buildSpriteBank(this.arc);
     host.appendChild(this.app.canvas);
     this.walkLayer.sortableChildren = true;
@@ -178,8 +220,14 @@ export class CityRenderer {
     this.badges.eventMode = 'none';
     this.cursor.eventMode = 'none';
     this.underside.eventMode = 'none';
-    this.world.addChild(this.underside, this.ground, this.blocks, this.badges, this.walkLayer, this.cursor);
+    for (const c of [this.wildGround, this.wildBack, this.wildFront, this.skyLayer, this.airLayer, this.terrain, this.shadows]) c.eventMode = 'none';
+    this.world.addChild(this.underside, this.wildGround, this.ground, this.terrain, this.shadows, this.wildBack, this.blocks, this.wildFront, this.badges, this.walkLayer, this.skyLayer, this.airLayer, this.cursor);
     this.app.stage.addChild(this.world);
+    if (!this.options.island) {
+      this.shadowTex = Texture.from(shadowCanvas());
+      this.vignette = new Sprite({ eventMode: 'none' });
+      this.app.stage.addChild(this.vignette);
+    }
     this.app.stage.eventMode = 'static';
     this.app.stage.hitArea = this.app.screen;
     this.app.stage.on('pointerdown', (e: FederatedPointerEvent) => {
@@ -221,6 +269,8 @@ export class CityRenderer {
     // Source: https://pixijs.download/v8.22.0/docs/ticker.Ticker.html#add
     this.app.ticker.add(this.onTick, this);
     this.drawGround();
+    this.drawWilds();
+    this.drawTerrain();
     this.drawIsland();
     this.resetView();
     this.ready = true;
@@ -237,6 +287,12 @@ export class CityRenderer {
       this.app.ticker.remove(this.onTick, this);
       this.app.destroy(true, { children: true });
     }
+    this.ambience?.destroy();
+    this.ambience = null;
+    this.clearWildTex();
+    this.clearTerrain();
+    this.shadowTex?.destroy(true);
+    this.shadowTex = null;
     this.waterTex?.destroy(true);
     this.waterTex = null;
     this.falls.length = 0;
@@ -260,6 +316,7 @@ export class CityRenderer {
     this.watchFrameRate(ticker.deltaMS);
     this.moveWalkers(ticker.deltaMS);
     if (this.options.island) this.floatIsland(ticker.deltaMS);
+    this.animateWilds(ticker.deltaMS);
     if (this.animEntries.length === 0) return;
     this.animElapsedMs += ticker.deltaMS;
     if (this.animElapsedMs < 280) return;
@@ -302,6 +359,7 @@ export class CityRenderer {
     const res = Math.min(window.devicePixelRatio || 1, cfg.maxRes);
     if (this.app.renderer.resolution !== res) this.app.renderer.resize(this.app.screen.width, this.app.screen.height, res);
     this.app.ticker.maxFPS = cfg.fps;
+    this.ambience?.setLite(q === 'lite');
     this.syncWalkers();
   }
 
@@ -492,25 +550,52 @@ export class CityRenderer {
 
   private applyView() {
     const { width, height } = this.app.screen;
-    this.minK = Math.min(width / (GRID * TW + 40), height / (GRID * TH + MARGIN_TOP + 30));
+    const fit = Math.min(width / (GRID * TW + 40), height / (GRID * TH + MARGIN_TOP + 30));
+    // in the game the wilds frame the map, so zooming out a little further shows the forest around it
+    this.minK = this.options.island ? fit : fit * 0.8;
     this.k = Math.min(CityRenderer.MAX_K, Math.max(this.minK, this.k));
-    this.cx = Math.min((GRID * TW) / 2, Math.max(-(GRID * TW) / 2, this.cx));
-    this.cy = Math.min(GRID * TH, Math.max(-MARGIN_TOP, this.cy));
+    const padX = this.options.island ? 0 : 4 * TW, padY = this.options.island ? 0 : 4 * TH;
+    this.cx = Math.min((GRID * TW) / 2 + padX, Math.max(-(GRID * TW) / 2 - padX, this.cx));
+    this.cy = Math.min(GRID * TH + padY, Math.max(-MARGIN_TOP - padY, this.cy));
     const effK = Math.min(CityRenderer.MAX_K, Math.max(this.minK, this.k * this.zoomBoost));
     this.effK = effK;
     this.baseY = Math.round(height / 2 - this.cy * effK);
     this.world.scale.set(effK);
     this.world.position.set(Math.round(width / 2 - this.cx * effK), this.baseY + this.bob());
     this.app.stage.hitArea = this.app.screen;
+    if (this.vignette) { this.vignette.width = width; this.vignette.height = height; }
   }
 
   /** Centre the map at a comfortable default zoom. */
   resetView() {
+    if (this.frameCity()) return;
     const { width } = this.app.screen;
     this.k = width / (CityRenderer.VISIBLE_TILES * TW);
     this.cx = 0;
     this.cy = (GRID * TH) / 2;
     this.applyView();
+  }
+
+  /** Game only: frame the built-up part of the map so the town fills most of the view. False if nothing is built. */
+  private frameCity(): boolean {
+    const s = this.state;
+    if (!s || this.options.island) return false;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+      if (!s.grid[y]![x]) continue;
+      const c = tileToWorld(x, y);
+      x0 = Math.min(x0, c.x - TW / 2); x1 = Math.max(x1, c.x + TW / 2);
+      y0 = Math.min(y0, c.y - TH * 1.5); y1 = Math.max(y1, c.y + TH);
+    }
+    if (x0 === Infinity) return false;
+    const { width, height } = this.app.screen;
+    // a small town is shown close up, a big one fills about three quarters of the view
+    const w = Math.max(x1 - x0, 12 * TW), h = Math.max(y1 - y0, 12 * TH);
+    this.k = Math.min(1.6, (width * 0.78) / w, (height * 0.78) / h);
+    this.cx = (x0 + x1) / 2;
+    this.cy = (y0 + y1) / 2;
+    this.applyView();
+    return true;
   }
 
   /** Look at the world point (cx, cy) at zoom k (used by the landing page to frame its showcase town). */
@@ -584,11 +669,105 @@ export class CityRenderer {
           y: c.y,
           roundPixels: true,
         });
+        fitTile(sp);
         this.ground.addChild(sp);
         this.groundSprites[y]![x] = sp;
         this.baseGroundTex[y]![x] = tex;
       }
     }
+  }
+
+  private clearWildTex() {
+    for (const frames of this.wildTex) for (const t of frames) t.destroy(true);
+    this.wildTex = [];
+    this.wildAnims.length = 0;
+  }
+
+  /**
+   * The wilds: WILD_RINGS rings of themed land around the map (a forest for the Elves, a swamp for the
+   * Lizardfolk, volcanic rock for the Dragonkin...). The first rings stay open like a clearing, it
+   * grows denser and darker further out until it melts into the backdrop. Tall scenery only stands
+   * behind the map or well in front of it, so it never hides the city. The game only, not the island.
+   */
+  private drawWilds() {
+    const bank = this.bank;
+    if (!bank || this.options.island) return;
+    for (const c of [this.wildGround, this.wildBack, this.wildFront]) c.removeChildren().forEach((ch) => ch.destroy());
+    this.clearWildTex();
+    this.ambience?.destroy();
+    this.ambience = null;
+    const theme: WildTheme = wildTheme(this.arc);
+    if (!this.options.transparent) this.app.renderer.background.color = theme.backdrop;
+    const toTex = (c: HTMLCanvasElement) => { const t = Texture.from(c); t.source.scaleMode = 'nearest'; return t; };
+    this.wildTex = theme.props.map((p) => p.frames.map(toTex));
+    this.theme = theme;
+    this.propTex = this.wildTex.slice(0, theme.props.length);
+    this.decorKey = '';
+    const groundTex = theme.ground.map(toTex);
+    this.wildTex.push(groundTex); // destroyed with the props
+    const waterTex = (theme.water ?? []).map((m) => m.map(toTex));
+    this.wildTex.push(...waterTex);
+    // the map itself wears the wilds' seamless ground, so no tile outlines show (paths come from terrain.ts)
+    const hd = groundTex[0]!.width > 100;
+    for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+      const gSp = this.groundSprites[y]?.[x];
+      if (!gSp) continue;
+      const tex = groundTex[tileHash(x, y, 101) & 3]!;
+      const c = tileToWorld(x, y);
+      gSp.texture = tex;
+      gSp.scale.set(hd ? 0.5 : 1);
+      gSp.position.set(c.x - SPRITE_W / 2 - 1, c.y - 1);
+      this.baseGroundTex[y]![x] = tex;
+    }
+    const R = WILD_RINGS, water: WaterSpot[] = [], glows: LightSpot[] = [];
+    const shadeColor = (base: number, k: number) => {
+      const r = Math.round(((base >> 16) & 255) * k), g = Math.round(((base >> 8) & 255) * k), b = Math.round((base & 255) * k);
+      return (r << 16) | (g << 8) | b;
+    };
+    for (let d = -2 * R; d <= 2 * (GRID + R); d++) {
+      for (let y = -R; y < GRID + R; y++) {
+        const x = d - y;
+        if (x < -R || x >= GRID + R) continue;
+        if (x >= 0 && y >= 0 && x < GRID && y < GRID) continue;
+        const ring = Math.max(-x, -y, x - (GRID - 1), y - (GRID - 1));
+        const shade = ringShade(ring, theme.day);
+        const c = tileToWorld(x, y);
+        const h = tileHash(x, y, 101);
+        const spot = theme.place?.(x, y, ring) ?? null;
+        const wetTex = spot?.ground === 'water' ? waterTex[spot.mask ?? 0] : undefined;
+        const g = new Sprite({ texture: wetTex ? wetTex[0]! : groundTex[h & 3]!, x: c.x - SPRITE_W / 2 - 1, y: c.y - 1, roundPixels: true });
+        if (groundTex[0]!.width > 100) g.scale.set(0.5); // HD wild ground (2x)
+        g.tint = shadeColor(0xffffff, shade);
+        this.wildGround.addChild(g);
+        if (wetTex && !this.calm) this.wildAnims.push({ sprite: g, frames: wetTex, phase: 0 });
+        const front = x >= GRID || y >= GRID;
+        const pi = spot ? (spot.prop ?? -1) : pickProp(theme, x, y, ring, front);
+        if (pi < 0) continue;
+        const frames = this.wildTex[pi]!;
+        const src = theme.props[pi]!;
+        const sp = new Sprite({ texture: frames[0]!, roundPixels: true });
+        const pk = SPRITE_W / src.frames[0]!.width;
+        sp.scale.set(pk);
+        sp.position.set(c.x - SPRITE_W / 2, c.y + TILE_H - src.frames[0]!.height * pk);
+        sp.tint = shadeColor(0xffffff, Math.min(1, shade * 1.08));
+        (front ? this.wildFront : this.wildBack).addChild(sp);
+        if (frames.length > 1 && !this.calm) this.wildAnims.push({ sprite: sp, frames, phase: (h >>> 4) & 3 });
+        if (src.water && ring <= 12) water.push({ x: c.x, y: c.y + TILE_H / 2, kind: src.water });
+        if (src.glow && ring <= 13) glows.push({ x: c.x, y: c.y + TILE_H / 2 - 4, color: src.glow });
+      }
+    }
+    if (!this.calm) this.ambience = new Ambience(this.airLayer, this.skyLayer, this.arc, water, this.quality === 'lite', glows);
+  }
+
+  /** Wind in the trees, water and lava on the move, and the life in the air. */
+  private animateWilds(dt: number) {
+    this.ambience?.update(dt);
+    if (this.wildAnims.length === 0) return;
+    this.wildMs += dt;
+    if (this.wildMs < 320) return;
+    this.wildMs %= 320;
+    this.wildTick = (this.wildTick + 1) >>> 0;
+    for (const e of this.wildAnims) e.sprite.texture = e.frames[(this.wildTick + e.phase) % e.frames.length]!;
   }
 
   /** The island's outline in world px (top vertex, the side corners, the bottom vertex). */
@@ -738,6 +917,9 @@ export class CityRenderer {
 
     let used = 0;
     let badgeUsed = 0;
+    let shadowUsed = 0;
+    const island = !!this.options.island;
+    const decor = island ? null : this.decorFor(s);
     this.animEntries.length = 0;
 
     // Depth-sorted by x+y diagonal, matching the original drawBlocks order
@@ -748,10 +930,29 @@ export class CityRenderer {
         const kind = s.grid[y]![x];
         const gSp = this.groundSprites[y]?.[x];
         if (!kind) {
-          if (gSp) gSp.texture = this.baseGroundTex[y]![x]!;
+          if (gSp && island) { gSp.texture = this.baseGroundTex[y]![x]!; fitTile(gSp); }
+          const pi = decor ? decor[y * GRID + x]! : -1;
+          if (pi >= 0) {
+            const frames = this.propTex[pi]!;
+            const phase = (x * 5 + y * 3) & 3;
+            let sp = this.spritePool[used];
+            if (!sp) {
+              sp = new Sprite({ roundPixels: true });
+              this.spritePool.push(sp);
+              this.blocks.addChild(sp);
+            }
+            sp.texture = frames[(this.animTick + phase) % frames.length]!;
+            fitTile(sp);
+            const c = tileToWorld(x, y);
+            sp.position.set(c.x - SPRITE_W / 2, c.y + TILE_H - sp.height);
+            sp.visible = true;
+            used++;
+            if (frames.length > 1 && !this.calm) this.animEntries.push({ sprite: sp, frames, phase });
+          }
           continue;
         }
-        if (gSp) gSp.texture = bank.foundation;
+        // the island keeps its tile plates; the game paints worn ground under the town instead (terrain.ts)
+        if (gSp && island) { gSp.texture = bank.foundation; fitTile(gSp); }
 
         const lv = buildingLevel(s, x, y);
         const frames = lv >= 2 ? bank.levelFrames(kind, lv) : bank.buildings[kind];
@@ -766,9 +967,25 @@ export class CityRenderer {
           this.blocks.addChild(sp);
         }
         sp.texture = tex;
-        sp.position.set(c.x - SPRITE_W / 2, c.y + TILE_H - SPRITE_H);
+        fitTile(sp); // HD art (128 px) is drawn at half scale, so it fills the same tile
+        sp.position.set(c.x - SPRITE_W / 2, c.y + TILE_H - sp.height); // tall art grows upward from the tile
         sp.visible = true;
         used++;
+
+        if (this.shadowTex) {
+          let sh = this.shadowPool[shadowUsed];
+          if (!sh) {
+            sh = new Sprite({ texture: this.shadowTex, anchor: 0.5 });
+            this.shadowPool.push(sh);
+            this.shadows.addChild(sh);
+          }
+          // taller buildings cast a wider shadow, thrown a little to the lower right
+          const tall = Math.min(1, Math.max(0, (sp.height - TILE_H * 1.6) / (TILE_H * 2)));
+          sh.scale.set(((TW * (1.05 + 0.3 * tall)) / 128));
+          sh.position.set(c.x + 5 + 6 * tall, c.y + TH / 2 + 3 + 2 * tall);
+          sh.visible = true;
+          shadowUsed++;
+        }
 
         if (frames.length > 1) {
           this.animEntries.push({ sprite: sp, frames, phase });
@@ -796,6 +1013,100 @@ export class CityRenderer {
     for (let i = badgeUsed; i < this.badgePool.length; i++) {
       this.badgePool[i]!.visible = false;
     }
+    for (let i = shadowUsed; i < this.shadowPool.length; i++) this.shadowPool[i]!.visible = false;
+    this.updatePaths(s);
+  }
+
+  /** Game only: build the painted terrain layers for the current people (patches, paths, glow, vignette). */
+  private drawTerrain() {
+    if (this.options.island) return;
+    this.clearTerrain();
+    const look = terrainLook(this.arc);
+    const place = (tex: Texture, k = TERRAIN_SCALE) => {
+      const sp = new Sprite({ texture: tex, x: -MAP_W / 2, y: 0 });
+      sp.scale.set(1 / k);
+      this.terrain.addChild(sp);
+      return sp;
+    };
+    this.patchTex = Texture.from(paintPatches(this.arc));
+    place(this.patchTex);
+    const blank = (k = TERRAIN_SCALE) => { const c = document.createElement('canvas'); c.width = Math.ceil(MAP_W * k); c.height = Math.ceil(MAP_H * k); return c; };
+    this.pathCanvas = blank();
+    this.pathTex = Texture.from(this.pathCanvas);
+    place(this.pathTex);
+    this.glowCanvas = blank(GLOW_SCALE);
+    this.glowTex = Texture.from(this.glowCanvas);
+    const glow = place(this.glowTex, GLOW_SCALE);
+    glow.blendMode = 'add';
+    glow.visible = look.glowA > 0;
+    this.occKey = '';
+    if (this.vignette) {
+      this.vignette.texture?.destroy(true);
+      this.vignette.texture = Texture.from(vignetteCanvas(look.vignette));
+      this.applyView();
+    }
+    if (this.state) this.updatePaths(this.state);
+  }
+
+  /**
+   * Which wild prop (index into the theme's props, or -1) stands on each open map tile. Nothing grows
+   * right next to buildings; further out the land turns into meadow, copse and rocks, and tall trees
+   * only stand well away from the town. Recomputed only when buildings come or go.
+   */
+  private decorFor(s: GameState): Int16Array | null {
+    const theme = this.theme;
+    if (!theme || this.propTex.length === 0) return null;
+    const key = occupancyKey(s);
+    if (this.decor && key === this.decorKey) return this.decor;
+    this.decorKey = key;
+    // distance (in tiles, 8-way) to the nearest building
+    const dist = new Int16Array(GRID * GRID).fill(99);
+    const queue: number[] = [];
+    for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) if (s.grid[y]![x]) { dist[y * GRID + x] = 0; queue.push(y * GRID + x); }
+    for (let qi = 0; qi < queue.length; qi++) {
+      const i = queue[qi]!, x = i % GRID, y = (i / GRID) | 0, d = dist[i]! + 1;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= GRID || ny >= GRID) continue;
+        const j = ny * GRID + nx;
+        if (dist[j]! > d) { dist[j] = d; queue.push(j); }
+      }
+    }
+    const dry = (i: number) => !theme.props[i]!.water;
+    const tall = (theme.scatter?.tall ?? theme.props.map((p, i) => (p.tall ? i : -1)).filter((i) => i >= 0)).filter(dry);
+    const low = (theme.scatter?.low ?? theme.props.map((p, i) => (p.tall ? -1 : i)).filter((i) => i >= 0)).filter(dry);
+    const out = new Int16Array(GRID * GRID).fill(-1);
+    for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+      const d = dist[y * GRID + x]!;
+      if (d < 2) continue;
+      const h = tileHash(x, y, 777);
+      const pct = d < 3 ? 5 : d < 5 ? 11 : 16;
+      if (h % 100 >= pct) continue;
+      const useTall = d >= 4 && tall.length > 0 && ((h >>> 8) % 100) < 45;
+      const list = useTall ? tall : low;
+      if (list.length) out[y * GRID + x] = list[(h >>> 12) % list.length]!;
+    }
+    this.decor = out;
+    return out;
+  }
+
+  /** Repaint paths and glow when buildings came or went. */
+  private updatePaths(s: GameState) {
+    if (!this.pathCanvas || !this.glowCanvas) return;
+    const key = occupancyKey(s);
+    if (key === this.occKey) return;
+    this.occKey = key;
+    paintPaths(this.pathCanvas, s, this.arc);
+    paintGlow(this.glowCanvas, s, this.arc);
+    this.pathTex?.source.update();
+    this.glowTex?.source.update();
+  }
+
+  private clearTerrain() {
+    this.terrain.removeChildren().forEach((c) => c.destroy());
+    for (const t of [this.patchTex, this.pathTex, this.glowTex]) t?.destroy(true);
+    this.patchTex = this.pathTex = this.glowTex = null;
+    this.pathCanvas = this.glowCanvas = null;
   }
 
   private drawCursor() {
@@ -831,6 +1142,8 @@ export class CityRenderer {
     const old = this.bank;
     this.bank = buildSpriteBank(arc);
     this.drawGround();
+    this.drawWilds();
+    this.drawTerrain();
     if (this.state) this.drawBlocks();
     for (const w of this.walkers) w.sprite.destroy();
     this.walkers.length = 0;
@@ -906,6 +1219,7 @@ export class CityRenderer {
     this.state = state;
     if (!this.ready) return;
     this.drawBlocks();
+    if (!this.framed) { this.framed = true; this.frameCity(); }
     this.syncWalkers();
     this.updateCursorColor();
     this.drawCursor();
