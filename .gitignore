@@ -7,3 +7,6 @@ next-env.d.ts
 target/
 # local worker task files and reports (project management, not source)
 .agy/
+# Blender renders and caches (the game uses the installed WebP in apps/web/public/art)
+tools/blender/out/
+__pycache__/
