@@ -312,10 +312,12 @@ function canvasToTexture(canvas: HTMLCanvasElement): Texture {
     tctx.drawImage(canvas, 0, 0);
     c = t;
   }
+  // painted (AI-made) art is not pixel art: sample it smoothly, with mipmaps for zoomed-out views
+  const smooth = canvas.dataset.smooth === '1';
   const source = new CanvasSource({
     resource: c,
-    scaleMode: 'nearest',
-    autoGenerateMipmaps: false,
+    scaleMode: smooth ? 'linear' : 'nearest',
+    autoGenerateMipmaps: smooth,
   });
   return new Texture({ source });
 }

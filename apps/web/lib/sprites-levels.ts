@@ -1085,20 +1085,32 @@ export function buildLevelCanvas(
   frame: number,
   filter: string | null,
 ): HTMLCanvasElement {
-  const [out, octx] = makeCanvas(SPRITE_W, SPRITE_H);
+  // HD art (2x canvas): the shared add-on is drawn at 1x and doubled with crisp pixels
+  // (any multiple of 64, and a canvas taller than square keeps its tile at the bottom)
+  const res = Math.max(1, Math.round(baseCanvas.width / SPRITE_W));
+  const [out, octx] = makeCanvas(SPRITE_W * res, baseCanvas.height);
+  const dy = baseCanvas.height - SPRITE_H * res;
+  if (baseCanvas.dataset.smooth) out.dataset.smooth = baseCanvas.dataset.smooth;
   octx.drawImage(baseCanvas, 0, 0);
 
-  const [addon, actx] = makeCanvas(SPRITE_W, SPRITE_H);
+  const [addon1, actx] = makeCanvas(SPRITE_W, SPRITE_H);
   drawLevelAddon(actx, kind, level, frame);
+  let addon = addon1;
+  if (res > 1) {
+    const [big, bctx] = makeCanvas(SPRITE_W * res, SPRITE_H * res);
+    bctx.imageSmoothingEnabled = false;
+    bctx.drawImage(addon1, 0, 0, SPRITE_W * res, SPRITE_H * res);
+    addon = big;
+  }
 
   // MDN CanvasRenderingContext2D.filter applies CSS filter functions to subsequent drawImage calls
   // Source: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/filter
   if (filter) {
     octx.filter = filter;
-    octx.drawImage(addon, 0, 0);
+    octx.drawImage(addon, 0, dy);
     octx.filter = 'none';
   } else {
-    octx.drawImage(addon, 0, 0);
+    octx.drawImage(addon, 0, dy);
   }
   return out;
 }
