@@ -214,6 +214,37 @@ pub fn lose_troops(army: &mut [u32; 3], sent: &[u32; 3], lost: u64) {
     let _ = left;
 }
 
+/// Gold to train one troop of `role` (0 vanguard, 1 raider, 2 breaker) for this people (sim trainRole).
+pub fn troop_gold(arc: u8, role: usize) -> u64 {
+    pm(pm(TROOP_COST, ARC_TROOP_COST_PM[usize::from(arc)]), ROLE_COST_PM[role]).max(1)
+}
+
+/// Free vanguards the grid's barracks brought by being upgraded (sim upgradeBuilding: 5 at level 2, 10 more at 3).
+pub fn barracks_recruits(grid: &[u8], levels: &[u8]) -> u64 {
+    let barracks = BUILDING_KINDS.iter().position(|k| *k == "barracks").map(|p| p as u8 + 1);
+    let mut n = 0u64;
+    for i in 0..grid.len() {
+        if Some(grid[i]) == barracks {
+            n += RECRUITS[1..=level_at(grid, levels, i) as usize].iter().sum::<u64>();
+        }
+    }
+    n
+}
+
+/// Gold the troops added since the saved city cost to train. Recruits from newly upgraded barracks are free.
+pub fn training_cost(old_army: &[u32; 3], army: &[u32; 3], old_recruits: u64, recruits: u64, arc: u8) -> u64 {
+    let free = recruits.saturating_sub(old_recruits);
+    let mut cost = 0u64;
+    for r in 0..3 {
+        let mut added = u64::from(army[r]).saturating_sub(u64::from(old_army[r]));
+        if r == 0 {
+            added = added.saturating_sub(free);
+        }
+        cost = cost.saturating_add(added.saturating_mul(troop_gold(arc, r)));
+    }
+    cost
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -43,6 +43,12 @@ pub const ATTACK_COOLDOWN_SECS: u64 = 60;
 pub const ROLE_ATK_PM: [u64; 3] = [900, 1000, 1100];
 pub const ROLE_LOSS_PM: [u64; 3] = [600, 1100, 1000];
 pub const ROLE_LOOT_PM: [u64; 3] = [800, 1600, 800];
+/// Training: gold per troop = max(1, TROOP_COST x ARC_TROOP_COST_PM x ROLE_COST_PM), sim trainRole.
+pub const TROOP_COST: u64 = 40;
+pub const ARC_TROOP_COST_PM: [u64; 5] = [1000, 900, 700, 1300, 800];
+pub const ROLE_COST_PM: [u64; 3] = [1000, 900, 1300];
+/// Free vanguards a barracks brings when it reaches each level (sim upgradeBuilding).
+pub const RECRUITS: [u64; 4] = [0, 0, 5, 10];
 
 pub const RELIC_KINDS: [&str; 24] = ["geode", "starmetal", "voidheart", "cog", "sunengine", "whetstone", "masterhammer", "kingsblade", "aetheranvil", "amber", "heartwood", "goldenseed", "goldtimber", "goblinskull", "dragonscale", "moonpearl", "grimoire", "mandrake", "ironbark", "tankard", "phoenixfeather", "titanbone", "wardenbanner", "clockheart"];
 pub const RELIC_NAMES: [&str; 24] = ["Crystal Geode", "Starmetal Ore", "Voidheart Ore", "Perpetual Cog", "Sun Engine", "Runed Whetstone", "Master's Hammer", "Kingsblade", "Aether Anvil", "Ancient Amber", "Heartwood Bough", "Golden Seed", "Gilded Timber", "Skull of the Goblin King", "Elder Dragon Scale", "Moonwell Pearl", "Forbidden Grimoire", "Screaming Mandrake", "Ironbark Log", "Bottomless Tankard", "Phoenix Feather", "Titan Knucklebone", "Banner of the First Warden", "Clockwork Heart"];

@@ -55,7 +55,7 @@ Every step is "do X, see Y". Steps 1 to 6 need no wallet and no account.
 | 9 | **Players on chain → Raid** a saved city | A battle run by the contract: loot moved on chain, a 5 minute shield for the loser, the result in your log |
 | 10 | **$METRO market** | Buy or sell against testnet NEAR; the price sits next to the coin's NAV, and raids move the NAV |
 | 11 | Clone and run `pnpm test` (Node 22+) | 178 simulation tests pass, including the one that checks the contract's rule tables against the game |
-| 12 | `cd contracts/metropolix && cargo test` | 34 contract tests pass |
+| 12 | `cd contracts/metropolix && cargo test` | 43 contract tests pass |
 
 The claims-to-evidence matrix for every number in this README is in **[JUDGES.md](JUDGES.md)**. A longer walkthrough is in [docs/TRY_IT.md](docs/TRY_IT.md).
 
@@ -67,7 +67,7 @@ Three reads straight from NEAR testnet. Expected output: step 1 prints the code 
 
 ```bash
 RPC=https://test.rpc.fastnear.com
-# 1. The code hash of the deployed contract (DAmujFPaq...U2U at the time of writing)
+# 1. The code hash of the deployed contract (HE7aKmdeP...Qw9p at the time of writing)
 curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_account","finality":"final","account_id":"metropolix.testnet"}}' | grep -o '"code_hash":"[^"]*"'
 # 2. The $METRO coin: supply, pool reserves, treasury, city index, NAV and mNAV (permille)
 curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"call_function","finality":"final","account_id":"metropolix.testnet","method_name":"get_coin","args_base64":"e30="}}' | python3 -c "import sys,json;print(bytes(json.load(sys.stdin)['result']['result']).decode())"
@@ -124,7 +124,7 @@ Metropolix splits the game along one line. Four pieces.
 | What backs the coin | A database row | Treasury plus the gold of every saved city; mNAV 1.18x on 15 Nov 2026, 4 swaps recorded | `get_coin`, `/verify` section 3 |
 | ChainPower ranking | "Trust us" | Computed by the contract and recomputed in your browser: **3 of 3 cities match, to the digit** | `/verify`, `packages/sim/tests/verify.test.ts` |
 | Client cheating | Whatever the client sends | Layout validated, troops and XP bounded, gold and clock clamped to what could have been earned | `commit_snapshot`, 34 contract tests |
-| Contract review | Unknown | Two AI audit rounds, every finding fixed with a test; deployed code hash equals a fresh build | [Limits](#limits-stated-plainly), the terminal check above |
+| Contract review | Unknown | Three AI audit rounds, every finding fixed with a test; deployed code hash equals a fresh build | [Limits](#limits-stated-plainly), the terminal check above |
 
 ---
 
@@ -151,7 +151,7 @@ Metropolix splits the game along one line. Four pieces.
 
 - **60 buildings**, each drawn for your people, each up to level 3.
 - **40 rival mayors** with real treasuries to scout and raid. They raid you back.
-- **Cities saved on NEAR**: founding costs 0.05 testnet NEAR for storage and gives a 100 $METRO welcome grant; one city per account.
+- **Cities saved on NEAR**: founding costs 0.05 testnet NEAR for storage and gives a welcome grant of up to 100 $METRO (never worth more than half the deposit, so founding cities to sell grants cannot pay); one city per account.
 - **Autosave with no popups**: a function-call access key limited to four methods, no deposits, 0.25 NEAR of gas allowance.
 - **Restore on any device**: *Load my city from chain* rebuilds your city from the contract.
 - **Players on chain**: a live list of saved cities with ChainPower, defense and treasury, one click from a raid.
@@ -180,10 +180,10 @@ Metropolix splits the game along one line. Four pieces.
 | A legal layout | `commit_snapshot` panics on an unknown building code, a wonder built by the wrong people, a limit exceeded or a bad grid size |
 | Troops and XP | The army must fit the barracks of the saved layout; XP never falls and grows at most 10 a second |
 | Clock, gold, XP | Clamped to real time since the mint plus one hour of play from before the wallet, and to what the layout could have earned after paying for its new buildings; the result says what was kept |
-| Raids | 60 second cooldown, new cities under level 3 protected, a 5 minute shield after a loss, a win takes up to 35% of the target's on-chain gold |
+| Raids | 60 second cooldown, new cities (under level 3, or saved fewer than twice) protected, a 5 minute shield after a loss, a win takes up to 35% of the target's on-chain gold |
 | Trophies | A defense is worth only the trophies the attacker lost (up to 3), so a trophy-less alt cannot farm them |
 | The coin | Each trade applies issue or buyback in proportion to its size (full at 1% of the pool); a buyback never spends more than the trade's own fee |
-| Relics | 3 mints an hour; epic, legendary and mythic need saved level 3, 5 and 7; returning a relic burns the token |
+| Relics | 3 mints an hour from a saved city of level 3 or more; legendary and mythic need level 5 and 7; minting pauses while the contract has less than 2 NEAR free for storage; returning a relic burns the token |
 
 ### Invariants the tests hold
 
@@ -222,7 +222,7 @@ The contract's methods:
 
 | Method | What it does |
 |---|---|
-| `mint_city(arc, name, portrait)` | one city per account; attach 0.05 NEAR for its storage, get a 100 $METRO welcome grant |
+| `mint_city(arc, name, portrait)` | one city per account; attach 0.05 NEAR for its storage, get a welcome grant of up to 100 $METRO (at most half the deposit's worth) |
 | `commit_snapshot(grid, levels, army, gold, xp, tick)` | saves the city after checking the layout (60 building kinds), the troop cap and XP never falling; clamps the clock, gold and XP and returns what was kept |
 | `attack(target, commit, focus)` | a War Room battle against another player's saved city, luck from `env::random_seed()` |
 | `buy_metro`, `sell_metro`, `quote_*`, `get_coin` | $METRO (NEP-141) against testnet NEAR in an x·y=k pool, 1% fee to the treasury, NAV rules after every swap |
@@ -298,7 +298,7 @@ On a production build the city paints in about half a second and holds around 56
 | `packages/sim/tests/audit.test.ts` | `pnpm test` | Hostile inputs (NaN, Infinity, fractions), invariant fuzzing, and a check that ordering and relisting cannot print gold |
 | `contracts/metropolix` unit tests (34) | `cargo test` | Layout validation, clamps, raids, protection, coin, relics |
 
-Total: **178 simulation tests and 34 contract tests, all passing.**
+Total: **178 simulation tests and 43 contract tests, all passing.**
 
 ---
 
@@ -377,7 +377,8 @@ docs/                   logo and README screenshots
 - Heroes, spells and rams are left out of on-chain battles.
 
 **Not proven:**
-- The contract went through two AI audit rounds before the deadline (storage refunds, first-save bounds, stacked grace on quick saves, unpaid buildings, buyback size, alt-account shields and trophies, double-counted loot, overflow); every finding is fixed and has a test. There was no external commercial audit and no formal proof.
+- The contract went through three AI audit rounds before the deadline (storage refunds, first-save bounds, stacked grace on quick saves, unpaid buildings, buyback size, alt-account shields and trophies, double-counted loot, overflow; then unpaid troops, relic mints draining the storage reserve, welcome-grant arbitrage and raids on fresh alt cities); every finding is fixed and has a test. There was no external commercial audit and no formal proof.
+- A city's gold backs $METRO, and game gold is cheap to make: a new account (0.05 NEAR) with an hour of claimed play can add a large city to the backing and lift NAV. It cannot take NEAR out (buybacks never spend more than a trade's fee), and the owner can retune the weight of gold with `set_nav_k`, but NAV is a game signal, not a price floor.
 - Testnet only: $METRO and the NFTs have no real value, and only three test players have fought on chain so far.
 - Built for desktop: it runs in a mobile browser and you can tap to build, but the map and side panels are cramped on a phone.
 - Desktop only for now.

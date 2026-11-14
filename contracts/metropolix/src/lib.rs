@@ -44,6 +44,8 @@ pub const MINT_DEPOSIT_YOCTO: u128 = 50_000_000_000_000_000_000_000; // 0.05 NEA
 pub const TRADE_MARGIN_PER_SEC: u64 = 200;
 /// Cities below this level cannot be raided by other players.
 pub const NEWBIE_LEVEL: u8 = 3;
+/// Cities saved fewer times than this cannot be raided by other players.
+pub const MIN_COMMITS_TO_RAID: u64 = 2;
 pub const BATTLES_KEPT: u64 = 200;
 pub const MAX_NAME_LEN: usize = 24;
 pub const MAX_PAGE: u32 = 100;
@@ -251,7 +253,7 @@ impl Metropolix {
 
     /// Found your city: pick a people (0 elf, 1 lizard, 2 caveman, 3 dragon, 4 goblin) and the mayor's name.
     /// Attach 0.05 NEAR: it stays with the contract and pays for the city's storage. Every new mayor gets the
-    /// welcome grant of $METRO.
+    /// welcome grant of up to 100 $METRO (never worth more than half the deposit).
     #[payable]
     pub fn mint_city(&mut self, arc: u8, name: String, portrait: Option<u32>) -> CityView {
         let caller = env::predecessor_account_id();
@@ -285,7 +287,7 @@ impl Metropolix {
         };
         let view = city.view(false);
         self.cities.insert(caller.clone(), city);
-        self.grant_welcome(&caller);
+        let _ = self.grant_welcome(&caller);
         emit("city_minted", json!({ "owner": caller, "arc": arc, "name": view.name }));
         view
     }
@@ -320,7 +322,10 @@ impl Metropolix {
         // new buildings are paid from the same purse (counted at half price, for market bargains and moved buildings)
         let budget = base.saturating_add(earned);
         let grown = (grid_value(&grid, &levels) / 2).saturating_sub(if first { 0 } else { grid_value(&city.grid, &city.levels) / 2 });
-        require!(grown <= budget, "These buildings cost more than this city could have earned since its last save");
+        // troops are paid too: every troop above the saved army costs its training gold (lost troops must be retrained)
+        let drilled = training_cost(&city.army, &army, barracks_recruits(&city.grid, &city.levels), barracks_recruits(&grid, &levels), city.arc);
+        let grown = grown.saturating_add(drilled);
+        require!(grown <= budget, "These buildings and troops cost more than this city could have earned since its last save");
         let gold = gold.min(budget - grown);
         let xp = xp.min(city.xp.saturating_add(if first { XP_GRACE } else { 0 }).saturating_add(XP_PER_SEC.saturating_mul(dt)));
 
@@ -355,7 +360,8 @@ impl Metropolix {
         let mut d = self.cities.get(&target).cloned().unwrap_or_else(|| env::panic_str("Target does not have a city"));
         require!(troops(&a.army) > 0, "No troops: train some and save your city first");
         require!(d.commits > 0, "That city has never been saved on chain");
-        require!(level_from_xp(d.xp) >= NEWBIE_LEVEL, "New cities (below level 3) are protected");
+        // new cities are protected: below level 3, or saved fewer than twice (a fresh alt cannot be farmed at once)
+        require!(level_from_xp(d.xp) >= NEWBIE_LEVEL && d.commits >= MIN_COMMITS_TO_RAID, "New cities (below level 3 or saved fewer than twice) are protected");
         require!(d.shield_until_ns <= now, "That city is shielded after a recent raid");
         if let Some(&last) = a.last_attack_ns.get(&target) {
             require!(now >= last + ATTACK_COOLDOWN_SECS * NS, "Target is on cooldown");
@@ -471,6 +477,7 @@ impl Metropolix {
             "arcs": &ARC_IDS[..],
             "relics": &RELIC_KINDS[..],
             "newbie_level": NEWBIE_LEVEL,
+            "min_commits_to_raid": MIN_COMMITS_TO_RAID,
             "shield_secs": SHIELD_SECS,
             "attack_cooldown_secs": ATTACK_COOLDOWN_SECS,
             "max_loot_pct": MAX_LOOT_PCT,
@@ -557,8 +564,10 @@ mod tests {
         founded(&mut c, "mallory.testnet", 0, 10);
         let (g, l) = layout(&[("house", 5), ("barracks", 1)]);
         ctx("mallory.testnet", 20, 0);
-        let r = c.commit_snapshot(g, l, [5, 0, 0], U128(u128::MAX), U128(u128::MAX), U128(u128::MAX));
+        let r = c.commit_snapshot(g.clone(), l.clone(), [5, 0, 0], U128(u128::MAX), U128(u128::MAX), U128(u128::MAX));
         let v = c.get_city(acc("mallory.testnet"), Some(false)).unwrap();
+        ctx("mallory.testnet", 30, 0);
+        c.commit_snapshot(g, l, [5, 0, 0], U128(u128::from(r.gold)), U128(u128::from(v.xp)), U128(u128::from(v.tick)));
         // a first save may carry an hour of play from before the wallet, not more
         assert!(v.tick <= 10 + FIRST_TICK_ALLOWANCE_SECS + 10);
         assert!(r.gold < u64::MAX / 1000 && v.gold == r.gold);
@@ -723,6 +732,56 @@ mod tests {
         c.commit_snapshot(g, l, [30, 0, 0], U128(0), U128(0), U128(1));
     }
 
+    #[test]
+    fn lost_troops_must_be_retrained_with_gold() {
+        let mut c = fresh();
+        founded(&mut c, "alice.testnet", 0, 10);
+        let (g, l) = layout(&[("barracks", 5)]);
+        ctx("alice.testnet", 20, 0);
+        c.commit_snapshot(g.clone(), l.clone(), [0; 3], U128(0), U128(0), U128(10));
+        // 60 seconds later: claim the whole budget as gold AND 100 new raiders
+        ctx("alice.testnet", 80, 0);
+        let budget = c.get_city(acc("alice.testnet"), Some(false)).unwrap().gold + (max_income(&g, &l) + TRADE_MARGIN_PER_SEC) * 70;
+        let r = c.commit_snapshot(g, l, [0, 100, 0], U128(u128::from(budget)), U128(0), U128(80));
+        // the raiders' training gold comes out of what the chain keeps
+        assert!(r.gold <= budget - 100 * troop_gold(0, 1), "kept {} of a {} budget", r.gold, budget);
+    }
+
+    #[test]
+    #[should_panic(expected = "buildings and troops cost more")]
+    fn an_army_from_nowhere_is_refused() {
+        let mut c = fresh();
+        founded(&mut c, "alice.testnet", 3, 10);
+        let (g, l) = layout(&[("barracks", 40)]);
+        ctx("alice.testnet", 20, 0);
+        c.commit_snapshot(g.clone(), l.clone(), [0; 3], U128(0), U128(0), U128(10));
+        ctx("alice.testnet", 21, 0);
+        c.commit_snapshot(g, l, [0, 0, 800], U128(0), U128(0), U128(11));
+    }
+
+    #[test]
+    fn upgraded_barracks_recruits_are_free() {
+        let (g, mut l) = layout(&[("barracks", 2)]);
+        let before = barracks_recruits(&g, &l);
+        l[0] = 3;
+        l[1] = 2;
+        assert_eq!(barracks_recruits(&g, &l) - before, 15 + 5);
+        assert_eq!(training_cost(&[0; 3], &[20, 0, 0], before, barracks_recruits(&g, &l), 0), 0);
+        assert_eq!(training_cost(&[0; 3], &[21, 0, 0], before, barracks_recruits(&g, &l), 0), troop_gold(0, 0));
+    }
+
+    #[test]
+    #[should_panic(expected = "saved fewer than twice")]
+    fn a_city_saved_once_cannot_be_raided() {
+        let mut c = two_cities();
+        founded(&mut c, "mallory.testnet", 0, 10);
+        let (g, l) = layout(&[("house", 5)]);
+        ctx("mallory.testnet", 20, 0);
+        c.commit_snapshot(g, l, [0; 3], U128(10_000), U128(5_000), U128(10));
+        ctx("alice.testnet", 100, 0);
+        c.attack(acc("mallory.testnet"), None, None);
+    }
+
     fn two_cities() -> Metropolix {
         let mut c = fresh();
         founded(&mut c, "alice.testnet", 4, 10);
@@ -732,6 +791,8 @@ mod tests {
         c.commit_snapshot(g, l, [20, 60, 20], U128(1_000), U128(2_000), U128(10));
         let (g, l) = layout(&[("house", 20), ("shop", 10), ("barracks", 1)]);
         ctx("bob.testnet", 20, 0);
+        c.commit_snapshot(g.clone(), l.clone(), [5, 0, 0], U128(20_000), U128(2_000), U128(10));
+        // a city must have been saved twice before other players may raid it
         c.commit_snapshot(g, l, [5, 0, 0], U128(20_000), U128(2_000), U128(10));
         c
     }

@@ -22,6 +22,8 @@ pub const ISSUE_AT_PM: u128 = 2000;
 pub const BUYBACK_BELOW_PM: u128 = 900;
 /// Starting k: yoctoNEAR of backing per point of the cities' gold index (0.001 NEAR).
 pub const DEFAULT_NAV_K: u128 = 1_000_000_000_000_000_000_000;
+/// Most a point of the gold index may be worth (1 NEAR), so a retune cannot overflow the NAV maths.
+pub const MAX_NAV_K: u128 = 1_000_000_000_000_000_000_000_000;
 
 const ICON: &str = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23f2a33a' stroke='%23201810' stroke-width='2'/%3E%3Cpath d='M8 23V10l8 7 8-7v13' fill='none' stroke='%23201810' stroke-width='3'/%3E%3C/svg%3E";
 
@@ -99,10 +101,17 @@ impl Metropolix {
             self.token.internal_register_account(a);
         }
     }
-    pub(crate) fn grant_welcome(&mut self, a: &AccountId) {
+    /// The welcome grant: 100 METRO, but never worth more than half the founding deposit at the pool's price,
+    /// so founding cities to sell their grants can never pay.
+    pub(crate) fn grant_welcome(&mut self, a: &AccountId) -> u128 {
         self.ensure_registered(a);
-        self.token.internal_deposit(a, WELCOME_GRANT);
-        FtMint { owner_id: a, amount: U128(WELCOME_GRANT), memo: Some("welcome grant for a new city") }.emit();
+        let p = self.price();
+        let grant = if p == 0 { WELCOME_GRANT } else { WELCOME_GRANT.min(mul_div(crate::MINT_DEPOSIT_YOCTO / 2, ONE, p)) };
+        if grant > 0 {
+            self.token.internal_deposit(a, grant);
+            FtMint { owner_id: a, amount: U128(grant), memo: Some("welcome grant for a new city") }.emit();
+        }
+        grant
     }
     fn price(&self) -> u128 {
         let m = self.metro_reserve();
@@ -114,7 +123,7 @@ impl Metropolix {
         if supply == 0 || self.pool.city_index == 0 {
             return 0;
         }
-        mul_div(self.pool.treasury + self.pool.city_index * self.nav_k(), ONE, supply)
+        mul_div(self.pool.treasury.saturating_add(self.pool.city_index.saturating_mul(self.nav_k())), ONE, supply)
     }
     fn mnav_pm(&self) -> u128 {
         let nav = self.nav();
@@ -169,7 +178,7 @@ impl Metropolix {
     /// Owner only: retune how much backing one point of the cities' gold index is worth.
     pub fn set_nav_k(&mut self, k: U128) {
         require!(env::predecessor_account_id() == self.owner_id, "Owner only");
-        require!(k.0 > 0, "k must be positive");
+        require!(k.0 > 0 && k.0 <= MAX_NAV_K, "k must be between 1 yoctoNEAR and 1 NEAR");
         self.pool.nav_k = k.0;
     }
 
@@ -392,6 +401,29 @@ mod tests {
         ctx("bob.testnet", 6, NEAR / 100);
         c.buy_metro(None);
         assert!(c.pool.burned > 0);
+    }
+
+    #[test]
+    fn the_welcome_grant_is_never_worth_more_than_half_the_deposit() {
+        let mut c = seeded();
+        // pump the price far up: 1.9 NEAR into a 2 NEAR pool
+        ctx("whale.testnet", 5, 19 * NEAR / 10);
+        c.buy_metro(None);
+        let price = c.price();
+        ctx("sybil.testnet", 6, crate::MINT_DEPOSIT_YOCTO);
+        c.mint_city(0, "Sybil".into(), None);
+        let grant = c.token.ft_balance_of(acc("sybil.testnet")).0;
+        assert!(grant < WELCOME_GRANT, "a dear coin shrinks the grant");
+        assert!(mul_div(grant, price, ONE) <= crate::MINT_DEPOSIT_YOCTO / 2);
+        // and selling it pays less than the deposit
+        assert!(c.quote_sell(U128(grant)).0 < crate::MINT_DEPOSIT_YOCTO);
+    }
+
+    #[test]
+    #[should_panic(expected = "between 1 yoctoNEAR and 1 NEAR")]
+    fn nav_k_is_bounded() {
+        let mut c = seeded();
+        c.set_nav_k(U128(u128::MAX));
     }
 
     #[test]

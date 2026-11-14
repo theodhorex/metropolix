@@ -16,6 +16,8 @@ use crate::tables::{RELIC_DESC, RELIC_KINDS, RELIC_NAMES, RELIC_RARITY};
 use crate::{Metropolix, MetropolixExt, NS, emit};
 
 pub const RELIC_MINTS_PER_HOUR: u32 = 3;
+/// NEAR the contract keeps free for cities and battles; relic mints (whose storage it pays) stop above this line.
+pub const RELIC_STORAGE_RESERVE_YOCTO: u128 = 2_000_000_000_000_000_000_000_000; // 2 NEAR
 
 fn rarity_label(r: &str) -> &'static str {
     match r {
@@ -34,8 +36,9 @@ impl Metropolix {
         let idx = RELIC_KINDS.iter().position(|k| *k == kind).unwrap_or_else(|| env::panic_str("Unknown relic"));
         let now = env::block_timestamp();
         let mut city = self.cities.get(&me).cloned().unwrap_or_else(|| env::panic_str("Mint a city first"));
-        // finds are not proven on chain, so rarer relics need a bigger (bounded, saved) city
-        let need = match RELIC_RARITY[idx] { "mythic" => 7, "legendary" => 5, "epic" => 3, _ => 1 };
+        // finds are not proven on chain, so only a saved city of level 3 or more mints, and rarer relics need more
+        require!(city.commits > 0, "Save your city on chain before minting relics");
+        let need = match RELIC_RARITY[idx] { "mythic" => 7, "legendary" => 5, _ => 3 };
         require!(crate::war::level_from_xp(city.xp) >= need, "Your city's saved level is too low to mint a relic this rare");
         if now >= city.relic_window_ns + 3600 * NS {
             city.relic_window_ns = now;
@@ -63,6 +66,10 @@ impl Metropolix {
             reference_hash: None,
         };
         let token = self.nft.internal_mint_with_refund(token_id, me.clone(), Some(meta), None);
+        // the contract pays each relic's storage, so minting pauses before it could eat the reserve the game needs
+        // for new cities and battles
+        let locked = u128::from(env::storage_usage()) * env::storage_byte_cost().as_yoctonear();
+        require!(env::account_balance().as_yoctonear() >= locked + RELIC_STORAGE_RESERVE_YOCTO, "Relic minting is paused: the game's storage reserve is low");
         emit("relic_minted", json!({ "owner": me, "token_id": token.token_id, "kind": kind }));
         token
     }
@@ -160,30 +167,56 @@ impl NonFungibleTokenMetadataProvider for Metropolix {
 mod tests {
     use crate::test_utils::*;
     use super::*;
+    use near_sdk::json_types::U128;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{NearToken, testing_env};
+
+    /// A city minted at t=10 and saved once at t=20 with `xp` (an empty grid).
+    fn saved(c: &mut Metropolix, who: &str, xp: u128) {
+        ctx(who, 10, crate::MINT_DEPOSIT_YOCTO);
+        c.mint_city(0, "Mayor".into(), None);
+        ctx(who, 20, 0);
+        let (g, l) = layout(&[]);
+        c.commit_snapshot(g, l, [0; 3], U128(0), U128(xp), U128(10));
+    }
 
     #[test]
     fn mint_transfer_and_return() {
         let mut c = fresh();
-        ctx("alice.testnet", 10, crate::MINT_DEPOSIT_YOCTO);
-        c.mint_city(0, "Alice".into(), None);
-        ctx("alice.testnet", 10, 0);
+        saved(&mut c, "alice.testnet", 500);
         let t = c.mint_relic("geode".into());
         assert_eq!(c.nft.nft_supply_for_owner(acc("alice.testnet")).0, 1);
-        ctx("alice.testnet", 11, 1);
+        ctx("alice.testnet", 21, 1);
         c.nft_transfer(acc("bob.testnet"), t.token_id.clone(), None, None);
-        ctx("bob.testnet", 12, 0);
+        ctx("bob.testnet", 22, 0);
         assert_eq!(c.return_relic(t.token_id.clone()), "geode");
         assert!(c.nft_token(t.token_id).is_none());
         assert_eq!(c.nft.nft_total_supply().0, 0);
     }
 
     #[test]
-    #[should_panic(expected = "limit reached")]
-    fn rate_limited() {
+    #[should_panic(expected = "Save your city on chain")]
+    fn a_city_never_saved_cannot_mint() {
         let mut c = fresh();
         ctx("alice.testnet", 10, crate::MINT_DEPOSIT_YOCTO);
         c.mint_city(0, "Alice".into(), None);
         ctx("alice.testnet", 10, 0);
+        c.mint_relic("geode".into());
+    }
+
+    #[test]
+    #[should_panic(expected = "level is too low")]
+    fn even_a_rare_relic_needs_level_3() {
+        let mut c = fresh();
+        saved(&mut c, "alice.testnet", 100); // level 2
+        c.mint_relic("geode".into());
+    }
+
+    #[test]
+    #[should_panic(expected = "limit reached")]
+    fn rate_limited() {
+        let mut c = fresh();
+        saved(&mut c, "alice.testnet", 500);
         for _ in 0..4 {
             c.mint_relic("geode".into());
         }
@@ -193,20 +226,33 @@ mod tests {
     #[should_panic(expected = "level is too low")]
     fn rare_relics_need_a_bigger_city() {
         let mut c = fresh();
-        ctx("alice.testnet", 10, crate::MINT_DEPOSIT_YOCTO);
-        c.mint_city(0, "Alice".into(), None);
-        ctx("alice.testnet", 10, 0);
+        saved(&mut c, "alice.testnet", 500);
         let mythic = crate::tables::RELIC_KINDS[crate::tables::RELIC_RARITY.iter().position(|r| *r == "mythic").unwrap()];
         c.mint_relic(mythic.into());
+    }
+
+    #[test]
+    #[should_panic(expected = "storage reserve is low")]
+    fn minting_pauses_before_the_storage_reserve() {
+        let mut c = fresh();
+        saved(&mut c, "alice.testnet", 500);
+        // the contract holds only what its storage needs plus 1 NEAR: below the 2 NEAR reserve
+        let locked = u128::from(env::storage_usage()) * env::storage_byte_cost().as_yoctonear();
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(acc("metropolix.testnet"))
+            .predecessor_account_id(acc("alice.testnet"))
+            .block_timestamp(30 * crate::NS)
+            .storage_usage(env::storage_usage())
+            .account_balance(NearToken::from_yoctonear(locked + 1_000_000_000_000_000_000_000_000));
+        testing_env!(b.build());
+        c.mint_relic("geode".into());
     }
 
     #[test]
     #[should_panic(expected = "Unknown relic")]
     fn unknown_kind() {
         let mut c = fresh();
-        ctx("alice.testnet", 10, crate::MINT_DEPOSIT_YOCTO);
-        c.mint_city(0, "Alice".into(), None);
-        ctx("alice.testnet", 10, 0);
+        saved(&mut c, "alice.testnet", 500);
         c.mint_relic("rubberduck".into());
     }
 }

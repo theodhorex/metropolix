@@ -230,7 +230,7 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin, onRe
         {others.length === 0 && <p className="mt-1 text-xs text-[var(--paper-dim)]">No other cities saved on chain yet.</p>}
         {others.map((c) => {
           const shielded = c.shield_until_ns > nowNs;
-          const young = c.level < 3;
+          const young = c.level < 3 || c.commits < 2;
           const why = !city ? 'Found your city first' : city.troops === 0 ? 'Save some troops on chain first' : young ? 'New cities are protected' : shielded ? 'Shielded after a raid' : '';
           return (
             <div key={c.owner} className="well mt-1 flex items-center justify-between gap-1 px-2 py-1">
