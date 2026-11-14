@@ -59,6 +59,7 @@ export function fromUnits(v: string | undefined, decimals = 24): number {
 }
 /** A decimal amount to the smallest unit as a string (no floats in the integer part). */
 export function toUnits(amount: string, decimals = 24): string {
+  if (!/^\d*(\.\d*)?$/.test(amount.trim())) return '0';
   const [i = '0', f = ''] = amount.trim().split('.');
   const whole = (i.replace(/\D/g, '') || '0') + (f.replace(/\D/g, '') + '0'.repeat(decimals)).slice(0, decimals);
   return whole.replace(/^0+(?=\d)/, '');

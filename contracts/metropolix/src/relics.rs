@@ -34,6 +34,9 @@ impl Metropolix {
         let idx = RELIC_KINDS.iter().position(|k| *k == kind).unwrap_or_else(|| env::panic_str("Unknown relic"));
         let now = env::block_timestamp();
         let mut city = self.cities.get(&me).cloned().unwrap_or_else(|| env::panic_str("Mint a city first"));
+        // finds are not proven on chain, so rarer relics need a bigger (bounded, saved) city
+        let need = match RELIC_RARITY[idx] { "mythic" => 7, "legendary" => 5, "epic" => 3, _ => 1 };
+        require!(crate::war::level_from_xp(city.xp) >= need, "Your city's saved level is too low to mint a relic this rare");
         if now >= city.relic_window_ns + 3600 * NS {
             city.relic_window_ns = now;
             city.relic_mints = 0;
@@ -161,8 +164,9 @@ mod tests {
     #[test]
     fn mint_transfer_and_return() {
         let mut c = fresh();
-        ctx("alice.testnet", 10, 0);
+        ctx("alice.testnet", 10, crate::MINT_DEPOSIT_YOCTO);
         c.mint_city(0, "Alice".into(), None);
+        ctx("alice.testnet", 10, 0);
         let t = c.mint_relic("geode".into());
         assert_eq!(c.nft.nft_supply_for_owner(acc("alice.testnet")).0, 1);
         ctx("alice.testnet", 11, 1);
@@ -177,19 +181,32 @@ mod tests {
     #[should_panic(expected = "limit reached")]
     fn rate_limited() {
         let mut c = fresh();
-        ctx("alice.testnet", 10, 0);
+        ctx("alice.testnet", 10, crate::MINT_DEPOSIT_YOCTO);
         c.mint_city(0, "Alice".into(), None);
+        ctx("alice.testnet", 10, 0);
         for _ in 0..4 {
             c.mint_relic("geode".into());
         }
     }
 
     #[test]
+    #[should_panic(expected = "level is too low")]
+    fn rare_relics_need_a_bigger_city() {
+        let mut c = fresh();
+        ctx("alice.testnet", 10, crate::MINT_DEPOSIT_YOCTO);
+        c.mint_city(0, "Alice".into(), None);
+        ctx("alice.testnet", 10, 0);
+        let mythic = crate::tables::RELIC_KINDS[crate::tables::RELIC_RARITY.iter().position(|r| *r == "mythic").unwrap()];
+        c.mint_relic(mythic.into());
+    }
+
+    #[test]
     #[should_panic(expected = "Unknown relic")]
     fn unknown_kind() {
         let mut c = fresh();
-        ctx("alice.testnet", 10, 0);
+        ctx("alice.testnet", 10, crate::MINT_DEPOSIT_YOCTO);
         c.mint_city(0, "Alice".into(), None);
+        ctx("alice.testnet", 10, 0);
         c.mint_relic("rubberduck".into());
     }
 }

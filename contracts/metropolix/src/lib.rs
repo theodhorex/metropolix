@@ -28,6 +28,12 @@ pub const NS: u64 = 1_000_000_000;
 pub const TICK_GRACE_SECS: u64 = 120;
 /// What a brand-new city may already hold on its first snapshot (a local save started before the wallet).
 pub const FIRST_GOLD_ALLOWANCE: u64 = 50_000;
+/// A first save may carry this much play from before the wallet was connected (the tick clock is checked from mint).
+pub const FIRST_TICK_ALLOWANCE_SECS: u64 = 3 * 86_400;
+/// XP a save may add on top of what the gold it could have spent explains (building XP is a tenth of the cost).
+pub const XP_GRACE: u64 = 1_000;
+/// Founding a city stakes this much NEAR for its storage (about 3.3 KB), so new cities cannot be farmed for free.
+pub const MINT_DEPOSIT_YOCTO: u128 = 50_000_000_000_000_000_000_000; // 0.05 NEAR
 /// Extra gold per second the bound allows on top of the grid's income: market sales and citizen gifts.
 pub const TRADE_MARGIN_PER_SEC: u64 = 200;
 /// Cities below this level cannot be raided by other players.
@@ -238,9 +244,12 @@ impl Metropolix {
     }
 
     /// Found your city: pick a people (0 elf, 1 lizard, 2 caveman, 3 dragon, 4 goblin) and the mayor's name.
-    /// The chain pays the storage. Every new mayor gets the welcome grant of $METRO.
+    /// Attach 0.05 NEAR: it stays with the contract and pays for the city's storage. Every new mayor gets the
+    /// welcome grant of $METRO.
+    #[payable]
     pub fn mint_city(&mut self, arc: u8, name: String, portrait: Option<u32>) -> CityView {
         let caller = env::predecessor_account_id();
+        require!(env::attached_deposit().as_yoctonear() >= MINT_DEPOSIT_YOCTO, "Attach 0.05 NEAR to found a city (it pays for its storage)");
         require!(usize::from(arc) < ARC_IDS.len(), "Unknown people");
         require!(!self.cities.contains_key(&caller), "City already minted");
         let name = name.trim().to_string();
@@ -275,12 +284,14 @@ impl Metropolix {
         view
     }
 
-    /// Save the city. Bounded, not replayed: valid layout, troops within the barracks, the tick clock no faster
-    /// than the chain's, gold no more than the grid could have earned (plus raid winnings), XP never falling.
-    /// Gold other players took since the last save is subtracted here and reported back as `lost_applied`.
+    /// Save the city. Bounded, not replayed: valid layout, troops within the barracks, XP never falling. The tick
+    /// clock, gold and XP are clamped to what the chain can vouch for (the clock no faster than real time, gold no
+    /// more than the saved city could have earned, XP no more than that gold could have bought); the result says
+    /// what was kept. Gold other players took since the last save is subtracted and reported as `lost_applied`.
     pub fn commit_snapshot(&mut self, grid: Vec<u8>, levels: Vec<u8>, army: [u32; 3], gold: U128, xp: U128, tick: U128) -> CommitResult {
         let caller = env::predecessor_account_id();
-        let (gold, xp, tick) = (gold.0 as u64, xp.0 as u64, tick.0 as u64);
+        let clamp = |v: u128| u64::try_from(v).unwrap_or(u64::MAX);
+        let (gold, xp, tick) = (clamp(gold.0), clamp(xp.0), clamp(tick.0));
         let now = now_ns();
         let mut city = self.cities.get(&caller).cloned().unwrap_or_else(|| env::panic_str("City not found: mint a city first"));
         check_layout(&grid, &levels, city.arc);
@@ -288,13 +299,19 @@ impl Metropolix {
         require!(xp >= city.xp, "XP cannot go down");
         require!(tick >= city.tick, "Invalid tick: older than the saved city");
         let first = city.commits == 0;
-        let elapsed = if first { tick } else { (now - city.committed_ns) / NS + TICK_GRACE_SECS };
-        require!(first || tick - city.tick <= elapsed, "Invalid tick: the city clock ran faster than real time");
-        // income comes from the city as it was saved; buildings claimed now only earn from the next save on
+        // the clock runs no faster than the chain's; a first save may also bring a few days of play from before the wallet
+        let since = if first { (now - city.minted_ns) / NS + FIRST_TICK_ALLOWANCE_SECS } else { (now - city.committed_ns) / NS + TICK_GRACE_SECS };
+        let tick = tick.min(city.tick.saturating_add(since));
+        let dt = tick - city.tick;
+        // income comes from the city as it was saved; buildings claimed now only earn from the next save on.
+        // The saved gold already holds raid winnings and losses; a defender's game does not know its loss yet,
+        // so the bound adds it back here and it is subtracted below.
         let rate = if first { max_income(&grid, &levels) } else { max_income(&city.grid, &city.levels) } + TRADE_MARGIN_PER_SEC;
-        let base = if first { FIRST_GOLD_ALLOWANCE } else { city.gold };
-        let bound = base + rate * (tick - city.tick) + city.loot_unsynced;
-        require!(gold <= bound, "Invalid gold: more than this city could have earned");
+        let earned = rate.saturating_mul(dt);
+        let base = if first { FIRST_GOLD_ALLOWANCE } else { city.gold.saturating_add(city.gold_lost_unsynced) };
+        let gold = gold.min(base.saturating_add(earned));
+        let spendable = if first { FIRST_GOLD_ALLOWANCE } else { 0 }.saturating_add(earned);
+        let xp = xp.min(city.xp.saturating_add(XP_GRACE).saturating_add(spendable / 10));
 
         let old_index = isqrt(u128::from(city.gold));
         let lost_applied = city.gold_lost_unsynced.min(gold);
@@ -340,6 +357,7 @@ impl Metropolix {
             fight(&atk, &def, commit.unwrap_or(100), focus.unwrap_or(0), roll)
         };
         let win = f.stars >= 1;
+        // any loot shields the city, so a swarm of small raids cannot drain it
         // attacker
         lose_troops(&mut a.army, &f.sent, f.lost);
         a.trophies = (i64::from(a.trophies) + f.trophies).max(0) as u32;
@@ -347,10 +365,12 @@ impl Metropolix {
         a.last_attack_ns.retain(|_, t| now < *t + ATTACK_COOLDOWN_SECS * NS);
         a.last_attack_ns.insert(target.clone(), now);
         // defender
+        if win || f.loot > 0 {
+            d.shield_until_ns = now + SHIELD_SECS * NS;
+        }
         if win {
             d.record.breached += 1;
             d.trophies = d.trophies.saturating_sub(6);
-            d.shield_until_ns = now + SHIELD_SECS * NS;
         } else {
             d.record.held += 1;
             d.trophies += 3;
@@ -359,8 +379,8 @@ impl Metropolix {
         let ai = isqrt(u128::from(a.gold)) + isqrt(u128::from(d.gold));
         d.gold -= f.loot;
         d.gold_lost_unsynced += f.loot;
-        a.gold += f.loot;
-        a.loot_unsynced += f.loot;
+        a.gold = a.gold.saturating_add(f.loot);
+        a.loot_unsynced = a.loot_unsynced.saturating_add(f.loot);
         let bi = isqrt(u128::from(a.gold)) + isqrt(u128::from(d.gold));
         self.pool.city_index = self.pool.city_index - ai + bi;
 
@@ -493,10 +513,65 @@ mod tests {
     use super::test_utils::*;
     use super::*;
     use near_contract_standards::fungible_token::core::FungibleTokenCore;
+    use near_contract_standards::storage_management::StorageManagement;
 
     fn founded(c: &mut Metropolix, who: &str, arc: u8, t: u64) {
-        ctx(who, t, 0);
+        ctx(who, t, MINT_DEPOSIT_YOCTO);
         c.mint_city(arc, format!("Mayor {who}"), None);
+        ctx(who, t, 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "Attach 0.05 NEAR")]
+    fn founding_needs_the_storage_deposit() {
+        let mut c = fresh();
+        ctx("alice.testnet", 10, 0);
+        c.mint_city(0, "Alice".into(), None);
+    }
+
+    #[test]
+    #[should_panic(expected = "not supported")]
+    fn no_free_storage_refunds() {
+        let mut c = fresh();
+        founded(&mut c, "alice.testnet", 0, 10);
+        ctx("alice.testnet", 11, 1);
+        c.storage_unregister(Some(true));
+    }
+
+    #[test]
+    fn huge_first_save_is_clamped_and_the_city_stays_raidable() {
+        let mut c = two_cities();
+        founded(&mut c, "mallory.testnet", 0, 10);
+        let (g, l) = layout(&[("house", 5), ("barracks", 1)]);
+        ctx("mallory.testnet", 20, 0);
+        let r = c.commit_snapshot(g, l, [5, 0, 0], U128(u128::MAX), U128(u128::MAX), U128(u128::MAX));
+        let v = c.get_city(acc("mallory.testnet"), Some(false)).unwrap();
+        // a first save may carry three days of play from before the wallet, not more
+        assert!(v.tick <= 10 + FIRST_TICK_ALLOWANCE_SECS + 10);
+        assert!(r.gold < u64::MAX / 1000 && v.gold == r.gold);
+        assert!(v.xp < u64::MAX / 1000);
+        ctx("alice.testnet", 100, 0);
+        let b = c.attack(acc("mallory.testnet"), None, Some(1));
+        assert!(b.loot <= r.gold * MAX_LOOT_PCT / 100);
+    }
+
+    #[test]
+    fn a_raided_city_saves_right_away_and_loot_counts_once() {
+        let mut c = two_cities();
+        ctx("alice.testnet", 100, 0);
+        let b = c.attack(acc("bob.testnet"), None, Some(1));
+        assert!(b.loot > 0);
+        // bob's game still holds the 20,000 it saved (plus a few seconds of income): the save goes through
+        let (g, l) = layout(&[("house", 20), ("shop", 10), ("barracks", 1)]);
+        ctx("bob.testnet", 105, 0);
+        let r = c.commit_snapshot(g, l, [5, 0, 0], U128(20_010), U128(2_000), U128(15));
+        assert_eq!((r.lost_applied, r.gold), (b.loot, 20_010 - b.loot));
+        // alice cannot claim her loot twice: her saved gold already holds it
+        let (g, l) = layout(&[("barracks", 5), ("armory", 2), ("house", 10)]);
+        ctx("alice.testnet", 101, 0);
+        let a = c.get_city(acc("alice.testnet"), Some(false)).unwrap();
+        let r = c.commit_snapshot(g, l, a.army, U128(1_000 + 2 * u128::from(b.loot)), U128(2_000), U128(11));
+        assert!(r.gold < 1_000 + 2 * b.loot);
     }
 
     #[test]
@@ -532,20 +607,19 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid gold")]
-    fn gold_from_nowhere_fails() {
+    fn gold_from_nowhere_is_clamped() {
         let mut c = fresh();
         founded(&mut c, "alice.testnet", 0, 10);
         let (g, l) = layout(&[("house", 1)]);
         ctx("alice.testnet", 20, 0);
         c.commit_snapshot(g.clone(), l.clone(), [0; 3], U128(100), U128(0), U128(10));
         ctx("alice.testnet", 80, 0);
-        c.commit_snapshot(g, l, [0; 3], U128(10_000_000), U128(0), U128(60));
+        let r = c.commit_snapshot(g, l, [0; 3], U128(10_000_000), U128(0), U128(60));
+        assert!(r.gold < 100_000, "kept {}", r.gold);
     }
 
     #[test]
-    #[should_panic(expected = "ran faster than real time")]
-    fn fast_clock_fails() {
+    fn fast_clock_is_clamped() {
         let mut c = fresh();
         founded(&mut c, "alice.testnet", 0, 10);
         let (g, l) = layout(&[("house", 1)]);
@@ -553,6 +627,8 @@ mod tests {
         c.commit_snapshot(g.clone(), l.clone(), [0; 3], U128(100), U128(0), U128(10));
         ctx("alice.testnet", 30, 0);
         c.commit_snapshot(g, l, [0; 3], U128(100), U128(0), U128(10_000));
+        let v = c.get_city(acc("alice.testnet"), Some(false)).unwrap();
+        assert!(v.tick <= 10 + 10 + TICK_GRACE_SECS, "tick {}", v.tick);
     }
 
     #[test]

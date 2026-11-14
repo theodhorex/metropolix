@@ -348,6 +348,7 @@ export default function CoinPanel({ open, account, onClose, onLog }: Props) {
     try {
       const chain = await loadChain();
       const nearIn = toUnits(buyNear.trim(), 24);
+      if (BigInt(nearIn) <= 0n) return;
       const minOutBi = (BigInt(buyQuote) * 97n) / 100n;
       const outcome = await chain.call('buy_metro', { min_out: minOutBi.toString() }, nearIn);
       const received = chain.returnValue<string>(outcome);
@@ -375,6 +376,7 @@ export default function CoinPanel({ open, account, onClose, onLog }: Props) {
     try {
       const chain = await loadChain();
       const metroIn = toUnits(sellMetro.trim(), 18);
+      if (BigInt(metroIn) <= 0n) return;
       const minOutBi = (BigInt(sellQuote) * 97n) / 100n;
       const outcome = await chain.call('sell_metro', { amount: metroIn, min_out: minOutBi.toString() }, '1');
       const received = chain.returnValue<string>(outcome);

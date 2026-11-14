@@ -157,11 +157,13 @@ pub fn fight(atk: &Side, def: &Side, commit: u8, focus: u8, roll: u64) -> Fight 
     let force = pm(atk_raw, apm) * roll / 1000;
     let destruction = (force * 65 / eff_defense).min(100);
     let stars = if destruction >= 100 { 3 } else if destruction >= 75 { 2 } else if destruction >= 50 { 1 } else { 0 };
-    let focus_loot = match focus { 1 => 1200, 2 => 700, _ => 1000 };
-    let cap = def.gold * MAX_LOOT_PCT / 100;
+    let focus_loot: u64 = match focus { 1 => 1200, 2 => 700, _ => 1000 };
+    // in u128: a treasury near u64::MAX must not make the city impossible to raid
+    let cap = u128::from(def.gold) * u128::from(MAX_LOOT_PCT) / 100;
     let loot = if n > 0 {
-        let base = cap * destruction / 100;
-        pm(pm(pm(base, focus_loot), loot_w / n), ARC_LOOT_PM[usize::from(atk.arc)]).min(cap)
+        let base = cap * u128::from(destruction) / 100;
+        let l = base * u128::from(focus_loot) / 1000 * u128::from(loot_w / n) / 1000 * u128::from(ARC_LOOT_PM[usize::from(atk.arc)]) / 1000;
+        u64::try_from(l.min(cap)).unwrap_or(u64::MAX)
     } else {
         0
     };

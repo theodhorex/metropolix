@@ -66,6 +66,8 @@ export async function openModal() {
 }
 
 export async function signOut() {
+  const a = await currentAccount();
+  if (a) try { localStorage.removeItem(`metropolix-session-${NETWORK}-${a}`); } catch { /* nothing stored */ }
   await getConnector().disconnect();
 }
 

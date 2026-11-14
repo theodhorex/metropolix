@@ -120,22 +120,24 @@ impl Metropolix {
         let nav = self.nav();
         if nav == 0 { 0 } else { mul_div(self.price(), 1000, nav) }
     }
-    /// The coin's rules, applied after each trade.
-    fn rebalance(&mut self) {
-        if self.nav() == 0 {
+    /// The coin's rules, applied after each trade, in proportion to its size: a trade of 1% of the pool's NEAR or
+    /// more applies them in full, a dust trade barely at all (so they cannot be farmed with tiny swaps).
+    fn rebalance(&mut self, near_moved: u128) {
+        if self.nav() == 0 || self.pool.near_reserve == 0 {
             return;
         }
+        let size_pm = mul_div(near_moved, 100_000, self.pool.near_reserve).min(1000);
         let mnav = self.mnav_pm();
         let me = Self::me();
         if mnav >= ISSUE_AT_PM {
-            let m = self.metro_reserve() / 200;
+            let m = mul_div(self.metro_reserve() / 200, size_pm, 1000);
             if m > 0 {
                 self.token.internal_deposit(&me, m);
                 self.pool.issued += m;
                 FtMint { owner_id: &me, amount: U128(m), memo: Some("mNAV above 2x: new METRO into the pool") }.emit();
             }
         } else if mnav < BUYBACK_BELOW_PM && self.pool.treasury > 0 {
-            let spend = self.pool.treasury / 10;
+            let spend = mul_div(self.pool.treasury / 10, size_pm, 1000);
             let out = mul_div(self.metro_reserve(), spend, self.pool.near_reserve + spend);
             if out > 0 {
                 self.pool.treasury -= spend;
@@ -187,7 +189,7 @@ impl Metropolix {
         self.pool.treasury += fee;
         self.pool.swaps += 1;
         self.pool.volume_near += near_in;
-        self.rebalance();
+        self.rebalance(near_in);
         emit("coin_swap", json!({ "account": buyer, "side": "buy", "near": U128(near_in), "metro": U128(out), "price": U128(self.price()) }));
         U128(out)
     }
@@ -208,7 +210,7 @@ impl Metropolix {
         self.pool.treasury += fee;
         self.pool.swaps += 1;
         self.pool.volume_near += gross;
-        self.rebalance();
+        self.rebalance(gross);
         emit("coin_swap", json!({ "account": seller, "side": "sell", "near": U128(out), "metro": amount, "price": U128(self.price()) }));
         Promise::new(seller).transfer(NearToken::from_yoctonear(out)).detach();
         U128(out)
@@ -290,9 +292,11 @@ impl StorageManagement for Metropolix {
     fn storage_withdraw(&mut self, amount: Option<NearToken>) -> StorageBalance {
         self.token.storage_withdraw(amount)
     }
+    /// Not supported: accounts are registered by the game for free, so unregistering would refund storage the
+    /// account never paid for.
     #[payable]
-    fn storage_unregister(&mut self, force: Option<bool>) -> bool {
-        self.token.internal_storage_unregister(force).is_some()
+    fn storage_unregister(&mut self, _force: Option<bool>) -> bool {
+        env::panic_str("Unregistering is not supported")
     }
     fn storage_balance_bounds(&self) -> StorageBalanceBounds {
         self.token.storage_balance_bounds()

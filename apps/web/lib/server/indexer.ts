@@ -17,7 +17,7 @@ async function viewFn<T>(method: string, args: Record<string, unknown> = {}): Pr
     jsonrpc: '2.0', id: 'idx', method: 'query',
     params: { request_type: 'call_function', finality: 'final', account_id: CONTRACT, method_name: method, args_base64: Buffer.from(JSON.stringify(args)).toString('base64') },
   };
-  const r = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });
+  const r = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store', signal: AbortSignal.timeout(10_000) });
   const j = (await r.json()) as { result?: { result?: number[] }; error?: unknown };
   if (!j.result?.result) throw new Error(`rpc ${method}: ${JSON.stringify(j.error ?? j).slice(0, 200)}`);
   return JSON.parse(Buffer.from(j.result.result).toString('utf8')) as T;
@@ -55,6 +55,7 @@ async function setMeta(key: string, value: string) {
 
 // ---------- sync ----------
 let inflight: Promise<SyncReport> | null = null;
+let lastFailure = 0; // a failed sync waits a minute before the next try, so a dead RPC is not hammered
 export interface SyncReport { ok: boolean; store: string; cities: number; battles: number; relics: number; ms: number; error?: string }
 
 async function lastSync(): Promise<number> {
@@ -64,6 +65,7 @@ async function lastSync(): Promise<number> {
 /** Sync when the data is older than SYNC_MS (or always with `force`). One sync at a time. */
 export async function maybeSync(force = false): Promise<SyncReport | null> {
   if (!force && Date.now() - (await lastSync()) < SYNC_MS) return null;
+  if (Date.now() - lastFailure < 60_000) return null;
   inflight ??= syncNow().finally(() => { inflight = null; });
   return inflight;
 }
@@ -105,8 +107,11 @@ async function syncNow(): Promise<SyncReport> {
       for (const b of battles) await sql`insert into mx_battles (seq, attacker, target, ts_ns, data) values (${b.seq}, ${b.attacker}, ${b.target}, ${String(b.ts_ns)}, ${JSON.stringify(b)}) on conflict (seq) do nothing`;
       await sql`insert into mx_coin_ticks (ts, data) values (${tick.ts}, ${JSON.stringify({ ...tick, coin })}) on conflict (ts) do nothing`;
       await sql`delete from mx_coin_ticks where ts < ${Date.now() - 7 * 24 * 3600 * 1000}`;
-      await sql`delete from mx_relics`;
-      for (const r of relics) await sql`insert into mx_relics (token_id, owner_id, data) values (${r.token_id}, ${r.owner_id}, ${JSON.stringify(r)})`;
+      // replace the relic list in one transaction, so a read never sees it half-empty
+      await sql.transaction([
+        sql`delete from mx_relics`,
+        ...relics.map((r) => sql`insert into mx_relics (token_id, owner_id, data) values (${r.token_id}, ${r.owner_id}, ${JSON.stringify(r)})`),
+      ]);
       await setMeta('next_battle', String(next));
       await setMeta('last_sync', String(Date.now()));
     } else {
@@ -120,6 +125,7 @@ async function syncNow(): Promise<SyncReport> {
     }
     return { ok: true, store: storeKind(), cities: cities.length, battles: battles.length, relics: relics.length, ms: Date.now() - t0 };
   } catch (e) {
+    lastFailure = Date.now();
     return { ok: false, store: storeKind(), cities: 0, battles: 0, relics: 0, ms: Date.now() - t0, error: e instanceof Error ? e.message : String(e) };
   }
 }

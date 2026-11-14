@@ -6,7 +6,7 @@
 
 <p align="center">
   <img alt="NEAR testnet" src="https://img.shields.io/badge/NEAR-LIVE%20ON%20TESTNET-000000?style=flat-square&labelColor=555555">
-  <img alt="Tests" src="https://img.shields.io/badge/TESTS-122%20SIM%20%2B%2025%20CONTRACT-16A34A?style=flat-square&labelColor=555555">
+  <img alt="Tests" src="https://img.shields.io/badge/TESTS-122%20SIM%20%2B%2030%20CONTRACT-16A34A?style=flat-square&labelColor=555555">
   <img alt="Next.js" src="https://img.shields.io/badge/NEXT.JS-16-000000?style=flat-square&labelColor=555555">
   <img alt="PixiJS" src="https://img.shields.io/badge/PIXIJS-8-8B5CF6?style=flat-square&labelColor=555555">
   <img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-F4B728?style=flat-square&labelColor=555555">
@@ -93,17 +93,19 @@ the $METRO coin and treasure NFTs.
 
 | Method | What it does |
 |---|---|
-| `mint_city(arc, name, portrait)` | one city per account, with a 100 $METRO welcome grant |
-| `commit_snapshot(grid, levels, army, gold, xp, tick)` | saves the city after checking the layout (60 building kinds, tables generated from the simulation), the troop cap, XP never falling, a tick clock no faster than the chain's, and gold no higher than the saved city could have earned |
-| `attack(target, commit, focus)` | a War Room battle against another player's saved city, luck from `env::random_seed()`; loot up to 35% of their on-chain gold, 5 min shield, 60 s cooldown, new cities under level 3 protected |
+| `mint_city(arc, name, portrait)` | one city per account; attach 0.05 NEAR for its storage, get a 100 $METRO welcome grant |
+| `commit_snapshot(grid, levels, army, gold, xp, tick)` | saves the city after checking the layout (60 building kinds, tables generated from the simulation), the troop cap and XP never falling; the tick clock, gold and XP are clamped to what the chain can vouch for (real time, what the saved city could have earned, what that gold could have bought) and the result says what was kept |
+| `attack(target, commit, focus)` | a War Room battle against another player's saved city, luck from `env::random_seed()`; loot up to 35% of their on-chain gold, a 5 min shield after any loot, 60 s cooldown, new cities under level 3 protected |
 | `buy_metro`, `sell_metro`, `quote_*`, `get_coin` | $METRO (NEP-141) against testnet NEAR in an x·y=k pool, 1% fee to the treasury |
-| `mint_relic(kind)`, `return_relic(token_id)` | a treasure from your vault as a NEP-171 NFT (3 an hour); returning it burns the token |
+| `mint_relic(kind)`, `return_relic(token_id)` | a treasure from your vault as a NEP-171 NFT (3 an hour; epic, legendary and mythic need saved level 3, 5 and 7); returning it burns the token; `nft_transfer` sends it to another player |
 | `get_city`, `get_cities`, `get_leaderboard`, `get_battles` | read cities, ChainPower and the last 200 battles |
 
 **$METRO and its NAV.** NAV = (treasury + city index × k) / supply, where the
 city index grows with the gold saved by every player. mNAV is the pool price
 over NAV. When mNAV reaches 2x the contract issues 0.5% more METRO into the
-pool; under 0.9x the treasury buys METRO back and burns it. Raids move gold
+pool; under 0.9x the treasury buys METRO back and burns it. Each trade applies
+the rules in proportion to its size (full at 1% of the pool), so dust swaps
+cannot farm them. Raids move gold
 between cities, so they move NAV, and players can trade the gap.
 
 **No popup for every save.** Turning on autosave adds one function-call access
@@ -127,7 +129,7 @@ idle or you press Connect, so the city is playable first.
 | **The world** | Integer-only, seeded, deterministic simulation: the same seed and moves give the same city on every machine, so the contract can replay it later. 122 tests, property tests with fast-check among them. | [`packages/sim/`](packages/sim/) |
 | **The indexer** | Next.js route handlers over the contract's views, Neon Postgres or memory. | [`apps/web/app/api/chain/`](apps/web/app/api/chain/) |
 | **The game** | Next.js 16, React 19, PixiJS 8 isometric renderer with HD and Lite modes. Every sprite, tile, icon and portrait is pixel art drawn in code; no third-party art. | [`apps/web/`](apps/web/) |
-| **The chain** | Rust NEAR contract (near-sdk 5, near-contract-standards for NEP-141 and NEP-171), 25 unit tests; a test fails when its building tables drift from the simulation. | [`contracts/metropolix/`](contracts/metropolix/) |
+| **The chain** | Rust NEAR contract (near-sdk 5, near-contract-standards for NEP-141 and NEP-171), 30 unit tests; a test fails when its building tables drift from the simulation. | [`contracts/metropolix/`](contracts/metropolix/) |
 
 On a production build the city paints in about half a second and holds around
 56 FPS with no long tasks while you play.
@@ -147,7 +149,9 @@ for the hackathon, starting 10 November 2026, with no starter template.
 ## Limits, stated plainly
 
 - Testnet only. $METRO and the NFTs have no real value.
-- The contract bounds what a client may claim (layout, troops, clock, gold) but does not replay the simulation. Gold from trades and AI raids beyond that bound is saved at the bound.
+- The contract bounds what a client may claim (layout, troops, clock, gold, XP) but does not replay the simulation. Gold from trades and AI raids beyond that bound is saved at the bound, and the panel says so.
+- Treasure finds are not proven on chain: the vault lives in the browser. Minting is rate-limited and gated by saved level.
+- The contract was reviewed by an AI auditor before the deadline (storage refunds, first-save bounds, dust rebalancing, double-counted loot, overflow); every finding is fixed and has a test.
 - Rival AI mayors are simulated in the browser; only players who founded a city on chain can be raided on chain.
 - Heroes, spells and rams are left out of on-chain battles.
 - Desktop only for now.
@@ -160,7 +164,7 @@ pnpm typecheck
 pnpm build && pnpm --filter @metropolix/web exec next start
 
 cd contracts/metropolix
-cargo test                                          # 25 unit tests
+cargo test                                          # 30 unit tests
 cargo build --target wasm32-unknown-unknown --release   # .cargo/config.toml adds --cfg near so panics keep their message
 # tables.rs is generated: cd packages/sim && UPDATE=1 npx vitest run tests/contract-tables.test.ts
 ```

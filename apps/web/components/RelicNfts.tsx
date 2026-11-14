@@ -34,6 +34,7 @@ interface Props { s: sim.GameState; account: string | null; act: (r?: sim.Result
 export default function RelicNfts({ s, account, act, refreshKey, onMsg }: Props) {
   const [tokens, setTokens] = useState<RelicToken[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [sendTo, setSendTo] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!account) { setTokens(null); return; }
@@ -51,6 +52,24 @@ export default function RelicNfts({ s, account, act, refreshKey, onMsg }: Props)
     } catch { setTokens(fromDb ?? []); }
   }, [account]);
   useEffect(() => { void load(); }, [load, refreshKey]);
+
+  /** NEP-171 transfer to another account: the wallet confirms it (1 yoctoNEAR, as the standard requires). */
+  const send = async (t: RelicToken) => {
+    const to = (sendTo[t.token_id] ?? '').trim().toLowerCase();
+    if (!account || !/^[a-z0-9_.-]{2,64}$/.test(to) || to === account) { onMsg('Enter another NEAR account, like friend.testnet'); return; }
+    setBusy(t.token_id);
+    try {
+      const chain = await loadChain();
+      await chain.call('nft_transfer', { receiver_id: to, token_id: t.token_id }, '1');
+      sim.pushLog(s, `${t.title || 'A relic NFT'} sent to ${to}.`);
+      onMsg(null);
+      act(undefined);
+      void fetch('/api/chain/poke', { method: 'POST' }).catch(() => undefined);
+      setTokens((ts) => (ts ?? []).filter((x) => x.token_id !== t.token_id));
+    } catch (e) {
+      onMsg(`Could not send it: ${errText(e)}`);
+    } finally { setBusy(null); }
+  };
 
   const bringHome = async (t: RelicToken) => {
     if (!account) return;
@@ -89,9 +108,17 @@ export default function RelicNfts({ s, account, act, refreshKey, onMsg }: Props)
                 <b className="font-display block truncate">{t.title || t.kind}</b>
                 <span className="text-xs text-[var(--paper-dim)]">Token #{t.token_id}</span>
               </div>
-              <button className="btn btn-quiet px-2 py-1 text-xs" disabled={!!busy} onClick={() => void bringHome(t)}>
-                {busy === t.token_id ? '...' : 'Bring home'}
-              </button>
+              <div className="flex shrink-0 flex-col gap-1">
+                <button className="btn btn-quiet px-2 py-1 text-xs" disabled={!!busy} onClick={() => void bringHome(t)}>
+                  {busy === t.token_id ? '...' : 'Bring home'}
+                </button>
+                <span className="flex gap-1">
+                  <label className="sr-only" htmlFor={`to-${t.token_id}`}>Send {t.title} to account</label>
+                  <input id={`to-${t.token_id}`} className="field w-28 px-1.5 py-0.5 text-xs" placeholder="friend.testnet" value={sendTo[t.token_id] ?? ''}
+                    onChange={(e) => setSendTo({ ...sendTo, [t.token_id]: e.target.value })} />
+                  <button className="btn btn-quiet px-2 py-0.5 text-xs" disabled={!!busy} onClick={() => void send(t)}>Send</button>
+                </span>
+              </div>
             </li>
           ))}
         </ul>

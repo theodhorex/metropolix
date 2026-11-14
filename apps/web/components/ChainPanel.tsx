@@ -53,13 +53,12 @@ const ago = (ns: number) => {
 };
 
 /** What to send so the chain accepts it: the tick no faster than real time since the last save. */
-function safeArgs(chain: Chain, s: sim.GameState, city: CityView | null, goldCap?: number) {
+function safeArgs(chain: Chain, s: sim.GameState, city: CityView | null) {
   const a = chain.snapshotArgs(s);
   if (city && city.commits > 0) {
     const elapsed = Math.floor((Date.now() * 1e6 - city.committed_ns) / 1e9);
     a.tick = String(Math.max(city.tick, Math.min(s.tick, city.tick + elapsed + 60)));
   }
-  if (goldCap !== undefined) a.gold = String(Math.min(Number(a.gold), goldCap));
   return a;
 }
 
@@ -72,6 +71,7 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState(0);
+  const [kept, setKept] = useState<{ chain: number; local: number } | null>(null);
   const cityRef = useRef<CityView | null>(null);
   cityRef.current = city ?? null;
   // this browser holds an older city than the chain (a new device, cleared storage): offer to load it, never overwrite it
@@ -108,15 +108,15 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
     const chain = await loadChain();
     const c = cityRef.current;
     let r: CommitResult | undefined;
+    const args = safeArgs(chain, s, c);
     try {
-      r = await chain.sessionCall<CommitResult>(account, 'commit_snapshot', safeArgs(chain, s, c));
+      // the chain keeps what it can vouch for (gold the saved city could have earned) and says what it kept
+      r = await chain.sessionCall<CommitResult>(account, 'commit_snapshot', args);
     } catch (e) {
-      const why = errText(e);
-      if (!/Invalid gold/.test(why) || !c) { if (!quiet) onLog(`Save failed: ${why}`); return; }
-      // more gold than the chain can vouch for (big trades, raids on AI cities): save what it can prove
-      const elapsed = Math.max(0, Number(safeArgs(chain, s, c).tick) - c.tick);
-      r = await chain.sessionCall<CommitResult>(account, 'commit_snapshot', safeArgs(chain, s, c, c.gold + elapsed * 200));
+      if (!quiet) onLog(`Save failed: ${errText(e)}`);
+      return;
     }
+    if (r) setKept({ chain: r.gold, local: Math.max(0, Number(args.gold) - r.lost_applied) });
     if (r && r.lost_applied > 0) {
       s.gold = Math.max(0, s.gold - r.lost_applied);
       sim.pushLog(s, `Raiders from other players took ${r.lost_applied} gold from your treasury.`);
@@ -181,10 +181,11 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
 
       {account && city === null && (
         <>
-          <p className="text-xs text-[var(--paper-dim)]">Signed in as <b>{account}</b>. Found your city on chain to join the other players (you get 100 $METRO).</p>
+          <p className="text-xs text-[var(--paper-dim)]">Signed in as <b>{account}</b>. Found your city on chain to join the other players. It costs 0.05 testnet NEAR for storage and you get 100 $METRO.</p>
           <button className={`${btn} mt-1.5`} disabled={!!busy || !s?.arc} onClick={() => run('Found city', async (chain) => {
             const st = getState(); if (!st?.arc) return;
-            await chain.call('mint_city', { arc: sim.arcDef(st.arc)!.index, name: (st.name || 'Mayor').slice(0, 24), portrait: st.portrait || null });
+            // 0.05 NEAR pays for the city's storage on chain
+            await chain.call('mint_city', { arc: sim.arcDef(st.arc)!.index, name: (st.name || 'Mayor').slice(0, 24), portrait: st.portrait || null }, '50000000000000000000000');
           })}>{busy === 'Found city' ? 'Founding...' : 'Found my city on chain'}</button>
         </>
       )}
@@ -194,7 +195,7 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
           <p className="text-xs"><b>{city.name}</b> ({account})</p>
           {behind && (
             <div className="well space-y-1.5 border-l-4 border-l-[var(--gold)] p-2 text-xs">
-              <p>The city saved on chain (level {city.level}) is ahead of the one in this browser, so autosave is paused.</p>
+              <p>The city saved on chain (level {city.level}) is ahead of the one in this browser, so autosave is paused. Loading it replaces this browser's city; treasures stay only where they were found unless you minted them as NFTs.</p>
               <button className="btn btn-gold w-full text-sm" disabled={!!busy} onClick={() => void restore()}>{busy === 'Load city' ? 'Loading...' : 'Load my city from chain'}</button>
             </div>
           )}
@@ -203,6 +204,9 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
             Last save {ago(savedAt ? savedAt * 1e6 : city.committed_ns)}{session ? `, autosave every ${AUTOSAVE_MS / 60000} min` : ''}.
             {city.record.won + city.record.lost + city.record.held + city.record.breached > 0 && ` Raids: ${city.record.won} won, ${city.record.lost} lost, ${city.record.held} held, ${city.record.breached} breached.`}
           </p>
+          {kept && kept.chain < kept.local && (
+            <p className="text-xs text-[var(--paper-dim)]">The chain holds {kept.chain.toLocaleString('en-US')} of your {kept.local.toLocaleString('en-US')} gold: it only vouches for what your saved city could earn. Raids by players use the chain's number.</p>
+          )}
           {city.gold_lost_unsynced > 0 && <p className="text-xs text-[var(--bad)]">Players raided {city.gold_lost_unsynced} gold from you. It leaves your treasury at the next save.</p>}
           {city.shield_until_ns > nowNs && <p className="text-xs text-[var(--good)]">Shielded for {Math.ceil((city.shield_until_ns - nowNs) / 1e9)}s after a raid.</p>}
           {!session ? (
