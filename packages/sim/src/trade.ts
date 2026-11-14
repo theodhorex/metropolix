@@ -1,7 +1,7 @@
 // Trading post, buy orders and packing up buildings.
 // Imports from './index' are only used inside functions (index imports this module back).
 import {
-  BUILDINGS, GRID, clearLevel, NPC_CITIES, RELICS, RELIC_FILL_PER10K, RESOURCE_KINDS, YOU, addStock, fairPrice, goodMaker, isBuilding, isGood, isRelic, isResource, itemName, levelFromXp, pushLog, rngInt, stockOf,
+  BUILDINGS, GRID, clearLevel, NPC_CITIES, RELICS, RELIC_FILL_PER10K, RESOURCE_KINDS, YOU, addStock, buyerCapPct, fairPrice, goodMaker, isBuilding, isGood, isRelic, isResource, itemName, levelFromXp, pushLog, rngInt, stockOf, wholeAmount,
   type GameState, type ItemKind, type ResourceKind, type Result,
 } from './index';
 
@@ -21,6 +21,9 @@ export function freshPost(): Record<ResourceKind, number> {
   for (const k of ['wood', 'ore', 'food', 'moonleaf', 'spice', 'hides', 'emberstone', 'gears'] as ResourceKind[]) out[k] = isGood(k) ? 6 : 20;
   return out;
 }
+
+/** An order fills only from this percent of the fair price up: 90, or what buyers pay for it when that is more. */
+export const orderFloorPct = (k: ItemKind) => Math.max(90, buyerCapPct(k));
 
 const whole = (n: number) => Number.isInteger(n) && n >= 1;
 
@@ -75,7 +78,7 @@ export function fillOrder(s: GameState, id: number, amount: number): Result {
   const o = s.orders.find((x) => x.id === id);
   if (!o) return { ok: false, msg: 'That order is gone' };
   if (o.buyer === YOU) return { ok: false, msg: 'That is your own order' };
-  const n = Math.min(Math.max(1, Math.floor(amount)), o.qty, stockOf(s, o.kind));
+  const n = Math.min(wholeAmount(amount), o.qty, stockOf(s, o.kind));
   if (n < 1) return { ok: false, msg: `You have no ${itemName(o.kind)} to sell` };
   addStock(s, o.kind, -n);
   s.gold += n * o.price;
@@ -105,7 +108,9 @@ export function tradeStep(s: GameState) {
   for (const o of s.orders.slice()) {
     if (o.buyer !== YOU) continue;
     if (isBuilding(o.kind) && levelFromXp(s.xp) < BUILDINGS[o.kind].unlockLevel) continue;
-    if (o.price * 100 < fairPrice(o.kind) * 90) continue; // lowballs never fill
+    // lowballs never fill; and never below what simulated buyers pay for the same thing (see marketStep), or ordering
+    // here and relisting there would print gold
+    if (o.price * 100 < fairPrice(o.kind) * orderFloorPct(o.kind)) continue;
     // relics are scarce everywhere: the rarer, the longer a fair order waits
     if (isRelic(o.kind) ? rngInt(s, 10_000) >= RELIC_FILL_PER10K[RELICS[o.kind].rarity] : rngInt(s, 100) >= 6) continue;
     const n = isResource(o.kind) ? Math.min(o.qty, isGood(o.kind) ? 3 : 10) : 1;

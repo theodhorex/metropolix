@@ -204,7 +204,7 @@ function Mine({ s, run, preview, onPackUp }: { s: sim.GameState; run: (r: sim.Re
   const [sellP, setSellP] = useState(0);
   const [buyK, setBuyK] = useState<sim.ItemKind>('spice');
   const [buyQ, setBuyQ] = useState(5);
-  const [buyP, setBuyP] = useState(sim.fairPrice('spice'));
+  const [buyP, setBuyP] = useState(Math.ceil((sim.fairPrice('spice') * sim.orderFloorPct('spice')) / 100));
   const sk = (sellK || stock[0]) as sim.ItemKind | undefined;
   // default ask: the most a buyer pays (fair price, but only 70% for a used building)
   const sp = sellP || (sk ? Math.floor((sim.fairPrice(sk) * Math.min(100, sim.buyerCapPct(sk))) / 100) : 0);
@@ -246,7 +246,7 @@ function Mine({ s, run, preview, onPackUp }: { s: sim.GameState; run: (r: sim.Re
         <div className="space-y-2 text-sm">
           <label className="flex items-center gap-2"><span className="w-14 text-[var(--paper-dim)]">Item</span>
             <ItemThumb k={buyK} size={28} preview={preview} />
-            <select className="field flex-1" value={buyK} onChange={(e) => { const k = e.target.value as sim.ItemKind; setBuyK(k); setBuyP(sim.fairPrice(k)); }}>{all.map(opt)}</select>
+            <select className="field flex-1" value={buyK} onChange={(e) => { const k = e.target.value as sim.ItemKind; setBuyK(k); setBuyP(Math.ceil((sim.fairPrice(k) * sim.orderFloorPct(k)) / 100)); }}>{all.map(opt)}</select>
           </label>
           <label className="flex items-center gap-2"><span className="w-14 text-[var(--paper-dim)]">Amount</span>
             <input type="number" className="field w-24" min={1} value={buyQ} onChange={(e) => setBuyQ(Math.max(1, Math.floor(+e.target.value)))} />
@@ -259,7 +259,7 @@ function Mine({ s, run, preview, onPackUp }: { s: sim.GameState; run: (r: sim.Re
             <span className="text-[var(--paper-dim)]">Holds <Gold n={buyQ * buyP} className="text-[var(--paper)]" /> until filled</span>
             <button className="btn btn-accent text-sm" disabled={s.gold < buyQ * buyP} onClick={() => run(sim.placeOrder(s, buyK, buyQ, buyP))}>Place order</button>
           </div>
-          <p className="text-xs text-[var(--paper-dim)]">Orders at 90% of the fair price or more fill bit by bit. Lower offers wait forever.</p>
+          <p className="text-xs text-[var(--paper-dim)]">Orders fill bit by bit once the price reaches what buyers pay for the item (110% of fair for goods, 125% for relics, 90% for buildings). Lower offers wait forever.</p>
         </div>
       </section>
 

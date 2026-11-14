@@ -13,10 +13,10 @@ const STEPS = [
     arcName: { en: 'Elf Realm', id: 'Kerajaan Elf', ko: '엘프 왕국', zh: '精灵王国' },
     title: { en: 'Build', id: 'Bangun', ko: '건설', zh: '建设' },
     text: {
-      en: 'Sixty buildings, drawn for your people, each up to level 3. Houses bring citizens, jobs bring gold, and every upgrade shows on the map.',
-      id: 'Enam puluh bangunan, digambar khusus untuk bangsamu, masing-masing sampai level 3. Rumah mendatangkan warga, pekerjaan menghasilkan emas, dan setiap peningkatan terlihat di peta.',
-      ko: '종족마다 따로 그려진 60종의 건물, 각각 레벨 3까지. 집은 시민을, 일자리는 골드를 부르고, 모든 업그레이드는 지도에 그대로 보입니다.',
-      zh: '六十种建筑，皆按你的种族专门绘制，每座最高3级。房屋迎来居民，就业带来金币，每次升级都会在地图上显现。',
+      en: 'Sixty buildings, drawn for your people, most of them up to level 3. Houses bring citizens, jobs bring gold, and every upgrade shows on the map.',
+      id: 'Enam puluh bangunan, digambar khusus untuk bangsamu, sebagian besar bisa sampai level 3. Rumah mendatangkan warga, pekerjaan menghasilkan emas, dan setiap peningkatan terlihat di peta.',
+      ko: '종족마다 따로 그려진 60종의 건물, 대부분 레벨 3까지. 집은 시민을, 일자리는 골드를 부르고, 모든 업그레이드는 지도에 그대로 보입니다.',
+      zh: '六十种建筑，皆按你的种族专门绘制，大多可升至3级。房屋迎来居民，就业带来金币，每次升级都会在地图上显现。',
     },
     src: '/landing/shop.jpg',
     w: 1600,
@@ -112,10 +112,10 @@ const GALLERY = [
   {
     title: { en: 'Vault', id: 'Brankas', ko: '금고', zh: '金库' },
     text: {
-      en: 'Mines and mills dig up relics, rarely. Show three for their bonus, or sell them.',
-      id: 'Tambang dan penggilingan kadang menggali relik, jarang sekali. Pajang tiga untuk bonusnya, atau jual.',
-      ko: '광산과 제재소에서 드물게 유물이 나옵니다. 세 개를 전시해 보너스를 받거나 팔 수 있습니다.',
-      zh: '矿场与工坊偶尔挖出遗物，极为罕见。陈列三件获得加成，或将其出售。',
+      en: 'Mines, camps, farms and workshops turn up relics, rarely. Show three for their bonus, sell them, or mint one as an NFT.',
+      id: 'Tambang, kamp kayu, ladang, dan bengkel sesekali menemukan relik, jarang sekali. Pajang tiga untuk bonusnya, jual, atau cetak jadi NFT.',
+      ko: '광산, 벌목장, 농장, 공방에서 드물게 유물이 나옵니다. 세 개를 전시해 보너스를 받거나, 팔거나, NFT로 발행할 수 있습니다.',
+      zh: '矿场、伐木场、农场和工坊偶尔会发现遗物，极为罕见。陈列三件获得加成，出售，或铸造为 NFT。',
     },
     src: '/landing/vault.png',
     w: 896,
@@ -187,7 +187,7 @@ export default function HowItPlays() {
       {/* Desktop 3-Panel Accordion (>= 761px) */}
       <div className="mx-auto mt-14 hidden w-full max-w-7xl px-4 min-[761px]:block" data-reveal>
         <div
-          role="tablist"
+          role="group"
           aria-label={tr('How it plays steps', 'Tahapan cara bermain', '플레이 단계', '游玩步骤')}
           className="flex h-[74vh] min-h-[580px] max-h-[820px] w-full overflow-hidden rounded-lg border border-[var(--l-line)] bg-[var(--l-surface)] shadow-[0_2px_10px_var(--l-shadow)]"
         >
@@ -196,9 +196,9 @@ export default function HowItPlays() {
             return (
               <div
                 key={s.num}
-                role="tab"
+                role="group"
                 tabIndex={0}
-                aria-selected={isActive}
+                aria-current={isActive ? 'step' : undefined}
                 aria-label={tr(
                   `Step ${s.num}: ${s.title.en}`,
                   `Langkah ${s.num}: ${s.title.id}`,
@@ -239,7 +239,7 @@ export default function HowItPlays() {
                     className="absolute bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap font-display text-sm font-bold tracking-wider text-[var(--landing-ink)]"
                     style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
                   >
-                    <span style={{ color: s.color }} className="mr-2">0{s.num}.</span>
+                    <span style={{ color: `color-mix(in srgb, ${s.color} 55%, var(--l-ink))` }} className="mr-2">0{s.num}.</span>
                     <T {...s.title} />
                   </div>
                 )}
@@ -256,7 +256,7 @@ export default function HowItPlays() {
                     <div className="flex items-center gap-3">
                       <span
                         className="font-display text-base font-bold"
-                        style={{ color: s.color }}
+                        style={{ color: `color-mix(in srgb, ${s.color} 55%, var(--l-ink))` }}
                       >
                         <T en={`Step ${s.num}`} id={`Langkah ${s.num}`} ko={`${s.num}단계`} zh={`第${s.num}步`} />
                       </span>
@@ -307,7 +307,7 @@ export default function HowItPlays() {
               <div className="flex items-center gap-3">
                 <span
                   className="font-display text-3xl font-bold"
-                  style={{ color: s.color }}
+                  style={{ color: `color-mix(in srgb, ${s.color} 55%, var(--l-ink))` }}
                 >
                   {s.num}.
                 </span>

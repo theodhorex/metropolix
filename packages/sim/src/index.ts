@@ -459,6 +459,7 @@ export function demolish(s: GameState, x: number, y: number): Result {
 }
 
 export function setTax(s: GameState, rate: number) {
+  if (!Number.isFinite(rate)) return; // NaN or Infinity must never reach the economy
   s.taxRate = clamp(Math.round(rate), 0, 30);
 }
 
@@ -631,6 +632,9 @@ export function cancelListing(s: GameState, id: number): Result {
   return { ok: true };
 }
 
+/** A typed amount as a whole number of at least 1 (NaN and junk count as 1; Infinity is left for the caller to cap). */
+export const wholeAmount = (n: number): number => (Number.isNaN(n) ? 1 : Math.max(1, Math.floor(n)));
+
 /** Buy `amount` units (default 1) from a listing, at most what it holds and what you can afford. */
 export function buyListing(s: GameState, id: number, amount = 1): Result {
   const l = s.market.find((x) => x.id === id);
@@ -640,7 +644,7 @@ export function buyListing(s: GameState, id: number, amount = 1): Result {
     const b = BUILDINGS[l.kind];
     if (levelFromXp(s.xp) < b.unlockLevel) return { ok: false, msg: `${b.name} unlocks at level ${b.unlockLevel}` };
   }
-  const n = Math.min(Math.max(1, Math.floor(amount)), l.qty, Math.floor(s.gold / l.price));
+  const n = Math.min(wholeAmount(amount), l.qty, Math.floor(s.gold / l.price));
   if (n < 1) return { ok: false, msg: 'Not enough gold' };
   s.gold -= n * l.price;
   addStock(s, l.kind, n);

@@ -29,10 +29,10 @@ const STEPS = [
       zh: '你的城市上链 NEAR',
     },
     text: {
-      en: 'Connect a wallet and the Rust contract keeps your city, level and gold, saved every five minutes without a pop-up. Load it back on any device.',
-      id: 'Hubungkan dompet dan kontrak Rust menyimpan kota, level, dan emasmu tiap lima menit tanpa pop-up. Muat kembali di perangkat mana pun.',
-      ko: '지갑을 연결하면 Rust 컨트랙트가 도시와 레벨, 골드를 팝업 없이 5분마다 저장합니다. 어느 기기에서든 다시 불러올 수 있습니다.',
-      zh: '连接钱包后，Rust 合约每五分钟自动保存你的城市、等级和金币，无须弹窗确认。在任何设备上都能读回。',
+      en: 'Connect a wallet and the Rust contract keeps your city, level and gold. One confirmation adds a key that can only call the game, so it saves every five minutes without a pop-up. Load it back on any device.',
+      id: 'Hubungkan dompet dan kontrak Rust menyimpan kota, level, dan emasmu. Satu konfirmasi menambah kunci yang hanya bisa memanggil game, jadi kota tersimpan tiap lima menit tanpa pop-up. Muat kembali di perangkat mana pun.',
+      ko: '지갑을 연결하면 Rust 컨트랙트가 도시와 레벨, 골드를 보관합니다. 한 번의 승인으로 게임만 호출할 수 있는 키가 추가되어, 팝업 없이 5분마다 저장됩니다. 어느 기기에서든 다시 불러올 수 있습니다.',
+      zh: '连接钱包后，Rust 合约保存你的城市、等级和金币。只需确认一次，即添加一把只能调用游戏方法的密钥，之后每五分钟自动保存，无须弹窗。在任何设备上都能读回。',
     },
     link: {
       href: 'https://testnet.nearblocks.io/address/metropolix.testnet',
@@ -89,10 +89,10 @@ const STEPS = [
       zh: '$METRO 与宝藏 NFT',
     },
     text: {
-      en: 'A NEP-141 coin with its own pool, backed by the gold in every saved city, so raids move its price. Treasures from your vault mint as NEP-171 NFTs. Testnet tokens, no real value.',
-      id: 'Koin NEP-141 dengan pool sendiri, dijamin emas di semua kota tersimpan, jadi serbuan menggerakkan harganya. Harta dari vault bisa dicetak jadi NFT NEP-171. Token testnet, tanpa nilai nyata.',
-      ko: '자체 풀을 가진 NEP-141 코인으로, 저장된 모든 도시의 골드가 담보가 되어 약탈이 가격을 움직입니다. 금고의 보물은 NEP-171 NFT로 발행됩니다. 실제 가치가 없는 testnet 토큰입니다.',
-      zh: '一枚拥有独立资金池的 NEP-141 代币，以所有已保存城市的金币为储备，因此突袭会影响其价格。金库中的宝藏可铸造为 NEP-171 NFT。均为测试网代币，没有真实价值。',
+      en: 'A NEP-141 coin with its own pool, backed by the treasury and the gold in every saved city, so raids move what backs it. Treasures from your vault mint as NEP-171 NFTs. Testnet tokens, no real value.',
+      id: 'Koin NEP-141 dengan pool sendiri, dijamin kas dan emas di semua kota tersimpan, jadi serbuan menggeser jaminannya. Harta dari vault bisa dicetak jadi NFT NEP-171. Token testnet, tanpa nilai nyata.',
+      ko: '자체 풀을 가진 NEP-141 코인으로, 국고와 저장된 모든 도시의 골드가 담보가 되어 약탈이 그 담보 가치를 움직입니다. 금고의 보물은 NEP-171 NFT로 발행됩니다. 실제 가치가 없는 testnet 토큰입니다.',
+      zh: '一枚拥有独立资金池的 NEP-141 代币，以国库和所有已保存城市的金币为储备，因此突袭会改变其储备价值。金库中的宝藏可铸造为 NEP-171 NFT。均为测试网代币，没有真实价值。',
     },
     link: {
       href: '/verify',
@@ -247,7 +247,7 @@ export default function OnChain() {
                   <span className="road-chip font-display"><T {...s.chip} /></span>
                   <h3 className="font-serif-display road-title"><T {...s.title} /></h3>
                   <p className="road-text"><T {...s.text} /></p>
-                  {s.link && (
+                  {s.link && (s.link.href.startsWith('http') ? (
                     <a href={s.link.href} target="_blank" rel="noopener noreferrer" className="road-link"
                       aria-label={tr(
                         `${s.link.label.en} (opens in a new tab)`,
@@ -257,12 +257,23 @@ export default function OnChain() {
                       )}>
                       <T {...s.link.label} />
                     </a>
-                  )}
+                  ) : (
+                    <a href={s.link.href} className="road-link"><T {...s.link.label} /></a>
+                  ))}
                 </div>
               </li>
             ))}
           </ol>
         </div>
+        {/* what backs these claims, all checkable in the repository or the browser */}
+        <p className="road-lead mx-auto mt-10 max-w-prose text-center text-sm sm:text-base" data-reveal>
+          <T
+            en={<>Checked, not just claimed: 178 simulation tests, 34 contract tests and two AI audit rounds of the contract. The <a className="road-link" href="/verify">verify page</a> recomputes every saved city and the $METRO backing from raw chain data, in your browser.</>}
+            id={<>Diperiksa, bukan sekadar diklaim: 178 tes simulasi, 34 tes kontrak, dan dua ronde audit AI atas kontrak. <a className="road-link" href="/verify">Halaman verifikasi</a> menghitung ulang setiap kota tersimpan dan jaminan $METRO dari data mentah chain, langsung di browsermu.</>}
+            ko={<>주장만이 아니라 검증했습니다: 시뮬레이션 테스트 178개, 컨트랙트 테스트 34개, 컨트랙트에 대한 AI 감사 2회. <a className="road-link" href="/verify">검증 페이지</a>는 저장된 모든 도시와 $METRO 담보를 체인 원본 데이터로 브라우저에서 다시 계산합니다.</>}
+            zh={<>不只是声称，而是经过检验：178 项模拟测试、34 项合约测试，以及两轮针对合约的 AI 审计。<a className="road-link" href="/verify">验证页面</a>会在你的浏览器中，用链上原始数据重新计算每座已保存的城市和 $METRO 的储备。</>}
+          />
+        </p>
       </div>
     </section>
   );

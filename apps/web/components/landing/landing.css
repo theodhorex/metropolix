@@ -310,7 +310,7 @@ html.lightbox-lock, html.lightbox-lock body { overflow: hidden !important; }
 .how-num-on { opacity: .09; text-shadow: none; transform: translateY(-6%) scale(1.04); }
 .how-shot { display: inline-block; width: auto; }
 @media (prefers-reduced-motion: no-preference) {
-  .how-panel[aria-selected='true'] .how-shot { animation: how-shot-in .8s cubic-bezier(.2, .8, .2, 1) .15s both; }
+  .how-panel[aria-current='step'] .how-shot { animation: how-shot-in .8s cubic-bezier(.2, .8, .2, 1) .15s both; }
 }
 @keyframes how-shot-in { from { opacity: 0; transform: translateY(18px) scale(.97); } }
 

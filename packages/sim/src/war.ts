@@ -72,6 +72,9 @@ export function loseTroops(s: GameState, n: number, only?: Army) {
 }
 
 export function trainRole(s: GameState, role: Role, n = 1): Result {
+  if (!ROLE_DEFS[role]) return { ok: false, msg: 'Unknown role' };
+  if (!(n >= 1)) return { ok: false, msg: 'Invalid amount' };
+  n = Math.floor(n);
   const st = stats(s);
   const d = ROLE_DEFS[role];
   const room = st.troopCap - s.troops;
@@ -181,7 +184,7 @@ export interface BattleReport {
 
 function compute(s: GameState, r: Rival, plan: RaidPlan, roll: number) {
   const a = armyOf(s);
-  const commit = clamp(Math.round(plan.commit), 10, 100);
+  const commit = Number.isFinite(plan.commit) ? clamp(Math.round(plan.commit), 10, 100) : 100;
   const sent: Army = { vanguard: Math.floor((a.vanguard * commit) / 100), raider: Math.floor((a.raider * commit) / 100), breaker: Math.floor((a.breaker * commit) / 100) };
   let n = sent.vanguard + sent.raider + sent.breaker;
   if (n === 0 && s.troops > 0) { const r0 = ROLES.find((x) => a[x] > 0)!; sent[r0] = 1; n = 1; }

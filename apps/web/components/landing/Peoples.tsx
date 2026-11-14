@@ -139,10 +139,10 @@ const PEOPLES_I18N: Record<ArcId, PeopleI18n> = {
       { en: 'Devastating attack (+25%)', id: 'Serangan mematikan (+25%)', ko: '파괴적인 공격력 (+25%)', zh: '毁灭性攻击力 (+25%)' },
     ],
     weakness: {
-      en: 'NO forests: wood must be bought on the market',
-      id: 'TANPA hutan: kayu harus dibeli di pasar',
-      ko: '산림 전무: 목재는 시장에서 구입 필수',
-      zh: '全无森林：木材必须依赖市场购买',
+      en: 'NO forests: every build is paid in ore instead of wood',
+      id: 'TANPA hutan: setiap bangunan dibayar dengan bijih, bukan kayu',
+      ko: '산림 전무: 모든 건설 비용을 목재 대신 광석으로 지불',
+      zh: '全无森林：所有建造均以矿石代替木材支付',
     },
   },
   goblin: {
@@ -439,7 +439,7 @@ export default function Peoples() {
 
                       <div className="people-card-body">
                         <div>
-                          <h3 className="font-display text-xl font-bold tracking-wide" style={{ color: a.accent }}>
+                          <h3 className="font-display text-xl font-bold tracking-wide" style={{ color: inkOf(a.accent) }}>
                             <T {...p.name} />
                           </h3>
                           <p className="mt-1 text-xs text-[var(--l-muted)]"><T {...p.tagline} /></p>
@@ -491,7 +491,7 @@ export default function Peoples() {
                       <div className="people-back-body">
                         <div className="flex items-center justify-between border-b border-[var(--l-line)] pb-2">
                           <div>
-                            <h3 className="font-display text-lg font-bold" style={{ color: a.accent }}>
+                            <h3 className="font-display text-lg font-bold" style={{ color: inkOf(a.accent) }}>
                               <T {...p.name} />
                             </h3>
                             <span className="text-[11px] font-medium text-[var(--l-muted)]">
@@ -514,7 +514,7 @@ export default function Peoples() {
                               <span className="people-stat-label">
                                 <T en="Attack" id="Serang" ko="공격력" zh="攻击" />
                               </span>
-                              <span className="people-stat-value" style={{ color: a.accent }}>
+                              <span className="people-stat-value" style={{ color: inkOf(a.accent) }}>
                                 {atkPct}%
                               </span>
                             </div>
@@ -530,7 +530,7 @@ export default function Peoples() {
                               <span className="people-stat-label">
                                 <T en="Defense" id="Bertahan" ko="방어력" zh="防御" />
                               </span>
-                              <span className="people-stat-value" style={{ color: a.accent }}>
+                              <span className="people-stat-value" style={{ color: inkOf(a.accent) }}>
                                 {defPct}%
                               </span>
                             </div>
@@ -546,7 +546,7 @@ export default function Peoples() {
                               <span className="people-stat-label">
                                 <T en="Economy" id="Ekonomi" ko="경제" zh="经济" />
                               </span>
-                              <span className="people-stat-value" style={{ color: a.accent }}>
+                              <span className="people-stat-value" style={{ color: inkOf(a.accent) }}>
                                 {ecoPct}%
                               </span>
                             </div>
@@ -562,7 +562,7 @@ export default function Peoples() {
                               <span className="people-stat-label">
                                 <T en="Cheap Army" id="Hemat Pasukan" ko="군대 비용 절감" zh="军费节约" />
                               </span>
-                              <span className="people-stat-value" style={{ color: a.accent }}>
+                              <span className="people-stat-value" style={{ color: inkOf(a.accent) }}>
                                 {cheapArmyPct}%
                               </span>
                             </div>
@@ -578,7 +578,7 @@ export default function Peoples() {
                               <span className="people-stat-label">
                                 <T en="Looting" id="Rampasan" ko="약탈" zh="掠夺" />
                               </span>
-                              <span className="people-stat-value" style={{ color: a.accent }}>
+                              <span className="people-stat-value" style={{ color: inkOf(a.accent) }}>
                                 {lootPct}%
                               </span>
                             </div>
@@ -624,6 +624,11 @@ export default function Peoples() {
       </div>
     </section>
   );
+}
+
+/** The people's accent darkened toward the page ink, so text in it stays readable on light and dark cards. */
+function inkOf(hex: string): string {
+  return `color-mix(in srgb, ${hex} 50%, var(--l-ink))`;
 }
 
 function colorMix(hex: string, alpha: number): string {

@@ -248,6 +248,14 @@ export default function SiteFooter() {
         <div className="mt-8 flex flex-col items-center justify-between gap-3 footer-rule pt-6 sm:flex-row">
           <p className="footer-muted text-xs">
             &copy; 2026 Metropolix.
+            {' '}
+            <T en="Also from us:" id="Juga dari kami:" ko="함께 만든 프로젝트:" zh="我们的其他项目：" />{' '}
+            <a href="https://github.com/theodhorex/scrip" target="_blank" rel="noopener noreferrer" className="footer-link underline">
+              Scrip
+              <span className="sr-only">
+                <T en=" (opens in a new tab)" id=" (membuka tab baru)" ko=" (새 탭에서 열림)" zh="（在新标签页中打开）" />
+              </span>
+            </a>
           </p>
           <p className="footer-muted text-xs">
             <T
