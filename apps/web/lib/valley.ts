@@ -1,8 +1,7 @@
 // The sunny valley (Theo's reference, 14 Nov: a bright day, a full forest, a cliff with a waterfall, a river and
-// a walled city) for every people. The goblin valley's HD pixel pieces (grass, river, ridge, wall, towers, gates,
-// tree clumps) are repainted per people by colour group, so each people keeps one layout but its own land: an
-// emerald elf forest with marble walls, a teal lizard jungle with sandstone and a swampy river, a golden caveman
-// savanna, and the dragons' scorched heath with crimson trees, basalt walls and a river of lava.
+// a walled city) for every people, each on its own bright land (Theo: every people a different backdrop, alive). The goblin valley's HD pixel pieces (grass, river, ridge, wall, towers, gates,
+// tree clumps) are repainted per people by colour group, so each people keeps one layout but its own land
+// (see LOOK).
 import type { ArcId } from '@metropolix/sim';
 import { goblinWildArt, type GoblinWildArt } from './wilds-goblin';
 
@@ -12,10 +11,14 @@ interface Look { grass: Tf; leaf: Tf; stone: Tf; water: Tf; roof: Tf }
 
 export type ValleyArc = Exclude<ArcId, 'goblin'>;
 const LOOK: Record<ValleyArc, Look> = {
-  elf: { grass: { dh: 12, s: 1.05, l: 1.02 }, leaf: { dh: 20, s: 1.1, l: 0.95 }, stone: { h: 45, sat: 0.14, l: 1.14 }, water: { dh: -8, s: 1.1, l: 1.05 }, roof: { h: 205, s: 0.85 } },
-  lizard: { grass: { dh: 40, s: 1.0, l: 0.95 }, leaf: { dh: 52, s: 1.15, l: 0.9 }, stone: { h: 38, sat: 0.34, l: 1.05 }, water: { dh: -34, s: 0.85, l: 0.95 }, roof: { dh: 12, s: 1.1 } },
-  caveman: { grass: { dh: -38, s: 0.95, l: 1.08 }, leaf: { dh: -22, s: 0.9 }, stone: { h: 28, sat: 0.22, l: 0.95 }, water: {}, roof: { h: 25, s: 0.6, l: 0.85 } },
-  dragon: { grass: { h: 28, sat: 0.3, l: 0.8 }, leaf: { dh: -95, s: 1.1, l: 1.0 }, stone: { h: 260, sat: 0.08, l: 0.6 }, water: { h: 20, sat: 1, l: 1.25 }, roof: { dh: -10, s: 1.15 } },
+  // elves: vivid emerald meadow under pink blossom trees, marble walls, a clear blue river
+  elf: { grass: { dh: 18, s: 1.1, l: 1.1 }, leaf: { h: 340, sat: 0.42, l: 1.75 }, stone: { h: 45, sat: 0.12, l: 1.2 }, water: { dh: -8, s: 1.15, l: 1.1 }, roof: { h: 205, s: 0.85 } },
+  // lizardfolk: a desert oasis, golden sand, bright palm greens, a turquoise river, sandstone walls
+  lizard: { grass: { h: 42, sat: 0.5, l: 1.45 }, leaf: { dh: 10, s: 1.25, l: 1.3 }, stone: { h: 35, sat: 0.35, l: 1.1 }, water: { h: 178, s: 1.1, l: 1.1 }, roof: { dh: 12, s: 1.1 } },
+  // cavemen: a bright snowfield, dark firs with frost, an icy river, grey-blue rock
+  caveman: { grass: { h: 205, sat: 0.22, l: 2.0 }, leaf: { dh: 30, s: 0.6, l: 0.9 }, stone: { h: 215, sat: 0.1, l: 1.05 }, water: { h: 195, s: 0.7, l: 1.25 }, roof: { h: 25, s: 0.6, l: 0.85 } },
+  // dragons: red ochre badlands, autumn-gold trees, basalt walls and a river of lava
+  dragon: { grass: { h: 14, sat: 0.42, l: 1.12 }, leaf: { h: 28, sat: 0.85, l: 1.15 }, stone: { h: 260, sat: 0.08, l: 0.7 }, water: { h: 20, sat: 1, l: 1.25 }, roof: { dh: -10, s: 1.15 } },
 };
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
@@ -41,8 +44,8 @@ function apply(t: Tf, h: number, s: number, l: number): [number, number, number]
   return hslToRgb(t.h ?? h + (t.dh ?? 0), clamp(t.sat ?? s * (t.s ?? 1)), clamp(l * (t.l ?? 1)));
 }
 
-/** Repaint a canvas: greens (as grass), greys (stone), blues (water) and bright red-orange (roofs). */
-function recolor(src: HTMLCanvasElement, look: Look): HTMLCanvasElement {
+/** Repaint a canvas: greens (as grass or as foliage), greys (stone), blues (water) and bright red-orange (roofs). */
+function recolor(src: HTMLCanvasElement, look: Look, green: 'grass' | 'leaf' = 'grass'): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = src.width; c.height = src.height;
   if (!c.width || !c.height) return c;
@@ -59,7 +62,7 @@ function recolor(src: HTMLCanvasElement, look: Look): HTMLCanvasElement {
       let t: Tf | null = null;
       if (l < 0.11) t = null; // ink outlines and deep shadow stay
       else if (s < 0.2) t = look.stone;
-      else if (h >= 70 && h < 170) t = look.grass;
+      else if (h >= 70 && h < 170) t = look[green];
       else if (h >= 170 && h < 250) t = look.water;
       else if ((h < 45 || h >= 330) && s > 0.5 && l > 0.3) t = look.roof;
       if (!t) out = key;
@@ -83,7 +86,11 @@ export function valleyArt(arc: ValleyArc): { art: GoblinWildArt; backdrop: numbe
     ...base,
     ground: base.ground.map((g) => recolor(g, look)),
     water: base.water.map((fs) => fs.map((f) => recolor(f, look))),
-    props: base.props.map((p) => ({ ...p, frames: p.frames.map((f) => recolor(f, look)) })),
+    // the tree clumps and bushes take the foliage colour; ridge, wall and towers keep the grass colour
+    props: base.props.map((p, i) => {
+      const leaf = base.tall.includes(i) || base.low.includes(i);
+      return { ...p, frames: p.frames.map((f) => recolor(f, look, leaf ? 'leaf' : 'grass')) };
+    }),
   };
   // the backdrop past the last ring: the grass, a little faded, like the goblin valley's
   const [r, g, b] = apply(look.grass, ...rgbToHsl(0x5d, 0x9b, 0x3a));

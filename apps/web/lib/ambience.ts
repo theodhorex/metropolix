@@ -23,7 +23,7 @@ const THEMES: Record<ArcId | 'none', Theme> = {
   elf: {
     motes: [
       { motion: 'firefly', tex: 'glow', colors: [0xd8ff7a, 0xbfe6ff, 0xfff2a8], count: 46, add: true, ring: [1, 12] },
-      { motion: 'fall', tex: 'leaf', colors: [0x6fc25a, 0xa8d86a, 0xe0c45a], count: 18, ring: [0, 10] },
+      { motion: 'fall', tex: 'leaf', colors: [0xffc0dc, 0xffe0ee, 0xf09cc4], count: 26, ring: [0, 10] }, // blossom petals
     ],
     fog: { color: 0xf0fbf4, alpha: 0.06, count: 7 }, flyers: { kind: 'birds', every: [16, 30], color: 0xf2f2ea }, clouds: 4, bubble: 0xbfe6ff,
   },

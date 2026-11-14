@@ -289,7 +289,7 @@ export const ARC_FILTER: Record<ArcId, string> = {
   elf: 'hue-rotate(35deg) saturate(1.15) brightness(1.2)',
   lizard: 'hue-rotate(85deg) saturate(1.3) brightness(1.12)',
   caveman: 'sepia(0.55) saturate(0.9) brightness(1.04)',
-  dragon: 'hue-rotate(-35deg) saturate(1.5) brightness(0.92) contrast(1.05)',
+  dragon: 'hue-rotate(-35deg) saturate(1.45) brightness(1.04)',
   goblin: 'hue-rotate(55deg) saturate(0.9) brightness(0.92) contrast(1.1)',
 };
 /**
@@ -309,9 +309,9 @@ export const ADDON_FILTER: Record<ArcId, string> = {
  */
 export const BUILDING_POP: Record<ArcId, string> = {
   elf: 'brightness(1.1) saturate(1.35)',
-  lizard: 'brightness(1.1) saturate(1.35)',
+  lizard: 'brightness(1.2) saturate(1.3)',
   caveman: 'brightness(1.12) saturate(1.5)',
-  dragon: 'brightness(1.22) saturate(1.3)',
+  dragon: 'brightness(1.3) saturate(1.25)',
   goblin: 'brightness(1.15) saturate(1.4)',
 };
 let themeFilter: string | null = null;
