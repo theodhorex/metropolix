@@ -5,8 +5,8 @@
 <p align="center"><b>A pixel fantasy city builder you can learn in ten minutes and keep coming back to.</b></p>
 
 <p align="center">
-  <img alt="NEAR testnet" src="https://img.shields.io/badge/NEAR-HEADED%20FOR%20TESTNET-000000?style=flat-square&labelColor=555555">
-  <img alt="Tests" src="https://img.shields.io/badge/TESTS-110%20SIM%20%2B%2022%20CONTRACT-16A34A?style=flat-square&labelColor=555555">
+  <img alt="NEAR testnet" src="https://img.shields.io/badge/NEAR-LIVE%20ON%20TESTNET-000000?style=flat-square&labelColor=555555">
+  <img alt="Tests" src="https://img.shields.io/badge/TESTS-122%20SIM%20%2B%2025%20CONTRACT-16A34A?style=flat-square&labelColor=555555">
   <img alt="Next.js" src="https://img.shields.io/badge/NEXT.JS-16-000000?style=flat-square&labelColor=555555">
   <img alt="PixiJS" src="https://img.shields.io/badge/PIXIJS-8-8B5CF6?style=flat-square&labelColor=555555">
   <img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-F4B728?style=flat-square&labelColor=555555">
@@ -16,8 +16,11 @@
 
 Pick one of five peoples, raise a city tile by tile, balance taxes against
 happiness, dig up rare treasures and raid rival mayors. It all runs in the
-browser with no sign-up. The NEAR contract that will hold your city and your
-battles is written and tested, and moves to testnet once the game is ready.
+browser with no sign-up. Connect a NEAR wallet and your city is saved on
+testnet, other players can raid it, and you can trade the game's coin,
+**$METRO**, and mint your treasures as NFTs.
+
+**Play:** [metropolix-theodhores-projects.vercel.app/play](https://metropolix-theodhores-projects.vercel.app/play) · **Contract:** [`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet)
 
 > **What you get in one sitting**
 > - **5 peoples** on different land: the dragonkin have no forests and buy every plank.
@@ -43,6 +46,8 @@ pnpm dev        # http://localhost:3000 is the landing page, /play is the game
 | **4.** Tap a building and press **Upgrade** | Now versus next, and the building changes shape on the map. |
 | **5.** Build a **Barracks**, **Open war room**, pick a target | The expected loot before you attack, the result in the log, your record on your profile. |
 | **6.** Click your card at the top left | Your portrait and its tier, your rank and your city's value. |
+| **7.** **Connect NEAR wallet**, **Found my city on chain**, **Turn on autosave** | One wallet confirmation; from then on the city saves itself every 5 minutes with no popup. |
+| **8.** **Players on chain → Raid**, then **$METRO market** | A battle against another player's saved city, gold moved on chain, and the coin's price against its NAV. |
 
 ---
 
@@ -81,18 +86,37 @@ and never re-rolled.
 
 ## On chain
 
-The game runs in your browser; the contract keeps what has to be shared and
-trusted. It is written and tested but **not deployed yet**, and the NEAR panel
-in the game says so.
+The game runs in your browser; one contract on NEAR testnet,
+[`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet),
+keeps what has to be shared and trusted: your city, raids between players,
+the $METRO coin and treasure NFTs.
 
 | Method | What it does |
 |---|---|
-| `mint_city()` | one empty 40×40 city per account |
-| `commit_snapshot(grid, troops, tick, econ_score)` | stores your city after checking the grid, a rising tick, the troop cap and a ceiling on the economy score |
-| `attack(target)` | resolves against the target's committed defense, 60 s cooldown per target, luck from `env::random_seed()` |
-| `claim_loot()`, `get_city`, `get_leaderboard` | pay out loot; read ChainPower, attack and defense |
+| `mint_city(arc, name, portrait)` | one city per account, with a 100 $METRO welcome grant |
+| `commit_snapshot(grid, levels, army, gold, xp, tick)` | saves the city after checking the layout (60 building kinds, tables generated from the simulation), the troop cap, XP never falling, a tick clock no faster than the chain's, and gold no higher than the saved city could have earned |
+| `attack(target, commit, focus)` | a War Room battle against another player's saved city, luck from `env::random_seed()`; loot up to 35% of their on-chain gold, 5 min shield, 60 s cooldown, new cities under level 3 protected |
+| `buy_metro`, `sell_metro`, `quote_*`, `get_coin` | $METRO (NEP-141) against testnet NEAR in an x·y=k pool, 1% fee to the treasury |
+| `mint_relic(kind)`, `return_relic(token_id)` | a treasure from your vault as a NEP-171 NFT (3 an hour); returning it burns the token |
+| `get_city`, `get_cities`, `get_leaderboard`, `get_battles` | read cities, ChainPower and the last 200 battles |
 
-Events follow NEP-297 (`city_minted`, `snapshot_committed`, `battle_resolved`).
+**$METRO and its NAV.** NAV = (treasury + city index × k) / supply, where the
+city index grows with the gold saved by every player. mNAV is the pool price
+over NAV. When mNAV reaches 2x the contract issues 0.5% more METRO into the
+pool; under 0.9x the treasury buys METRO back and burns it. Raids move gold
+between cities, so they move NAV, and players can trade the gap.
+
+**No popup for every save.** Turning on autosave adds one function-call access
+key to your account, limited to `commit_snapshot`, `attack`, `mint_relic` and
+`return_relic`, with no deposits and a 0.25 NEAR gas allowance. It lives in your
+browser. Anything that moves NEAR still goes through your wallet.
+
+**Reads go through an indexer.** `/api/chain/*` pulls the contract's views at
+most every 5 minutes (and on demand after an action) into Postgres when
+`DATABASE_URL` is set, or into server memory otherwise. A GitHub Actions cron
+also calls `/api/chain/sync` every 5 minutes. The game reads players, battles,
+coin history and NFTs from there and your own city straight from the RPC.
+
 The wallet layer is `@hot-labs/near-connect`, loaded only when the browser is
 idle or you press Connect, so the city is playable first.
 
@@ -100,16 +124,17 @@ idle or you press Connect, so the city is playable first.
 
 | Part | What | Where |
 |---|---|---|
-| **The world** | Integer-only, seeded, deterministic simulation: the same seed and moves give the same city on every machine, so the contract can replay it later. 110 tests, property tests with fast-check among them. | [`packages/sim/`](packages/sim/) |
+| **The world** | Integer-only, seeded, deterministic simulation: the same seed and moves give the same city on every machine, so the contract can replay it later. 122 tests, property tests with fast-check among them. | [`packages/sim/`](packages/sim/) |
+| **The indexer** | Next.js route handlers over the contract's views, Neon Postgres or memory. | [`apps/web/app/api/chain/`](apps/web/app/api/chain/) |
 | **The game** | Next.js 16, React 19, PixiJS 8 isometric renderer with HD and Lite modes. Every sprite, tile, icon and portrait is pixel art drawn in code; no third-party art. | [`apps/web/`](apps/web/) |
-| **The chain** | Rust NEAR contract (near-sdk 5), 22 unit and property tests plus a `near-workspaces` sandbox test. | [`contracts/metropolix/`](contracts/metropolix/) |
+| **The chain** | Rust NEAR contract (near-sdk 5, near-contract-standards for NEP-141 and NEP-171), 25 unit tests; a test fails when its building tables drift from the simulation. | [`contracts/metropolix/`](contracts/metropolix/) |
 
 On a production build the city paints in about half a second and holds around
 56 FPS with no long tasks while you play.
 
 **Libraries:** Next.js, React, PixiJS, three.js, GSAP, Lenis, Tailwind CSS,
-near-api-js, @hot-labs/near-connect, Vitest, fast-check, near-sdk,
-near-workspaces, proptest.
+near-api-js, @hot-labs/near-connect, @neondatabase/serverless, Vitest,
+fast-check, near-sdk, near-contract-standards.
 
 **Built with AI, said plainly.** Claude Code planned the work, wrote most of
 the simulation, contract, game UI and landing page, and reviewed every change.
@@ -121,24 +146,23 @@ for the hackathon, starting 10 November 2026, with no starter template.
 
 ## Limits, stated plainly
 
-- Not on testnet yet. Nothing in the game is money; city value is game gold only.
-- Rival mayors are simulated until a game server exists, and their profiles say so.
-- The contract bounds what a client may claim but does not replay the simulation yet.
-- The contract knows the first 14 building codes; the other 46 need a contract update.
-- `get_leaderboard` walks every city: fine for a hackathon, not for a million players.
+- Testnet only. $METRO and the NFTs have no real value.
+- The contract bounds what a client may claim (layout, troops, clock, gold) but does not replay the simulation. Gold from trades and AI raids beyond that bound is saved at the bound.
+- Rival AI mayors are simulated in the browser; only players who founded a city on chain can be raided on chain.
+- Heroes, spells and rams are left out of on-chain battles.
 - Desktop only for now.
 
 ## Commands
 
 ```bash
-pnpm test        # 110 simulation tests
+pnpm test        # 122 simulation tests, including the contract-table sync check
 pnpm typecheck
 pnpm build && pnpm --filter @metropolix/web exec next start
 
 cd contracts/metropolix
-cargo test                                          # 22 unit and property tests
-cargo build --target wasm32-unknown-unknown --release
-cargo test --test workspaces -- --ignored           # sandbox end-to-end, needs network once
+cargo test                                          # 25 unit tests
+cargo build --target wasm32-unknown-unknown --release   # .cargo/config.toml adds --cfg near so panics keep their message
+# tables.rs is generated: cd packages/sim && UPDATE=1 npx vitest run tests/contract-tables.test.ts
 ```
 
 ## License
