@@ -58,6 +58,26 @@ function fitTile(sp: Sprite) {
   if (sp.scale.x !== k) sp.scale.set(k);
 }
 
+/** A seamless tile of forest canopy (256x128 world px) packed with the given tree clumps, back to front. */
+function canopyCanvas(trees: HTMLCanvasElement[]): HTMLCanvasElement {
+  const W = 256, H = 128, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d')!;
+  ctx.imageSmoothingEnabled = false;
+  const spots: { x: number; y: number; t: HTMLCanvasElement }[] = [];
+  for (let j = 0; j < 8; j++) for (let i = 0; i < 4; i++) {
+    const h = tileHash(i, j, 917);
+    spots.push({ x: i * 64 + (j & 1) * 32 + (h % 9) - 4, y: j * 16 + ((h >>> 4) % 5) - 2, t: trees[(h >>> 8) % trees.length]! });
+  }
+  spots.sort((a, b) => a.y - b.y);
+  // each tree is drawn with its wrapped copies, so the tile repeats with no seam
+  for (const dy of [-H, 0, H]) for (const s of spots) for (const dx of [-W, 0, W]) {
+    const k = 64 / s.t.width, hh = s.t.height * k;
+    ctx.drawImage(s.t, s.x + dx - 32, s.y + dy + 16 - hh, 64, hh);
+  }
+  return c;
+}
+
 export const tileToWorld = (x: number, y: number) => ({ x: ((x - y) * TW) / 2, y: ((x + y) * TH) / 2 });
 
 export interface CityRendererOptions {
@@ -733,15 +753,39 @@ export class CityRenderer {
       const r = Math.round(((base >> 16) & 255) * k), g = Math.round(((base >> 8) & 255) * k), b = Math.round((base & 255) * k);
       return (r << 16) | (g << 8) | b;
     };
-    for (let d = -2 * R; d <= 2 * (GRID + R); d++) {
-      for (let y = -R; y < GRID + R; y++) {
+    // past the last ring the backdrop shows; on a day theme a band of forest stands on it (trees only, no
+    // ground tiles: the backdrop is the faded ground) over an endless canopy, so no pan or zoom finds bare grass
+    const RF = theme.day && !this.options.transparent ? R + (this.quality === 'lite' ? 6 : 10) : R;
+    const farTall = theme.scatter?.tall ?? [];
+    if (RF > R && farTall.length) {
+      const canopy = canopyCanvas([...new Set(farTall)].slice(0, 6).map((i) => theme.props[i]!.frames[0]!));
+      const ct = Texture.from(canopy); ct.source.scaleMode = 'nearest'; ct.source.addressMode = 'repeat';
+      this.wildTex.push([ct]);
+      const span = 400 * TW;
+      const cs = new TilingSprite({ texture: ct, width: span * 2, height: span, x: -span + (GRID * TW) / 2, y: -span / 2 + (GRID * TH) / 2 });
+      cs.tint = shadeColor(0xffffff, ringShade(99, true));
+      this.wildGround.addChildAt(cs, 0);
+    }
+    for (let d = -2 * RF; d <= 2 * (GRID + RF); d++) {
+      for (let y = -RF; y < GRID + RF; y++) {
         const x = d - y;
-        if (x < -R || x >= GRID + R) continue;
+        if (x < -RF || x >= GRID + RF) continue;
         if (x >= 0 && y >= 0 && x < GRID && y < GRID) continue;
         const ring = Math.max(-x, -y, x - (GRID - 1), y - (GRID - 1));
         const shade = ringShade(ring, theme.day);
         const c = tileToWorld(x, y);
         const h = tileHash(x, y, 101);
+        if (ring >= R) {
+          if (!farTall.length || h % 100 >= 88) continue;
+          const fi = farTall[(h >>> 8) % farTall.length]!;
+          const src = theme.props[fi]!, pk = SPRITE_W / src.frames[0]!.width;
+          const sp = new Sprite({ texture: this.wildTex[fi]![0]!, roundPixels: true });
+          sp.scale.set(pk);
+          sp.position.set(c.x - SPRITE_W / 2, c.y + TILE_H - src.frames[0]!.height * pk);
+          sp.tint = shadeColor(0xffffff, shade);
+          (x >= GRID || y >= GRID ? this.wildFront : this.wildBack).addChild(sp);
+          continue;
+        }
         const spot = theme.place?.(x, y, ring) ?? null;
         const wetTex = spot?.ground === 'water' ? waterTex[spot.mask ?? 0] : undefined;
         const g = new Sprite({ texture: wetTex ? wetTex[0]! : groundTex[h & 3]!, x: c.x - SPRITE_W / 2 - 1, y: c.y - 1, roundPixels: true });

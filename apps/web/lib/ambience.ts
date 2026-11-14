@@ -25,14 +25,14 @@ const THEMES: Record<ArcId | 'none', Theme> = {
       { motion: 'firefly', tex: 'glow', colors: [0xd8ff7a, 0xbfe6ff, 0xfff2a8], count: 46, add: true, ring: [1, 12] },
       { motion: 'fall', tex: 'leaf', colors: [0x6fc25a, 0xa8d86a, 0xe0c45a], count: 18, ring: [0, 10] },
     ],
-    fog: { color: 0xd8f0e8, alpha: 0.09, count: 9 }, flyers: { kind: 'birds', every: [16, 30], color: 0xf2f2ea }, clouds: 3, bubble: 0xbfe6ff,
+    fog: { color: 0xf0fbf4, alpha: 0.06, count: 7 }, flyers: { kind: 'birds', every: [16, 30], color: 0xf2f2ea }, clouds: 4, bubble: 0xbfe6ff,
   },
   lizard: {
     motes: [
       { motion: 'firefly', tex: 'glow', colors: [0xc6d84f, 0x9ff2a8], count: 22, add: true, ring: [1, 10] },
       { motion: 'drift', tex: 'dot', colors: [0x8aa86a, 0xb8c87a], count: 16, ring: [0, 12] },
     ],
-    fog: { color: 0xa8c0a0, alpha: 0.13, count: 12 }, flyers: { kind: 'dragonflies', every: [10, 20], color: 0x4fd8d0 }, clouds: 2, bubble: 0xd8f0e0,
+    fog: { color: 0xe8f4ec, alpha: 0.07, count: 8 }, flyers: { kind: 'dragonflies', every: [10, 20], color: 0x4fd8d0 }, clouds: 4, bubble: 0xd8f0e0,
   },
   caveman: {
     motes: [
@@ -46,7 +46,7 @@ const THEMES: Record<ArcId | 'none', Theme> = {
       { motion: 'rise', tex: 'glow', colors: [0xff8a2a, 0xffc24a, 0xff5a1a], count: 56, add: true, ring: [0, 14] },
       { motion: 'fall', tex: 'flake', colors: [0x8a8090, 0x5a5262], count: 26, ring: [0, 14] },
     ],
-    fog: { color: 0x3a3040, alpha: 0.16, count: 10 }, flyers: { kind: 'dragon', every: [18, 32], color: 0xd2452a }, clouds: 0, bubble: 0xffd27a,
+    fog: { color: 0xf0d8c8, alpha: 0.06, count: 6 }, flyers: { kind: 'dragon', every: [18, 32], color: 0xd2452a }, clouds: 3, bubble: 0xffd27a,
   },
   // a sunny valley: pollen and seeds on the breeze, leaves off the forest, birds and cloud shadows
   goblin: {

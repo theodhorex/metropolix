@@ -5,6 +5,13 @@
 // memory stays at one people's worth. An arc's art asks with paintedFrames() and keeps its drawing when
 // nothing is there.
 
+/**
+ * Off (Theo, 14 Nov 2026: "semua assetnya jangan pakai asset blender"): the game draws every building,
+ * citizen, icon and wild piece with its own pixel-art code. The Blender renders and this loader stay, so
+ * turning it back on is this one flag.
+ */
+export const USE_BLENDER_ART = false;
+
 type Manifest = Record<string, Record<string, number | Record<string, number>>>;
 
 const cache = new Map<string, HTMLCanvasElement[]>();
@@ -66,7 +73,7 @@ function loadManifest(): Promise<Manifest> {
 export function preloadPaintedArt(arc: string | null): Promise<void> {
   for (const key of [...cache.keys()]) if (!key.startsWith(`${arc}/`)) cache.delete(key);
   for (const a of [...loaded.keys()]) if (a !== arc) loaded.delete(a);
-  if (!arc) return Promise.resolve();
+  if (!arc || !USE_BLENDER_ART) return Promise.resolve();
   let p = loaded.get(arc);
   if (!p) {
     p = loadManifest().then((m) => {

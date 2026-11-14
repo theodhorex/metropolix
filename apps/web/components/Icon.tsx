@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from 'react';
+import { USE_BLENDER_ART } from '@/lib/painted';
 // Hand-drawn 12x12 pixel icons. One letter = one pixel; '.' is transparent.
 const PAL: Record<string, string> = {
   o: '#12151d', y: '#f2c14e', Y: '#b8862a', w: '#fff3c9', n: '#9a6a3a', N: '#65431f', s: '#aab3c2', S: '#68728a',
@@ -105,6 +106,7 @@ const iconListeners = new Set<() => void>();
 
 function loadRenderedIcons() {
   if (renderedIcons !== null || typeof window === 'undefined') return;
+  if (!USE_BLENDER_ART) { renderedIcons = new Set(); return; } // pixel icons only
   renderedIconsP ??= fetch('/art/ui/icons.json')
     .then((r) => (r.ok ? (r.json() as Promise<string[]>) : []))
     .catch(() => [] as string[])

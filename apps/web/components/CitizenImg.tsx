@@ -4,9 +4,10 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import type { ArcId } from '@metropolix/sim';
 import { drawCitizen } from '@/lib/citizens';
+import { USE_BLENDER_ART } from '@/lib/painted';
 
 export function CitizenImg({ arc, v, width, height, className, style }: { arc: ArcId; v: number; width: number; height: number; className?: string; style?: CSSProperties }) {
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState(!USE_BLENDER_ART);
   const fallback = useMemo(() => (failed ? drawCitizen(arc, v, 'front', 4).toDataURL() : null), [failed, arc, v]);
   return (
     <img

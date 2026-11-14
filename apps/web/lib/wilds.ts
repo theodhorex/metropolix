@@ -6,7 +6,8 @@ import type { ArcId } from '@metropolix/sim';
 import { goblinPlace, goblinWildArt, type Placement } from './wilds-goblin';
 import { disc, isoDiamond, makeCanvas, OUT, px, rect, tileHash } from './sprites';
 import { paintedLand, paintedWild } from './painted';
-import { createLandWater, landPlace, LANDMARK_SPOTS } from './wilds-land';
+import { LANDMARK_SPOTS } from './wilds-land';
+import { valleyArt } from './valley';
 
 /** Prop canvases are 64 px wide; the ground diamond's centre sits at (32, H - 16). */
 export const PROP_W = 64;
@@ -378,8 +379,19 @@ export function wildTheme(arc: ArcId | null): WildTheme {
   let place: ((x: number, y: number, ring: number) => Placement) | undefined;
   let scatter: { tall: number[]; low: number[] } | undefined;
 
+  let backdrop = mulColor(hex(t.ground[0]), WILD_FLOOR);
+  let ground = [0, 1, 2, 3].map((v) => groundTile(t.ground, v));
+  let day = false;
+
   if (arc) {
-    water = createLandWater(arc);
+    // every people lives in the sunny valley (Theo, 14 Nov: bright, a full forest, ridge and waterfall, river,
+    // walled city), painted in its own colours; its own scenery is mixed into the forest, and its three
+    // landmarks stand where the goblin's do (clear of the valley's river and ridge)
+    const v = valleyArt(arc);
+    backdrop = v.backdrop;
+    ground = v.art.ground;
+    water = v.art.water;
+    day = true;
     const landmarkIdx: (number | undefined)[] = [undefined, undefined, undefined];
     for (let k = 0; k < 3; k++) {
       const frames = paintedLand(arc, k);
@@ -388,23 +400,50 @@ export function wildTheme(arc: ArcId | null): WildTheme {
         landmarkIdx[k] = props.length - 1;
       }
     }
-
     let lavaGlowIdx: number | undefined;
     if (arc === 'dragon') {
       const [cv] = makeCanvas(PROP_W, 34);
       props.push({ frames: [cv], tall: false, water: 'lava', glow: 0xff6a1a });
       lavaGlowIdx = props.length - 1;
     }
-
     const tallBase = props.slice(0, baseCount).map((p, i) => (p.tall ? i : -1)).filter((i) => i >= 0);
     const lowBase = props.slice(0, baseCount).map((p, i) => (!p.tall ? i : -1)).filter((i) => i >= 0);
-    scatter = { tall: tallBase, low: lowBase };
-    place = (x, y, ring) => landPlace(arc, x, y, ring, landmarkIdx, lavaGlowIdx, lowBase[0]);
+    // the valley's pieces go after the people's props, with their indexes moved along
+    const off = props.length;
+    for (const p of v.art.props) {
+      const frames = p.sway && p.frames.length === 1 ? SWAY_STEPS.map((k) => (k === 0 ? p.frames[0]! : bend(p.frames[0]!, k * p.sway!))) : p.frames;
+      props.push({ frames, tall: p.tall, water: p.water, glow: p.glow });
+    }
+    const shift = (i: number) => i + off;
+    // a full forest (Theo: "hutannya dipenuhin"): the valley's big tree clumps in this people's colours carry
+    // it, with the people's own scenery mixed in so it still reads as its land
+    const clumps = v.art.tall.map(shift);
+    scatter = {
+      tall: [...clumps, ...clumps, ...clumps, ...tallBase],
+      low: [...lowBase, shift(v.art.low[0]!), shift(v.art.low[1]!), shift(v.art.low[4]!)],
+    };
+    const art = {
+      ...v.art,
+      idx: { wallX: shift(v.art.idx.wallX), wallY: shift(v.art.idx.wallY), tower: shift(v.art.idx.tower), gateX: shift(v.art.idx.gateX), gateY: shift(v.art.idx.gateY) },
+      ridge: new Map([...v.art.ridge].map(([k, i]) => [k, shift(i)] as [string, number])),
+      low: lowBase.length ? lowBase : v.art.low.map(shift),
+    };
+    place = (x, y, ring) => {
+      const spots = LANDMARK_SPOTS.goblin;
+      for (let k = 0; k < 3; k++) {
+        const s = spots[k];
+        if (s && s.x === x && s.y === y) return landmarkIdx[k] !== undefined ? { prop: landmarkIdx[k] } : {};
+      }
+      const r = goblinPlace(art, x, y, ring);
+      if (r && r.ground === 'water' && lavaGlowIdx !== undefined && (x + y) % 3 === 0) return { ...r, prop: lavaGlowIdx };
+      return r;
+    };
   }
 
   return {
-    backdrop: mulColor(hex(t.ground[0]), WILD_FLOOR),
-    ground: [0, 1, 2, 3].map((v) => groundTile(t.ground, v)),
+    backdrop,
+    day,
+    ground,
     water,
     props,
     place,
@@ -427,10 +466,10 @@ export function pickProp(theme: WildTheme, x: number, y: number, ring: number, f
   const lowIdx = theme.scatter?.low ?? theme.props.map((p, i) => (p.tall ? -1 : i)).filter((i) => i >= 0);
   const pick = (list: number[]) => list[(h >>> 8) % list.length]!;
   if (ring <= 1) return roll < 12 && lowIdx.length ? pick(lowIdx) : -1;
-  const tallOk = front ? ring >= 4 : ring >= 2;
-  // the forest thickens quickly past the clearing; a few tiles stay open as glades
-  const tallPct = !tallOk ? 0 : ring < 4 ? 30 : ring < 6 ? 62 : 80;
-  const lowPct = ring < 4 ? 26 : 14;
+  const tallOk = front ? ring >= 3 : ring >= 2;
+  // a full forest right past the clearing outside the wall; a few tiles stay open as glades
+  const tallPct = !tallOk ? 0 : ring < 3 ? 60 : ring < 5 ? 84 : 92;
+  const lowPct = ring < 4 ? 20 : 6;
   if (roll < tallPct && tallIdx.length) return pick(tallIdx);
   if (roll < tallPct + lowPct && lowIdx.length) return pick(lowIdx);
   return -1;

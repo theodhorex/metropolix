@@ -24,11 +24,11 @@ interface Look {
 }
 
 const LOOKS: Record<ArcId | 'none', Look> = {
-  elf: { path: '#3f5a3f', rim: '#0e2418', light: '#6f8a63', dark: '#2a3f2c', lit: '#4f9a66', shade: '#081a10', patch: 0.32, glow: '#ffd89a', glowA: 0.12, vignette: 0.5 },
-  lizard: { path: '#6a5c36', rim: '#2a2410', light: '#8d7c4e', dark: '#4c4226', lit: '#8a8a48', shade: '#141308', patch: 0.3, glow: '#ffcf80', glowA: 0.08, vignette: 0.45 },
-  caveman: { path: '#86683f', rim: '#3c2c1a', light: '#a88a5c', dark: '#5e4830', lit: '#a08a58', shade: '#1a120a', patch: 0.28, glow: '#ffc070', glowA: 0.06, vignette: 0.42 },
-  dragon: { path: '#3a2c30', rim: '#0a0608', light: '#5a464c', dark: '#8a2c18', lit: '#4a3446', shade: '#050306', patch: 0.34, glow: '#ff8a40', glowA: 0.1, vignette: 0.52 },
-  goblin: { path: '#9a7e52', rim: '#5a4a30', light: '#bea070', dark: '#76603c', lit: '#b8d870', shade: '#1e3410', patch: 0.2, glow: '#ffd890', glowA: 0, vignette: 0.28 },
+  elf: { path: '#3f5a3f', rim: '#1e3a26', light: '#6f8a63', dark: '#2a3f2c', lit: '#4f9a66', shade: '#1f4a2c', patch: 0.32, glow: '#ffd89a', glowA: 0.12, vignette: 0.16},
+  lizard: { path: '#6a5c36', rim: '#4a4020', light: '#8d7c4e', dark: '#4c4226', lit: '#8a8a48', shade: '#3a4a22', patch: 0.3, glow: '#ffcf80', glowA: 0.08, vignette: 0.14},
+  caveman: { path: '#86683f', rim: '#5a4228', light: '#a88a5c', dark: '#5e4830', lit: '#a08a58', shade: '#4a3620', patch: 0.28, glow: '#ffc070', glowA: 0.06, vignette: 0.14},
+  dragon: { path: '#3a2c30', rim: '#2a1a1e', light: '#5a464c', dark: '#8a2c18', lit: '#4a3446', shade: '#2a1c22', patch: 0.34, glow: '#ff8a40', glowA: 0.1, vignette: 0.2},
+  goblin: { path: '#9a7e52', rim: '#5a4a30', light: '#bea070', dark: '#76603c', lit: '#b8d870', shade: '#1e3410', patch: 0.2, glow: '#ffd890', glowA: 0, vignette: 0.14},
   none: { path: '#7d6c4e', rim: '#3a3020', light: '#a08a64', dark: '#5a4a34', lit: '#5a9a5a', shade: '#0a1a0a', patch: 0.28, glow: '#ffd08a', glowA: 0.08, vignette: 0.4 },
 };
 

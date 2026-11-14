@@ -286,11 +286,11 @@ export function makeCanvas(w: number, h: number): [HTMLCanvasElement, CanvasRend
 // Per-arc colour theme, applied to every sprite while a bank is built (nearest-neighbour safe: no scaling).
 // Distinct per-arc SHAPES come from ARC_SPRITES in ./arcs (optional overrides drawn by hand).
 export const ARC_FILTER: Record<ArcId, string> = {
-  elf: 'hue-rotate(35deg) saturate(1.15) brightness(1.08)',
-  lizard: 'hue-rotate(85deg) saturate(1.35) brightness(0.95)',
-  caveman: 'sepia(0.55) saturate(0.85) brightness(0.88)',
-  dragon: 'hue-rotate(-35deg) saturate(1.6) brightness(0.72) contrast(1.1)',
-  goblin: 'hue-rotate(55deg) saturate(0.9) brightness(0.8) contrast(1.15)',
+  elf: 'hue-rotate(35deg) saturate(1.15) brightness(1.2)',
+  lizard: 'hue-rotate(85deg) saturate(1.3) brightness(1.12)',
+  caveman: 'sepia(0.55) saturate(0.9) brightness(1.04)',
+  dragon: 'hue-rotate(-35deg) saturate(1.5) brightness(0.92) contrast(1.05)',
+  goblin: 'hue-rotate(55deg) saturate(0.9) brightness(0.92) contrast(1.1)',
 };
 /**
  * Level 2 and 3 add-ons use their own milder filter. The race filters spin hues hard, which turned
@@ -299,7 +299,7 @@ export const ARC_FILTER: Record<ArcId, string> = {
 export const ADDON_FILTER: Record<ArcId, string> = {
   elf: 'saturate(0.7) brightness(1.02)',
   lizard: 'saturate(0.8) brightness(0.98)',
-  caveman: 'sepia(0.55) saturate(0.85) brightness(0.88)',
+  caveman: 'sepia(0.55) saturate(0.9) brightness(1.04)',
   dragon: 'saturate(0.85) brightness(0.8) contrast(1.1)',
   goblin: 'saturate(0.7) brightness(0.82) contrast(1.1)',
 };
