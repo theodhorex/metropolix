@@ -17,8 +17,8 @@ import {
 } from '../sprites';
 
 // LIZARD PALETTE: teal, ochre, terracotta, amber, bone, swamp mud & dry reed thatch
-const TEAL_DARK = '#13494d';
-const TEAL_MID = '#1f7075';
+const TEAL_DARK = '#1f7a7e'; // oasis turquoise (was #13494d, too dark on the sand)
+const TEAL_MID = '#2a9aa0';
 const TEAL_LIGHT = '#359ca3';
 const TEAL_BRIGHT = '#62d8de';
 const OCHRE_DARK = '#7d5628';
@@ -34,8 +34,8 @@ const VENOM_GLOW = '#76ff9b';
 const BONE_DARK = '#8f8674';
 const BONE_MID = '#bfb59f';
 const BONE_LIGHT = '#ebe3d2';
-const MUD_DARK = '#3b2d20';
-const MUD_MID = '#54412e';
+const MUD_DARK = '#8a6a3e'; // sun-baked sandstone (was dark swamp mud)
+const MUD_MID = '#b38d55';
 const REED_DARK = '#6b5a35';
 const REED_LIGHT = '#9e8852';
 
@@ -435,7 +435,7 @@ function buildLizardFarm(): HTMLCanvasElement[] {
   for (let u = 3; u < 29; u++) {
     for (let v = 3; v < 29; v++) {
       const isDike = u === 14 || u === 15 || v % 6 === 0;
-      const col = isDike ? OCHRE_DARK : (u + v) % 2 === 0 ? TEAL_DARK : '#193b3d';
+      const col = isDike ? OCHRE_DARK : (u + v) % 2 === 0 ? TEAL_DARK : '#2a8a8e';
       isoTexel(ctx, 32, 32, u, v, col);
     }
   }

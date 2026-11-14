@@ -17,8 +17,8 @@ import {
 // ============================================================================
 // LIZARD PALETTE CONSTANTS (from lizard.ts)
 // ============================================================================
-const TEAL_DARK = '#13494d';
-const TEAL_MID = '#1f7075';
+const TEAL_DARK = '#1f7a7e'; // oasis turquoise (was #13494d, too dark on the sand)
+const TEAL_MID = '#2a9aa0';
 const TEAL_LIGHT = '#359ca3';
 const TEAL_BRIGHT = '#62d8de';
 const OCHRE_DARK = '#7d5628';
@@ -34,8 +34,8 @@ const VENOM_GLOW = '#76ff9b';
 const BONE_DARK = '#8f8674';
 const BONE_MID = '#bfb59f';
 const BONE_LIGHT = '#ebe3d2';
-const MUD_DARK = '#3b2d20';
-const MUD_MID = '#54412e';
+const MUD_DARK = '#8a6a3e'; // sun-baked sandstone (was dark swamp mud)
+const MUD_MID = '#b38d55';
 const REED_DARK = '#6b5a35';
 const REED_LIGHT = '#9e8852';
 
@@ -1227,14 +1227,14 @@ function buildLizardFoundry(frame = 0): HTMLCanvasElement {
 
   // Thick billowing smoke from both chimneys (3 frames)
   const y1 = frame * 2;
-  disc(ctx, 24, 27 - y1, 3, '#2a221b');
-  disc(ctx, 25, 22 - y1, 4, '#382e25');
-  disc(ctx, 27, 16 - y1, 3, '#4d4034');
+  disc(ctx, 24, 27 - y1, 3, '#6e5232');
+  disc(ctx, 25, 22 - y1, 4, '#8a6a3e');
+  disc(ctx, 27, 16 - y1, 3, '#a08050');
 
   const y2 = ((frame + 1) % 3) * 2;
-  disc(ctx, 38, 25 - y2, 3, '#2a221b');
-  disc(ctx, 39, 20 - y2, 4, '#382e25');
-  disc(ctx, 41, 14 - y2, 3, '#4d4034');
+  disc(ctx, 38, 25 - y2, 3, '#6e5232');
+  disc(ctx, 39, 20 - y2, 4, '#8a6a3e');
+  disc(ctx, 41, 14 - y2, 3, '#a08050');
 
   // Glowing molten iron reservoir in front court
   isoDiamond(ctx, 32, 55, 6, OUT);
@@ -1311,7 +1311,7 @@ function buildLizardGarden(): HTMLCanvasElement[] {
 
   // Low garden terrace pad
   isoDiamond(ctx, 32, 48, 28, MUD_DARK, OUT);
-  isoDiamond(ctx, 32, 48, 24, '#443425', TEAL_DARK);
+  isoDiamond(ctx, 32, 48, 24, '#9a7746', TEAL_DARK);
 
   // Low terracotta garden curbs
   isoBox(ctx, 32, 58, 16, 2, 2, {
@@ -2046,18 +2046,18 @@ function buildLizardPond(frame = 0): HTMLCanvasElement {
 
   // Swamp pool pad
   isoDiamond(ctx, 32, 48, 28, MUD_DARK, OUT);
-  isoDiamond(ctx, 32, 48, 24, MUD_MID, '#122c2e');
+  isoDiamond(ctx, 32, 48, 24, MUD_MID, '#1f7a7e');
 
   // Reflective teal pool
   isoDiamond(ctx, 32, 49, 18, TEAL_DARK, OUT);
-  isoDiamond(ctx, 32, 49, 14, '#17474a');
+  isoDiamond(ctx, 32, 49, 14, '#36b4b8');
 
   // Green lily pads with blossoms
-  disc(ctx, 25, 48, 3, '#2e6b3f');
+  disc(ctx, 25, 48, 3, '#4f9a45');
   px(ctx, 25, 48, '#ffffff');
   px(ctx, 26, 48, '#ff80ab');
 
-  disc(ctx, 39, 48, 3, '#2e6b3f');
+  disc(ctx, 39, 48, 3, '#4f9a45');
   px(ctx, 39, 48, '#ffffff');
   px(ctx, 38, 48, VENOM_GLOW);
 
@@ -2070,7 +2070,7 @@ function buildLizardPond(frame = 0): HTMLCanvasElement {
   // Animated ripples
   const rip = frame % 2;
   disc(ctx, 32, 48, 4 + rip * 2, rip === 0 ? TEAL_LIGHT : TEAL_BRIGHT);
-  disc(ctx, 32, 48, 3 + rip * 2, '#17474a');
+  disc(ctx, 32, 48, 3 + rip * 2, '#36b4b8');
 
   // Reeds & cattails
   rect(ctx, 28, 40, 1, 4, REED_LIGHT);
