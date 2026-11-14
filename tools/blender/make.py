@@ -33,17 +33,20 @@ def recipe_for(S, kind, reload=False):
     return S.overrides.get(kind) or table[kind]
 
 
-def build(arc, kind, seed=7, reload=True):
+def build(arc, kind, seed=7, reload=True, level=1):
     S = load_style(arc, reload=reload)
     fn = recipe_for(S, kind, reload=reload)
     kit.reset()
-    fn(S, random.Random(f'{arc}/{kind}/{seed}'))
+    rng = random.Random(f'{arc}/{kind}/{seed}')
+    fn(S, rng)
+    if level and level > 1:
+        S.upgrade(level, rng)
     kit.outline_all()
     kit.pose(0)
     return S
 
 
-def render(arc, kinds=None, save_blend=True):
+def render(arc, kinds=None, save_blend=True, level=1):
     import bpy
     bpy.context.preferences.filepaths.save_version = 0  # no .blend1 backups
     out = os.path.join(HERE, 'out', arc)
@@ -54,24 +57,50 @@ def render(arc, kinds=None, save_blend=True):
         # every recipe, except the other peoples' wonders
         from recipes import WONDER_ARC
         kinds = sorted(k for k in set(table) | set(S.overrides) if WONDER_ARC.get(k, arc) == arc)
+        if level and level > 1:
+            from recipes import decoration, wonders
+            decor_wonders = set(getattr(decoration, 'RECIPES', {})) | set(getattr(wonders, 'RECIPES', {}))
+            for extra in ('wonders_goblin', 'wonders_extra'):
+                try:
+                    mod = importlib.import_module(f'recipes.{extra}')
+                    decor_wonders |= set(getattr(mod, 'RECIPES', {}))
+                except ModuleNotFoundError:
+                    pass
+            kinds = [k for k in kinds if k not in decor_wonders]
     done = {}
     for kind in kinds:
+        name = f'{kind}@{level}' if level and level > 1 else kind
         try:
-            build(arc, kind, reload=False)
+            build(arc, kind, reload=False, level=level)
             for old in os.listdir(out):
-                if old == f'{kind}.png' or (old.startswith(f'{kind}_') and old[len(kind) + 1:-4].isdigit()):
+                if old == f'{name}.png' or (old.startswith(f'{name}_') and old[len(name) + 1:-4].isdigit()):
                     os.remove(os.path.join(out, old))
-            done[kind] = kit.render_all(os.path.join(out, kind))
+            if level and level > 1 and not kit._anims:
+                kit.anim(lambda f, n: None)
+            done[name] = kit.render_all(os.path.join(out, name))
             if save_blend:
-                bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out, f'{kind}.blend'), copy=True)
-            print(f'OK {arc}/{kind} frames={done[kind]}', flush=True)
+                bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out, f'{name}.blend'), copy=True)
+            print(f'OK {arc}/{name} frames={done[name]}', flush=True)
         except Exception as e:  # keep going: one broken recipe must not stop the batch
             import traceback
             traceback.print_exc()
-            print(f'FAIL {arc}/{kind}: {e}', flush=True)
+            print(f'FAIL {arc}/{name}: {e}', flush=True)
     return done
 
 
 if __name__ == '__main__' and '--' in sys.argv:
     args = sys.argv[sys.argv.index('--') + 1:]
-    render(args[0], args[1:] or None)
+    level = 1
+    clean_args = []
+    i = 0
+    while i < len(args):
+        if args[i] == '--level' and i + 1 < len(args):
+            level = int(args[i + 1])
+            i += 2
+        elif args[i].startswith('--level='):
+            level = int(args[i].split('=', 1)[1])
+            i += 1
+        else:
+            clean_args.append(args[i])
+            i += 1
+    render(clean_args[0], clean_args[1:] or None, level=level)

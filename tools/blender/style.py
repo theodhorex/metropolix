@@ -7,6 +7,7 @@
 # (left front) and the +Y face (right front): put doors, windows and signs on those faces.
 import math
 import bpy
+from mathutils import Vector
 import kit
 from kit import box, poly, cyl, cone, sphere, mat
 
@@ -309,3 +310,162 @@ class Style:
         fl = cone(x, y, z, 0.04 * s, 0.1 * s, mat('#ff9a2a', emit=5), seg=6, name='noink_fire')
         core = cone(x, y, z, 0.022 * s, 0.07 * s, mat('#fff0a0', emit=6), seg=6, name='noink_fire')
         kit.anim(lambda f, n: [setattr(fl, 'scale', (1, 1, (1.0, 1.25, 0.85)[f % 3])), setattr(core, 'scale', (1, 1, (1.1, 0.9, 1.2)[f % 3]))])
+
+    def upgrade(self, level, rng):
+        """Dress an upgradable building for level 2 or 3.
+        Called by make.py after the recipe, BEFORE outline_all.
+        """
+        if level <= 1:
+            return
+
+        # 1. Read the scene's mesh bounding box and highest point
+        min_x = min_y = min_z = float('inf')
+        max_x = max_y = max_z = float('-inf')
+        high_x = high_y = 0.0
+        max_z_vert = float('-inf')
+
+        for ob in bpy.context.scene.objects:
+            if ob.type == 'MESH':
+                for c in ob.bound_box:
+                    wco = ob.matrix_world @ Vector(c)
+                    if wco.x < min_x: min_x = wco.x
+                    if wco.x > max_x: max_x = wco.x
+                    if wco.y < min_y: min_y = wco.y
+                    if wco.y > max_y: max_y = wco.y
+                    if wco.z < min_z: min_z = wco.z
+                    if wco.z > max_z: max_z = wco.z
+                for v in ob.data.vertices:
+                    wco = ob.matrix_world @ v.co
+                    if wco.z > max_z_vert:
+                        max_z_vert = wco.z
+                        high_x, high_y = wco.x, wco.y
+
+        if min_x == float('inf'):
+            return
+
+        # Clamp footprint coordinates to stay safely inside |x|, |y| <= 0.47
+        min_x = max(-0.44, min_x)
+        max_x = min(0.44, max_x)
+        min_y = max(-0.44, min_y)
+        max_y = min(0.44, max_y)
+        high_x = max(-0.42, min(0.42, high_x))
+        high_y = max(-0.42, min(0.42, high_y))
+
+        base_z = max(0.0, min_z)
+        h = max(0.25, max_z - base_z)
+
+        # ---------------- LEVEL 2 ----------------
+        # Roof refit: level 2 re-tiles part of the roof in fresh copper, level 3 gilds it (the clearest
+        # sign of rank at 64 px); ridges and caps turn gold at level 3
+        refit = self.m('accent', metal=0.45, rough=0.45)
+        gold = self.m('accent2', metal=0.85, rough=0.3, emit=0.15)
+        share = 0.22 if level == 2 else 0.5
+        for ob in list(bpy.context.scene.objects):
+            if ob.type != 'MESH' or not ob.data.materials:
+                continue
+            n = ob.name.lower()
+            if n.startswith(('shingle', 'tile', 'roofcone', 'roof')) and rng.random() < share:
+                ob.data.materials[0] = refit if level == 2 else gold
+            elif level >= 3 and n.startswith(('ridge', 'roofcap', 'chimcap')):
+                ob.data.materials[0] = gold
+
+        # Waving banner on each visible face (+X and +Y faces, upper third)
+        bh = min(0.20, h * 0.32)
+        bw = min(0.10, min(max_x - min_x, max_y - min_y) * 0.25)
+        bz = base_z + h * 0.68 - bh
+
+        # +X face banner
+        ban_x = min(0.43, max_x)
+        ban_y = min_y + (max_y - min_y) * 0.45
+        self.banner('x', ban_x, ban_y, bz, w=bw, h=bh)
+
+        # +Y face banner
+        ban_y = min(0.43, max_y)
+        ban_x = min_x + (max_x - min_x) * 0.45
+        self.banner('y', ban_x, ban_y, bz, w=bw, h=bh)
+
+        # Flag on the highest point (S.flag, waves)
+        flag_h = min(0.25, max(0.18, h * 0.25))
+        self.flag(high_x, high_y, max_z, h=flag_h)
+
+        # Two lanterns at the front corners (S.lamp)
+        c1_x = min(0.44, max_x + 0.02)
+        c1_y = max(-0.44, min_y + 0.02)
+        self.lamp(c1_x, c1_y, base_z)
+
+        c2_x = max(-0.44, min_x + 0.02)
+        c2_y = min(0.44, max_y + 0.02)
+        self.lamp(c2_x, c2_y, base_z)
+
+        # Planters/flower boxes or barrels by the front corners (people's own props)
+        p1_x = min(0.43, c1_x - 0.04)
+        p1_y = max(-0.43, c1_y + 0.08)
+        box(p1_x, p1_y, base_z, 0.09, 0.06, 0.05, self.m('wood_dark'), 'planter')
+        sphere(p1_x, p1_y, base_z + 0.05, 0.035, self.m('foliage'), 'planter_bush', squash=0.7)
+        sphere(p1_x + 0.01, p1_y, base_z + 0.07, 0.02, self.m('accent2'), 'planter_flowers')
+
+        p2_x = max(-0.43, c2_x + 0.08)
+        p2_y = min(0.43, c2_y - 0.04)
+        self.barrel(p2_x, p2_y, base_z, r=0.045, h=0.09)
+        self.barrel(p2_x + 0.05, p2_y - 0.05, base_z, r=0.038, h=0.07)
+
+        # ---------------- LEVEL 3 ----------------
+        if level >= 3:
+            gold = self.m('accent2', metal=0.85, rough=0.2)
+
+            # Gold finial/crown on the highest point (metal accent2, small emissive glint)
+            tz = max_z + flag_h
+            sphere(high_x, high_y, tz + 0.015, 0.028, gold, 'finial_base')
+            cone(high_x, high_y, tz + 0.03, 0.032, 0.045, gold, seg=6, name='finial_crown')
+            glint = box(high_x, high_y, tz + 0.078, 0.014, 0.014, 0.014, mat('#ffffff', emit=5.0), 'noink_finial_glint')
+            kit.anim(lambda f, n: setattr(glint, 'scale', ((1.3, 0.7, 1.1)[f % 3],) * 3))
+
+            # Gold emblem plaques (S.emblem) on both faces
+            plaq_z = base_z + h * 0.60
+            plaq_x = min(0.44, max_x + 0.006)
+            plaq_y = min_y + (max_y - min_y) * 0.75
+            box(plaq_x, plaq_y, plaq_z, 0.012, 0.08, 0.08, gold, 'plaque_x')
+            self.emblem('x', plaq_x + 0.012, plaq_y, plaq_z, 0.07)
+
+            plaq_y2 = min(0.44, max_y + 0.006)
+            plaq_x2 = min_x + (max_x - min_x) * 0.75
+            box(plaq_x2, plaq_y2, plaq_z, 0.08, 0.012, 0.08, gold, 'plaque_y')
+            self.emblem('y', plaq_x2, plaq_y2 + 0.012, plaq_z, 0.07)
+
+            # Two braziers or statues by the entrance
+            b1_x = min(0.44, max_x + 0.01)
+            b1_y = max(min_y + 0.1, max_y - 0.16)
+            b2_x = max(min_x + 0.1, max_x - 0.16)
+            b2_y = min(0.44, max_y + 0.01)
+
+            for bx_b, by_b in ((b1_x, b1_y), (b2_x, b2_y)):
+                cyl(bx_b, by_b, base_z, 0.035, 0.12, self.m('stone_dark'), seg=8, name='brazier_ped')
+                cone(bx_b, by_b, base_z + 0.12, 0.055, 0.04, self.m('metal'), seg=8, r_top=0.065, name='brazier_bowl')
+                self.fire(bx_b, by_b, base_z + 0.16, s=0.7)
+
+            # 5-6 tiny emissive sparkles that drift upward over the frames (aura of prestige)
+            sparkle_mat = mat('#ffe680', emit=6.0)
+            sparkle_offsets = [
+                ((min_x + max_x) * 0.5 + 0.12, (min_y + max_y) * 0.5 - 0.10, base_z + h * 0.25),
+                ((min_x + max_x) * 0.5 - 0.10, (min_y + max_y) * 0.5 + 0.12, base_z + h * 0.40),
+                (min(0.43, max_x - 0.05), (min_y + max_y) * 0.5 + 0.05, base_z + h * 0.35),
+                ((min_x + max_x) * 0.5 + 0.05, min(0.43, max_y - 0.05), base_z + h * 0.50),
+                ((min_x + max_x) * 0.5 - 0.08, (min_y + max_y) * 0.5 - 0.08, base_z + h * 0.60),
+                ((min_x + max_x) * 0.5 + 0.02, (min_y + max_y) * 0.5 + 0.02, base_z + h * 0.70),
+            ]
+            sparkles = []
+            for i, (sx, sy, sz) in enumerate(sparkle_offsets):
+                sp = sphere(sx, sy, sz, 0.015, sparkle_mat, name='noink_sparkle')
+                sparkles.append((sp, (sx, sy, sz)))
+
+            def drift_sparkles(f, n):
+                for i, (sp, (ox, oy, oz)) in enumerate(sparkles):
+                    t = (f / n + i / len(sparkles)) % 1.0
+                    sp.location = (
+                        ox + 0.016 * math.sin(2 * math.pi * (t + i * 0.25)),
+                        oy + 0.016 * math.cos(2 * math.pi * (t + i * 0.25)),
+                        oz + t * 0.22
+                    )
+                    sc = 0.6 + 0.5 * math.sin(2 * math.pi * (t * 2 + i * 0.33))
+                    sp.scale = (sc, sc, sc)
+            kit.anim(drift_sparkles)

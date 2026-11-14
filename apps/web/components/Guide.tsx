@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { drawCitizen } from '@/lib/citizens';
+import { useEffect, useState } from 'react';
+import { CitizenImg } from './CitizenImg';
 import { arcDef, type BuildingKind, type GameState } from '@metropolix/sim';
 
 const KEY = 'metropolix-tutorial-v1';
@@ -44,13 +44,12 @@ export default function Guide(props: Props) {
   });
   useEffect(() => { onTarget(active ? cur!.target : null); return () => onTarget(null); }, [active, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pip = useMemo(() => (s.arc ? drawCitizen(s.arc, 0, 'front', 4).toDataURL() : null), [s.arc]);
   if (!active || !cur) return null;
   const arc = arcDef(s.arc)!;
   return (
     <div className="pointer-events-none fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-end gap-3 px-3" role="status">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {pip && <img src={pip} alt="" width={64} height={96} className="shrink-0" style={{ imageRendering: 'pixelated', filter: 'drop-shadow(0 3px 0 #12151d)' }} />}
+      {s.arc && <CitizenImg arc={s.arc} v={0} width={64} height={96} className="shrink-0" style={{ filter: 'drop-shadow(0 3px 0 #12151d)' }} />}
       <div className="pointer-events-auto relative max-w-sm border-2 border-[var(--ink)] bg-[var(--paper)] p-3 text-sm text-[#1b1b1b] shadow-[0_3px_0_var(--ink)]">
         <span className="absolute -left-2 bottom-5 h-3 w-3 rotate-45 border-b-2 border-l-2 border-[var(--ink)] bg-[var(--paper)]" />
         <p className="font-display mb-0.5 text-xs text-[#6b6455]">Pip, your guide</p>

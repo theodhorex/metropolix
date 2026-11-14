@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ArcId, Encounter, NpcAction } from '@metropolix/sim';
 import { SPECIES } from '@/lib/citizens';
-import { drawCitizen } from '@/lib/citizens';
+import { CitizenImg } from './CitizenImg';
 import { CloseX } from './ui';
 
 export interface NpcTalk { id: number; variant: number; name: string; x: number; y: number; encounter: Encounter; reply: string | null }
@@ -11,7 +11,6 @@ export interface NpcTalk { id: number; variant: number; name: string; x: number;
 interface Props { talk: NpcTalk; arc: ArcId; width: number; onAct: (a: NpcAction) => void; onMore: () => void; onClose: () => void }
 
 export default function NpcDialog({ talk, arc, width, onAct, onMore, onClose }: Props) {
-  const portrait = useMemo(() => drawCitizen(arc, talk.variant, 'front', 4).toDataURL(), [arc, talk.variant]);
   const species = SPECIES[arc][talk.variant % SPECIES[arc].length]!.name;
   const left = Math.max(150, Math.min(talk.x, width - 150));
   // the box is clamped to the map, the tail still points at the citizen
@@ -22,8 +21,7 @@ export default function NpcDialog({ talk, arc, width, onAct, onMore, onClose }: 
       <div className="panel p-2.5">
         <div className="flex items-start gap-2.5">
           <div className="well shrink-0 overflow-hidden p-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={portrait} alt="" width={48} height={72} className="npc-bob" style={{ imageRendering: 'pixelated' }} />
+            <CitizenImg arc={arc} v={talk.variant % 6} width={48} height={72} className="npc-bob" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 // Hand-drawn 12x12 pixel icons. One letter = one pixel; '.' is transparent.
 const PAL: Record<string, string> = {
   o: '#12151d', y: '#f2c14e', Y: '#b8862a', w: '#fff3c9', n: '#9a6a3a', N: '#65431f', s: '#aab3c2', S: '#68728a',
@@ -99,7 +99,54 @@ function compile(name: IconName): Compiled {
   return out;
 }
 
+let renderedIcons: Set<string> | null = null;
+let renderedIconsP: Promise<void> | null = null;
+const iconListeners = new Set<() => void>();
+
+function loadRenderedIcons() {
+  if (renderedIcons !== null || typeof window === 'undefined') return;
+  renderedIconsP ??= fetch('/art/ui/icons.json')
+    .then((r) => (r.ok ? (r.json() as Promise<string[]>) : []))
+    .catch(() => [] as string[])
+    .then((names) => {
+      renderedIcons = new Set(Array.isArray(names) ? names : []);
+      iconListeners.forEach((fn) => fn());
+      iconListeners.clear();
+    });
+}
+
 function IconImpl({ name, size = 20, className = '', title }: { name: IconName; size?: number; className?: string; title?: string }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (renderedIcons !== null) return;
+    const onLoaded = () => setTick((t) => t + 1);
+    iconListeners.add(onLoaded);
+    loadRenderedIcons();
+    return () => { iconListeners.delete(onLoaded); };
+  }, []);
+
+  if (renderedIcons?.has(name)) {
+    return (
+      <img
+        src={`/art/ui/${name}.webp`}
+        width={size}
+        height={size}
+        alt={title ?? ''}
+        title={title}
+        role={title ? 'img' : undefined}
+        aria-hidden={title ? undefined : true}
+        aria-label={title}
+        draggable={false}
+        onError={() => {
+          renderedIcons?.delete(name);
+          setTick((t) => t + 1);
+        }}
+        style={{ width: size, height: size, imageRendering: 'auto' }}
+        className={`inline-block shrink-0 select-none ${className}`}
+      />
+    );
+  }
+
   const { side, paths } = compile(name);
   return (
     <svg viewBox={`0 0 ${side} ${side}`} width={size} height={size} shapeRendering="crispEdges" className={`inline-block shrink-0 ${className}`} role={title ? 'img' : undefined} aria-hidden={title ? undefined : true} aria-label={title}>

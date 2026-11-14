@@ -414,6 +414,7 @@ export class CityRenderer {
       if (!t) break;
       const v = Math.floor(Math.random() * bank.citizens.length);
       const sprite = new Sprite({ texture: bank.citizens[v]![0]![4]!, roundPixels: true });
+      sprite.scale.set((0.8 * 16) / (sprite.texture.width || 16));
       sprite.anchor.set(0.5, 1);
       const id = this.npcSeq++;
       sprite.eventMode = 'static';
@@ -461,7 +462,7 @@ export class CityRenderer {
       if (!t) break;
       const sprite = new Sprite({ texture: bank.soldiers[0]![4]!, roundPixels: true });
       sprite.anchor.set(0.5, 1);
-      sprite.scale.set(0.8, 0.8);
+      sprite.scale.set((0.8 * 16) / (sprite.texture.width || 16));
       sprite.position.set(((t.x - t.y) * TW) / 2, ((t.x + t.y) * TH) / 2 + TH / 2 + 2);
       sprite.zIndex = t.x + t.y;
       sprite.eventMode = 'none';
@@ -530,7 +531,9 @@ export class CityRenderer {
       frame = Math.floor(w.dist * 5) % 4;
     }
     w.sprite.texture = set[w.view]![frame]!;
-    w.sprite.scale.set(w.flip * 0.8, 0.8);
+    // walkers show 16x24 art at 0.8; rendered (Blender) walkers are 64x96, so they are scaled by their width
+    const k = (0.8 * 16) / (w.sprite.texture.width || 16);
+    w.sprite.scale.set(w.flip * k, k);
     w.sprite.position.set(((w.x - w.y) * TW) / 2, ((w.x + w.y) * TH) / 2 + TH / 2 + 2);
     w.sprite.zIndex = w.x + w.y;
   }

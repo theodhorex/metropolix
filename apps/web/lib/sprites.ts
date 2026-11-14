@@ -1,7 +1,7 @@
 import { CanvasSource, Texture } from 'pixi.js';
 import { BUILDING_KINDS, canUpgrade, type ArcId, type BuildingKind } from '@metropolix/sim';
 import { ARC_ART } from './arcs';
-import { paintedFrames } from './painted';
+import { paintedFrames, paintedPeople } from './painted';
 import { buildLevelCanvas } from './sprites-levels';
 import { art3a } from './sprites-wave3a';
 import { art3b } from './sprites-wave3b';
@@ -1265,23 +1265,33 @@ export function buildSpriteBank(arc: ArcId | null): SpriteBank {
         get: () => { let t = made.get(k); if (!t) { t = make(k); made.set(k, t); } return t; },
       });
     }
+    // rendered (Blender) walkers win over the pixel drawings when this people has them (64x96, shown at 16x24)
+    const walker = (name: string, draw: (f: number) => HTMLCanvasElement): Texture[] => {
+      const r = arc ? paintedPeople(arc, name) : undefined;
+      return r && r.length >= WALK_FRAMES + 1 ? r.map(raw) : Array.from({ length: WALK_FRAMES + 1 }, (_, f) => raw(draw(f)));
+    };
     const citizens = Array.from({ length: SPECIES_COUNT }, (_, v) =>
-      (['front', 'back'] as const).map((view) => Array.from({ length: WALK_FRAMES + 1 }, (_, f) => raw(drawCitizen(arc, v, view, f)))));
+      (['front', 'back'] as const).map((view) => walker(`cit_${v}_${view}`, (f) => drawCitizen(arc, v, view, f))));
     const badges: [Texture, Texture] = [raw(buildBadgeTexture(2)), raw(buildBadgeTexture(3))];
-    const soldiers = (['front', 'back'] as const).map((view) =>
-      Array.from({ length: WALK_FRAMES + 1 }, (_, f) => raw(drawSoldier(arc, view, f))));
+    const soldiers = (['front', 'back'] as const).map((view) => walker(`sol_${view}`, (f) => drawSoldier(arc, view, f)));
     const arcFilter = arc ? ADDON_FILTER[arc] : null;
     const levelCache = new Map<string, Texture[]>();
     const levelFrames = (kind: BuildingKind, level: number): Texture[] => {
       if (level <= 1 || !canUpgrade(kind)) return buildings[kind];
-      // rendered (Blender) art keeps its look at every level: the pixel add-ons clash with it, and the
-      // gold level pips already say the level
-      const base = buildings[kind];
-      if ((base[0]?.source.resource as HTMLCanvasElement | undefined)?.dataset?.smooth === '1') return base;
       const lv: 2 | 3 = level >= 3 ? 3 : 2;
       const key = `${kind}@${lv}`;
       const hit = levelCache.get(key);
       if (hit) return hit;
+      const painted = arc ? paintedFrames(arc, key) : undefined;
+      if (painted && painted.length > 0) {
+        const frames = painted.map(raw);
+        levelCache.set(key, frames);
+        return frames;
+      }
+      // rendered (Blender) art keeps its look at every level: the pixel add-ons clash with it, and the
+      // gold level pips already say the level
+      const base = buildings[kind];
+      if ((base[0]?.source.resource as HTMLCanvasElement | undefined)?.dataset?.smooth === '1') return base;
       const frames = buildings[kind].map((baseTex, f) =>
         raw(buildLevelCanvas(baseTex.source.resource as HTMLCanvasElement, kind, lv, f, arcFilter)),
       );

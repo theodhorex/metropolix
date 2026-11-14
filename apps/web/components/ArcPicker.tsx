@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ARCS, BUILDINGS, BUILDING_KINDS, GOOD_KINDS, RESOURCES, type ArcDef, type ArcId, type GoodKind } from '@metropolix/sim';
 import ArcPortrait from './ArcPortrait';
 import Icon, { type IconName } from './Icon';
 
-import { SPECIES, SPECIES_COUNT, drawCitizen } from '@/lib/citizens';
+import { SPECIES, SPECIES_COUNT } from '@/lib/citizens';
+import { CitizenImg } from './CitizenImg';
 
 /** Land richness as a row of pixel icons: one icon = 20%, up to 200%. Half icons are dimmed. */
 function Pips({ icon, pm, label }: { icon: IconName; pm: number; label: string }) {
@@ -77,13 +78,11 @@ const BACKDROP: Record<ArcId, string> = {
 const INK: Record<ArcId, string> = { elf: '#0c1f12', lizard: '#2a1a05', caveman: '#2a1505', dragon: '#2a0b08', goblin: '#1a2205' };
 
 function PeopleGallery({ arc }: { arc: ArcId }) {
-  const urls = useMemo(() => Array.from({ length: SPECIES_COUNT }, (_, v) => drawCitizen(arc, v, 'front', 4).toDataURL()), [arc]);
   return (
     <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-      {urls.map((u, v) => (
+      {Array.from({ length: SPECIES_COUNT }, (_, v) => (
         <li key={v} className="well flex flex-col items-center px-1 pt-2 pb-1 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={u} alt="" width={64} height={96} style={{ imageRendering: 'pixelated' }} />
+          <CitizenImg arc={arc} v={v} width={64} height={96} />
           <span className="text-[11px] leading-tight">{SPECIES[arc][v]!.name}</span>
         </li>
       ))}

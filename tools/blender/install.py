@@ -29,7 +29,17 @@ def install(arc, kinds=None):
     dst = os.path.join(ART, arc)
     os.makedirs(dst, exist_ok=True)
     table = renders(arc)
-    for k in kinds or sorted(table):
+    if kinds:
+        targets = []
+        for k in kinds:
+            if k in table and k not in targets:
+                targets.append(k)
+            for tk in table:
+                if tk.startswith(f'{k}@') and tk not in targets:
+                    targets.append(tk)
+    else:
+        targets = sorted(table)
+    for k in targets:
         files = table[k]
         ims = [Image.open(p).convert('RGBA') for p in files]
         top = min(im.getchannel('A').getbbox()[1] for im in ims if im.getchannel('A').getbbox())
@@ -44,25 +54,29 @@ def install(arc, kinds=None):
     write_manifest()
 
 
+ARCS = sorted(('goblin', 'elf', 'lizard', 'caveman', 'dragon'))
+
+
 def write_manifest():
-    # scenery (wild_*) is listed under "_wild" by install_wilds.py: keep that entry, skip its files here
+    # scenery (wild_*), land and people (cit_*, sol_*) are listed by install_wilds.py and install_people.py
+    # under "_wild", "_land" and "_people": keep those entries, skip their files here
     path = os.path.join(ART, 'manifest.json')
     old = json.load(open(path)) if os.path.exists(path) else {}
     man = {}
-    for arc in sorted(os.listdir(ART)):
+    for arc in ARCS:
         d = os.path.join(ART, arc)
         if not os.path.isdir(d):
             continue
         kinds = {}
         for f in os.listdir(d):
-            if f.startswith(('wild_', 'land_')):
+            if f.startswith(('wild_', 'land_', 'cit_', 'sol_')):
                 continue
             m = FRAME.match(f)
             if m:
                 kinds[m.group(1)] = max(kinds.get(m.group(1), 0), int(m.group(2)) + 1)
             elif f.endswith(EXT):
                 kinds.setdefault(f[:-len(EXT)], 1)
-        for s in ('_wild', '_land'):
+        for s in ('_wild', '_land', '_people'):
             if s in old.get(arc, {}):
                 kinds[s] = old[arc][s]
         if kinds:
