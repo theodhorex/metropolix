@@ -34,6 +34,7 @@ Metropolix is for **anyone who likes a city builder but is tired of a city that 
 > - One Rust contract on NEAR testnet, [`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet), holds every player's saved city, runs raids between them, issues the **$METRO** coin and mints treasure **NFTs**.
 > - Every save is bounded by the contract: layout and troops are validated, and the clock, gold and XP are clamped to what the city could have earned.
 > - A raid is a real battle: the contract runs it with on-chain randomness and moves gold out of the other player's saved treasury.
+> - **Demo video:** [watch it on X](https://x.com/0xnoxxs/status/2121731993365020993).
 > - **Don't take our word for it.** [`/verify`](https://metropolix-city.vercel.app/verify) reads raw views from a NEAR RPC node and recomputes every city's ChainPower and the coin's NAV in your browser. Today: 4 cities, 1 coin, 0 mismatches.
 
 <img src="docs/screenshots/city.jpg" width="1440" alt="An elven city in Metropolix: tree houses, fountains, farms and barracks on a pixel isometric map">
