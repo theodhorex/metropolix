@@ -5,6 +5,7 @@
 // reads your own city straight from the RPC so it is always fresh.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as sim from '@metropolix/sim';
+import { cityFromChain } from '@/lib/restore';
 import { AUTOSAVE_MS, CONTRACT_ID, EXPLORER, NETWORK, indexer, loadChain, type Battle, type CityView, type CommitResult } from '@/lib/chain-meta';
 
 type Chain = Awaited<ReturnType<typeof loadChain>>;
@@ -73,6 +74,9 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
   const [savedAt, setSavedAt] = useState(0);
   const cityRef = useRef<CityView | null>(null);
   cityRef.current = city ?? null;
+  // this browser holds an older city than the chain (a new device, cleared storage): offer to load it, never overwrite it
+  const local = getState();
+  const behind = !!city && city.commits > 0 && (!local?.arc || sim.arcDef(local.arc)?.index !== city.arc || local.xp < city.xp);
 
   const refresh = useCallback(async () => {
     try {
@@ -126,11 +130,11 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
 
   // autosave every few minutes once a session key exists, and once soon after the page opens
   useEffect(() => {
-    if (!account || !session || !city) return;
+    if (!account || !session || !city || behind) return;
     const first = window.setTimeout(() => void save(true), 20_000);
     const t = window.setInterval(() => void save(true), AUTOSAVE_MS);
     return () => { window.clearTimeout(first); window.clearInterval(t); };
-  }, [account, session, city?.owner, save]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [account, session, city?.owner, behind, save]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const raid = (target: CityView) => run(`Raid on ${target.name}`, async (chain) => {
     const s = getState(); if (!s || !account) return;
@@ -143,6 +147,15 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
     sim.pushLog(s, b.win
       ? `On-chain raid on ${target.name}: ${b.stars}★, +${b.loot} gold, lost ${b.lost} troops.`
       : `On-chain raid on ${target.name} was thrown back: lost ${b.lost} troops.`);
+    onChange();
+  });
+
+  const restore = () => run('Load city', async (chain) => {
+    const s = getState(); if (!s || !account) return;
+    const full = await chain.view<CityView>('get_city', { account_id: account, full: true });
+    const r = full && cityFromChain(full, s.rng);
+    if (!r) throw new Error('No saved city to load');
+    Object.assign(s, r);
     onChange();
   });
 
@@ -179,6 +192,12 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
       {account && city && (
         <div className="mt-1 space-y-1.5">
           <p className="text-xs"><b>{city.name}</b> ({account})</p>
+          {behind && (
+            <div className="well space-y-1.5 border-l-4 border-l-[var(--gold)] p-2 text-xs">
+              <p>The city saved on chain (level {city.level}) is ahead of the one in this browser, so autosave is paused.</p>
+              <button className="btn btn-gold w-full text-sm" disabled={!!busy} onClick={() => void restore()}>{busy === 'Load city' ? 'Loading...' : 'Load my city from chain'}</button>
+            </div>
+          )}
           <p>ChainPower <b className="text-[var(--accent)]">{city.chain_power}</b>, trophies <b className="text-[var(--gold)]">{city.trophies}</b>, {city.troops} troops saved</p>
           <p className="text-xs text-[var(--paper-dim)]">
             Last save {ago(savedAt ? savedAt * 1e6 : city.committed_ns)}{session ? `, autosave every ${AUTOSAVE_MS / 60000} min` : ''}.
@@ -187,11 +206,11 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
           {city.gold_lost_unsynced > 0 && <p className="text-xs text-[var(--bad)]">Players raided {city.gold_lost_unsynced} gold from you. It leaves your treasury at the next save.</p>}
           {city.shield_until_ns > nowNs && <p className="text-xs text-[var(--good)]">Shielded for {Math.ceil((city.shield_until_ns - nowNs) / 1e9)}s after a raid.</p>}
           {!session ? (
-            <button className={btn} disabled={!!busy} onClick={() => run('Autosave', async (chain) => { await chain.createSession(account); setSession(true); await save(false); })}>
+            <button className={btn} disabled={!!busy} onClick={() => run('Autosave', async (chain) => { await chain.createSession(account); setSession(true); if (!behind) await save(false); })}>
               Turn on autosave (one wallet confirmation)
             </button>
           ) : (
-            <button className={btn} disabled={!!busy} onClick={() => run('Save', () => save(false))}>{busy === 'Save' ? 'Saving...' : 'Save now'}</button>
+            <button className={btn} disabled={!!busy || behind} onClick={() => run('Save', () => save(false))}>{busy === 'Save' ? 'Saving...' : 'Save now'}</button>
           )}
         </div>
       )}
