@@ -297,11 +297,22 @@ export const ARC_FILTER: Record<ArcId, string> = {
  * red banners orange on elf and silos pink on dragon; add-ons only need the race's light and dirt.
  */
 export const ADDON_FILTER: Record<ArcId, string> = {
-  elf: 'saturate(0.7) brightness(1.02)',
-  lizard: 'saturate(0.8) brightness(0.98)',
-  caveman: 'sepia(0.55) saturate(0.9) brightness(1.04)',
-  dragon: 'saturate(0.85) brightness(0.8) contrast(1.1)',
-  goblin: 'saturate(0.7) brightness(0.82) contrast(1.1)',
+  elf: 'saturate(1.05) brightness(1.12)',
+  lizard: 'saturate(1.1) brightness(1.1)',
+  caveman: 'sepia(0.4) saturate(1.3) brightness(1.12)',
+  dragon: 'saturate(1.1) brightness(1.05) contrast(1.05)',
+  goblin: 'saturate(1.05) brightness(1.05) contrast(1.05)',
+};
+/**
+ * Brighter, more colourful buildings (Theo, 14 Nov 2026: "agak terang dan colorful"), on top of the people's
+ * own colours; it also reaches the hand-drawn people buildings, which skip ARC_FILTER.
+ */
+export const BUILDING_POP: Record<ArcId, string> = {
+  elf: 'brightness(1.1) saturate(1.35)',
+  lizard: 'brightness(1.1) saturate(1.35)',
+  caveman: 'brightness(1.12) saturate(1.5)',
+  dragon: 'brightness(1.22) saturate(1.3)',
+  goblin: 'brightness(1.15) saturate(1.4)',
 };
 let themeFilter: string | null = null;
 
@@ -1249,13 +1260,16 @@ export function buildSpriteBank(arc: ArcId | null): SpriteBank {
     const filter = themeFilter;
     const made = new Map<BuildingKind, Texture[]>();
     const make = (k: BuildingKind): Texture[] => {
-      const keep = themeFilter; themeFilter = filter;
+      const pop = arc ? BUILDING_POP[arc] : null;
+      const keep = themeFilter; themeFilter = [filter, pop].filter(Boolean).join(' ') || null;
       try {
         // rendered art (tools/blender, public/art) wins over the drawings when this people has it
         const rendered = arc ? paintedFrames(arc, k) : undefined;
         if (rendered) return rendered.map(raw);
         const custom = art.buildings?.[k];
-        return custom ? custom().map(raw) : shared[k]();
+        if (!custom) return shared[k]();
+        themeFilter = pop; // the people's own drawings keep their colours, brightened
+        return custom().map((c) => canvasToTexture(c));
       } finally { themeFilter = keep; }
     };
     const buildings = {} as Record<BuildingKind, Texture[]>;
