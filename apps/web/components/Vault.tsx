@@ -5,6 +5,7 @@ import * as sim from '@metropolix/sim';
 import Icon from './Icon';
 import { RelicThumb } from './ItemThumb';
 import { Modal, SubHead, type TabDef } from './ui';
+import RelicNfts, { mintRelicNft } from './RelicNfts';
 
 type TabId = 'vault' | 'book';
 const TABS: TabDef<TabId>[] = [
@@ -34,15 +35,26 @@ function RarityTag({ k }: { k: sim.RelicKind }) {
   );
 }
 
-interface Props { open: boolean; s: sim.GameState | null; act: (r?: sim.Result) => void; onClose: () => void }
+interface Props { open: boolean; s: sim.GameState | null; account: string | null; act: (r?: sim.Result) => void; onClose: () => void }
 
-export default function Vault({ open, s, act, onClose }: Props) {
+export default function Vault({ open, s, account, act, onClose }: Props) {
   const [tab, setTab] = useState<TabId>('vault');
   const [msg, setMsg] = useState<string | null>(null);
   const [price, setPrice] = useState<Partial<Record<sim.RelicKind, number>>>({});
+  const [minting, setMinting] = useState<sim.RelicKind | null>(null);
+  const [nftKey, setNftKey] = useState(0);
   if (!open || !s) return null;
 
   const run = (r: sim.Result) => { setMsg(r.ok ? null : r.msg); act(r); };
+  const mint = async (k: sim.RelicKind) => {
+    if (!account) return;
+    setMinting(k);
+    const err = await mintRelicNft(s, account, k);
+    setMinting(null);
+    setMsg(err);
+    act(undefined);
+    setNftKey((n) => n + 1);
+  };
   const owned = sim.RELIC_KINDS.filter((k) => (s.vault[k] ?? 0) > 0);
   const RANK: Record<sim.Rarity, number> = { mythic: 0, legendary: 1, epic: 2, rare: 3 };
   const chronicle = [...(s.seen ?? [])].sort((a, b) => RANK[sim.RELICS[a].rarity] - RANK[sim.RELICS[b].rarity] || sim.RELICS[a].name.localeCompare(sim.RELICS[b].name));
@@ -120,6 +132,10 @@ export default function Vault({ open, s, act, onClose }: Props) {
                           className="field w-24 px-1.5 py-1 text-sm tabular-nums" />
                         <button className="btn btn-quiet w-32 py-1 text-sm" onClick={() => run(sim.listForSale(s, k, 1, ask))}>List on market</button>
                       </span>
+                      <button className="btn btn-quiet w-24 py-1 text-sm" disabled={!account || !!minting}
+                        title={account ? 'Mint one as an NFT on NEAR testnet' : 'Connect a NEAR wallet first'} onClick={() => void mint(k)}>
+                        {minting === k ? 'Minting...' : 'Mint NFT'}
+                      </button>
                     </div>
                   </li>
                 );
@@ -131,6 +147,7 @@ export default function Vault({ open, s, act, onClose }: Props) {
               On the market: {listed.map((l) => `${sim.itemName(l.kind)} at ${l.price.toLocaleString('en-US')}g`).join(', ')}. Cancel a listing from My trades in the Market.
             </p>
           )}
+          <RelicNfts s={s} account={account} act={act} refreshKey={nftKey} onMsg={setMsg} />
           <p className="mt-4 text-xs text-[var(--paper-dim)]">
             The crown buys any treasure on the spot for {sim.CROWN_PM / 10}% of its worth. Other cities pay more, but a rare buyer can take a long time to show up.
           </p>

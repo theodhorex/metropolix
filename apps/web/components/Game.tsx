@@ -17,6 +17,7 @@ import Icon, { type IconName } from './Icon';
 import NpcDialog, { type NpcTalk } from './NpcDialog';
 import Marketplace from './Marketplace';
 import Vault from './Vault';
+import CoinPanel from './CoinPanel';
 import FindReveal from './FindReveal';
 import Profile from './Profile';
 import Portrait from './Portrait';
@@ -48,6 +49,7 @@ export default function Game() {
   const [warOpen, setWarOpen] = useState(false);
   const [marketOpen, setMarketOpen] = useState(false);
   const [vaultOpen, setVaultOpen] = useState(false);
+  const [coinOpen, setCoinOpen] = useState(false);
   const [reveal, setReveal] = useState<sim.RelicKind | null>(null);
   const findsSeen = useRef<number | null>(null);
   const [profileOf, setProfileOf] = useState<sim.PlayerRow | 'you' | null>(null);
@@ -385,9 +387,9 @@ export default function Game() {
 
               <ChainPanel
                 getState={() => stateRef.current}
-                onLoot={(g) => { s.gold += g; act(undefined); }}
-                onTroopsLost={(n) => { s.troops = Math.max(0, s.troops - n); act(undefined); }}
+                onChange={() => act(undefined)}
                 onLog={(m) => { sim.pushLog(s, m); redraw(); }}
+                onOpenCoin={() => setCoinOpen(true)}
               />
 
               <section className="panel mt-2.5 p-2.5">
@@ -421,7 +423,8 @@ export default function Game() {
           onCancel={renaming ? () => setRenaming(false) : undefined}
           onSave={(n) => { const r = sim.setName(s, n); if (r.ok) { setRenaming(false); act(r); } return r; }} />
       )}
-      <Vault open={vaultOpen} s={s} act={act} onClose={() => setVaultOpen(false)} />
+      <CoinPanel open={coinOpen} account={account} onClose={() => setCoinOpen(false)} onLog={(m) => { if (s) { sim.pushLog(s, m); redraw(); } }} />
+      <Vault open={vaultOpen} s={s} account={account} act={act} onClose={() => setVaultOpen(false)} />
       {s && reveal && (
         <FindReveal s={s} kind={reveal} onClose={() => setReveal(null)}
           onDisplay={() => { act(sim.displayRelic(s, reveal)); setReveal(null); }}
