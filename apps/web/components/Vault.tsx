@@ -4,7 +4,7 @@ import { useState } from 'react';
 import * as sim from '@metropolix/sim';
 import Icon from './Icon';
 import { RelicThumb } from './ItemThumb';
-import { Modal, SubHead, type TabDef } from './ui';
+import { Modal, NumField, SubHead, type TabDef } from './ui';
 import RelicNfts, { mintRelicNft } from './RelicNfts';
 
 type TabId = 'vault' | 'book';
@@ -127,8 +127,8 @@ export default function Vault({ open, s, account, act, onClose }: Props) {
                       </button>
                       <span className="flex items-center gap-1">
                         <label className="sr-only" htmlFor={`ask-${k}`}>Market price for {r.name}</label>
-                        <input id={`ask-${k}`} type="number" min={1} max={sim.fairPrice(k) * 10} value={ask}
-                          onChange={(e) => setPrice({ ...price, [k]: Math.max(1, Math.floor(Number(e.target.value) || 0)) })}
+                        <NumField id={`ask-${k}`} max={sim.fairPrice(k) * 10} value={ask}
+                          onValue={(n) => setPrice({ ...price, [k]: n })}
                           className="field w-24 px-1.5 py-1 text-sm tabular-nums" />
                         <button className="btn btn-quiet w-32 py-1 text-sm" onClick={() => run(sim.listForSale(s, k, 1, ask))}>List on market</button>
                       </span>

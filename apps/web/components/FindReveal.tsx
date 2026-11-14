@@ -5,6 +5,7 @@ import * as sim from '@metropolix/sim';
 import { RelicThumb } from './ItemThumb';
 import { bonusText } from './Vault';
 import { useEscape } from '@/lib/escape';
+import { useFocusTrap } from './ui';
 
 /**
  * The one loud moment in the game: an Epic, Legendary or Super Legendary relic just turned up.
@@ -16,13 +17,15 @@ export default function FindReveal({ s, kind, onDisplay, onVault, onClose }: {
   const r = sim.RELICS[kind];
   const tier = sim.RARITY[r.rarity];
   const keep = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box);
   const canDisplay = s.displayed.length < sim.DISPLAY_SLOTS && !s.displayed.includes(kind) && (s.vault[kind] ?? 0) > 0;
   useEffect(() => { keep.current?.focus(); }, []); // once: the game re-renders every second
   useEscape(true, onClose);
 
   return (
-    <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#05070bdd] p-4" role="alertdialog" aria-labelledby="find-title" aria-describedby="find-desc" onMouseDown={onClose}>
-      <div className="window win-in w-full max-w-md" onMouseDown={(e) => e.stopPropagation()} style={{ borderColor: tier.color }}>
+    <div className="fixed inset-0 z-[65] flex items-center justify-center bg-[#05070bdd] p-4" role="alertdialog" aria-modal="true" aria-labelledby="find-title" aria-describedby="find-desc" onMouseDown={onClose}>
+      <div ref={box} tabIndex={-1} className="window win-in w-full max-w-md outline-none" onMouseDown={(e) => e.stopPropagation()} style={{ borderColor: tier.color }}>
         <div className="flex flex-col items-center p-6 text-center">
           <div className={`reveal-burst relative mb-4 grid h-40 w-40 place-items-center ${r.rarity === 'mythic' ? 'reveal-mythic' : ''}`} style={{ ['--tier' as string]: tier.color }}>
             <span aria-hidden className="reveal-rays absolute inset-0" />

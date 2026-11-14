@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useFocusTrap } from './ui';
 import { ARCS, BUILDINGS, BUILDING_KINDS, GOOD_KINDS, RESOURCES, type ArcDef, type ArcId, type GoodKind } from '@metropolix/sim';
 import ArcPortrait from './ArcPortrait';
 import Icon, { type IconName } from './Icon';
@@ -94,6 +95,8 @@ export default function ArcPicker({ onChoose }: { onChoose: (id: ArcId) => void 
   const [idx, setIdx] = useState(3); // open on the dragon to show off the art
   const [confirm, setConfirm] = useState(false);
   const arc: ArcDef = ARCS[idx]!;
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box);
 
   const go = (i: number) => { setIdx((i + ARCS.length) % ARCS.length); setConfirm(false); };
   useEffect(() => {
@@ -106,7 +109,7 @@ export default function ArcPicker({ onChoose }: { onChoose: (id: ArcId) => void 
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto transition-[background] duration-500" style={{ background: BACKDROP[arc.id], ['--accent' as string]: arc.accent, ['--accent-ink' as string]: INK[arc.id] }}
+    <div ref={box} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto outline-none transition-[background] duration-500" style={{ background: BACKDROP[arc.id], ['--accent' as string]: arc.accent, ['--accent-ink' as string]: INK[arc.id] }}
       role="dialog" aria-modal="true" aria-label="Choose your people">
       <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col px-4 py-5">
         <header>

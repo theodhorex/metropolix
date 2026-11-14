@@ -4,7 +4,7 @@ import { useState } from 'react';
 import * as sim from '@metropolix/sim';
 import Icon from './Icon';
 import { ItemThumb, RaceTag, type Preview } from './ItemThumb';
-import { Modal, SubHead, type TabDef } from './ui';
+import { Modal, NumField, SubHead, type TabDef } from './ui';
 
 type TabId = 'post' | 'offers' | 'wanted' | 'mine';
 const TABS: TabDef<TabId>[] = [
@@ -225,11 +225,11 @@ function Mine({ s, run, preview, onPackUp }: { s: sim.GameState; run: (r: sim.Re
               <select className="field flex-1" value={sk} onChange={(e) => { setSellK(e.target.value as sim.ItemKind); setSellP(0); setSellQ(1); }}>{stock.map(opt)}</select>
             </label>
             <label className="flex items-center gap-2"><span className="w-14 text-[var(--paper-dim)]">Amount</span>
-              <input type="number" className="field w-24" min={1} max={sim.stockOf(s, sk)} value={sellQ} onChange={(e) => setSellQ(Math.max(1, Math.floor(+e.target.value)))} />
+              <NumField className="field w-24" max={sim.stockOf(s, sk)} value={sellQ} onValue={setSellQ} />
               <span className="text-[var(--paper-dim)] tabular-nums">of {sim.stockOf(s, sk)}</span>
             </label>
             <label className="flex items-center gap-2"><span className="w-14 text-[var(--paper-dim)]">Price</span>
-              <input type="number" className="field w-24" min={1} value={sp} onChange={(e) => setSellP(Math.max(1, Math.floor(+e.target.value)))} />
+              <NumField className="field w-24" value={sp} onValue={setSellP} />
               <span className="text-xs"><Deal price={sp} k={sk} selling /></span>
             </label>
             <div className="flex items-center justify-between pt-1">
@@ -249,10 +249,10 @@ function Mine({ s, run, preview, onPackUp }: { s: sim.GameState; run: (r: sim.Re
             <select className="field flex-1" value={buyK} onChange={(e) => { const k = e.target.value as sim.ItemKind; setBuyK(k); setBuyP(Math.ceil((sim.fairPrice(k) * sim.orderFloorPct(k)) / 100)); }}>{all.map(opt)}</select>
           </label>
           <label className="flex items-center gap-2"><span className="w-14 text-[var(--paper-dim)]">Amount</span>
-            <input type="number" className="field w-24" min={1} value={buyQ} onChange={(e) => setBuyQ(Math.max(1, Math.floor(+e.target.value)))} />
+            <NumField className="field w-24" value={buyQ} onValue={setBuyQ} />
           </label>
           <label className="flex items-center gap-2"><span className="w-14 text-[var(--paper-dim)]">Price</span>
-            <input type="number" className="field w-24" min={1} value={buyP} onChange={(e) => setBuyP(Math.max(1, Math.floor(+e.target.value)))} />
+            <NumField className="field w-24" value={buyP} onValue={setBuyP} />
             <span className="text-xs"><Deal price={buyP} k={buyK} /></span>
           </label>
           <div className="flex items-center justify-between pt-1">

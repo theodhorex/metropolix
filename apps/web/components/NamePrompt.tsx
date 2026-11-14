@@ -5,6 +5,7 @@ import * as sim from '@metropolix/sim';
 import ArcPortrait from './ArcPortrait';
 import Icon from './Icon';
 import { useEscape } from '@/lib/escape';
+import { useFocusTrap } from './ui';
 
 const roll = (n: number) => {
   const out = new Set<string>();
@@ -23,6 +24,8 @@ export default function NamePrompt({ arc, initial = '', cost = 0, gold = 0, onSa
   const [ideas, setIdeas] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box);
   const people = sim.arcDef(arc);
 
   // suggestions come from Math.random, so roll them after mount (server HTML has none)
@@ -40,7 +43,7 @@ export default function NamePrompt({ arc, initial = '', cost = 0, gold = 0, onSa
 
   return (
     <div className="fixed inset-0 z-[66] flex items-center justify-center bg-[#05070bdd] p-4" role="dialog" aria-modal="true" aria-labelledby="name-title" onMouseDown={onCancel}>
-      <div className="window win-in grid w-full max-w-xl grid-cols-[9rem_minmax(0,1fr)] overflow-hidden" onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={box} tabIndex={-1} className="window win-in grid w-full max-w-xl grid-cols-[9rem_minmax(0,1fr)] overflow-hidden outline-none" onMouseDown={(e) => e.stopPropagation()}>
         <div className="border-r-2 border-[var(--ink)] bg-[var(--slab-lo)]">
           {arc && <ArcPortrait arc={arc} className="h-full w-full" />}
         </div>

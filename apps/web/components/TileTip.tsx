@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import * as sim from '@metropolix/sim';
 import Icon, { type IconName } from './Icon';
 import { ItemThumb, type Preview } from './ItemThumb';
@@ -12,20 +12,31 @@ type Tool = sim.BuildingKind | 'demolish' | 'pack' | 'select';
  * Card that rides next to the cursor over the map. It answers the question the player has
  * at that moment: what is here, what will my tap do, and if it cannot, why not.
  */
+// the last pointer position, kept even while no card shows, so a card that appears is placed at once
+let lastPointer: { x: number; y: number } | null = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointermove', (e) => { lastPointer = { x: e.clientX, y: e.clientY }; }, { passive: true, capture: true });
+}
+
+function place(el: HTMLElement, cx: number, cy: number) {
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const x = cx + 18 + w > window.innerWidth ? cx - w - 12 : cx + 18;
+  const y = cy + 18 + h > window.innerHeight ? cy - h - 12 : cy + 18;
+  el.style.transform = `translate(${x}px, ${y}px)`;
+}
+
 export default function TileTip({ s, tile, tool, preview }: { s: sim.GameState; tile: { x: number; y: number }; tool: Tool; preview: Preview }) {
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const move = (e: PointerEvent) => {
-      const el = box.current; if (!el) return;
-      const w = el.offsetWidth, h = el.offsetHeight;
-      const x = e.clientX + 18 + w > window.innerWidth ? e.clientX - w - 12 : e.clientX + 18;
-      const y = e.clientY + 18 + h > window.innerHeight ? e.clientY - h - 12 : e.clientY + 18;
-      el.style.transform = `translate(${x}px, ${y}px)`;
-    };
+    const move = (e: PointerEvent) => { if (box.current) place(box.current, e.clientX, e.clientY); };
     window.addEventListener('pointermove', move);
     return () => window.removeEventListener('pointermove', move);
   }, []);
+  // a card that just appeared (or changed size) sits by the pointer before paint, not off screen until the next move
+  useLayoutEffect(() => {
+    if (box.current && lastPointer) place(box.current, lastPointer.x, lastPointer.y);
+  });
 
   const here = s.grid[tile.y]?.[tile.x] ?? null;
   let body: ReactNode;

@@ -1,8 +1,65 @@
 'use client';
 
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode, type RefObject } from 'react';
 import Icon, { type IconName } from './Icon';
 import { useEscape } from '@/lib/escape';
+
+const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]';
+// open dialogs, innermost last: only the topmost one keeps Tab inside itself, so stacked dialogs never fight
+const trapStack: RefObject<HTMLElement | null>[] = [];
+
+/**
+ * Keep keyboard focus inside a dialog while it is open and give it back to whatever opened it on close.
+ * Focuses the dialog box itself unless something inside already took focus (an autofocused field).
+ */
+export function useFocusTrap(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    trapStack.push(ref);
+    if (ref.current && !ref.current.contains(document.activeElement)) ref.current.focus();
+    const onKey = (e: KeyboardEvent) => {
+      const box = ref.current;
+      if (e.key !== 'Tab' || !box || trapStack[trapStack.length - 1] !== ref) return;
+      const f = [...box.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.getClientRects().length > 0);
+      if (f.length === 0) { e.preventDefault(); return; }
+      const first = f[0]!, last = f[f.length - 1]!;
+      const inside = box.contains(document.activeElement) && document.activeElement !== box;
+      if (e.shiftKey && (!inside || document.activeElement === first)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (!inside || document.activeElement === last)) { e.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      const i = trapStack.indexOf(ref);
+      if (i >= 0) trapStack.splice(i, 1);
+      if (opener && opener.isConnected) opener.focus?.();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+/**
+ * A whole-number field that can be cleared while typing (Backspace works); it settles on blur to at least `min`.
+ */
+export function NumField({ value, onValue, min = 1, ...rest }: { value: number; onValue: (n: number) => void; min?: number } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type' | 'min'>) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <input {...rest} type="number" inputMode="numeric" min={min} value={draft ?? String(value)}
+      onChange={(e) => {
+        const t = e.target.value;
+        setDraft(t);
+        const n = Math.floor(Number(t));
+        if (t !== '' && Number.isFinite(n) && n >= min) onValue(n);
+      }}
+      onBlur={(e) => {
+        if (draft !== null) {
+          const n = Math.floor(Number(draft));
+          onValue(draft !== '' && Number.isFinite(n) ? Math.max(min, n) : value);
+          setDraft(null);
+        }
+        rest.onBlur?.(e);
+      }} />
+  );
+}
 
 /** Square red close button used by every window, drawer and dialog. */
 export function CloseX({ onClick, label = 'Close', className = '' }: { onClick: () => void; label?: string; className?: string }) {
@@ -43,20 +100,7 @@ export function Modal<T extends string>({ title, icon, onClose, tabs, tab, onTab
   closeRef.current = onClose;
   useEscape(true, () => closeRef.current());
 
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    box.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab' || !box.current) return;
-      const f = [...box.current.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select, [tabindex="0"]')];
-      if (f.length === 0) return;
-      const first = f[0]!, last = f[f.length - 1]!;
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => { window.removeEventListener('keydown', onKey); opener?.focus?.(); };
-  }, []);
+  useFocusTrap(box);
 
   const tabList = tabs && tab !== undefined && onTab && (
     <div role="tablist" aria-orientation={tabStyle === 'rail' ? 'vertical' : 'horizontal'}
