@@ -20,7 +20,7 @@ browser with no sign-up. Connect a NEAR wallet and your city is saved on
 testnet, other players can raid it, and you can trade the game's coin,
 **$METRO**, and mint your treasures as NFTs.
 
-**Play:** [metropolix-theodhores-projects.vercel.app/play](https://metropolix-theodhores-projects.vercel.app/play) · **Contract:** [`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet)
+**Play:** [metropolix-city.vercel.app/play](https://metropolix-city.vercel.app/play) · **Contract:** [`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet)
 
 > **What you get in one sitting**
 > - **5 peoples** on different land: the dragonkin have no forests and buy every plank.
