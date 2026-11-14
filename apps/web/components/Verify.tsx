@@ -23,11 +23,12 @@ async function view<T>(method: string, args: Record<string, unknown> = {}): Prom
 
 interface Audit { cities: AuditedCity[]; coin: CoinView; codeHash: string; block: number; at: number }
 
-const fmt = (n: bigint | string, digits = 18) => {
+/** Whole units with `shown` decimals: METRO has 18 decimals, NEAR amounts on the contract are yoctoNEAR (24). */
+const fmt = (n: bigint | string, digits = 18, shown = 4) => {
   const s = BigInt(n).toString().padStart(digits + 1, '0');
-  const whole = s.slice(0, -digits), frac = s.slice(-digits).slice(0, 4);
-  return `${whole}.${frac}`;
+  return `${s.slice(0, -digits)}.${s.slice(-digits).slice(0, shown)}`;
 };
+const near = (n: bigint | string) => fmt(n, 24, 9);
 
 const LEDGER: { rule: string; who: 'Chain rejects' | 'Chain clamps' | 'Chain computes' | 'Browser, bounded'; how: string }[] = [
   { rule: 'A saved city is a legal city (60 building codes, limits, wonders only for their people)', who: 'Chain rejects', how: 'commit_snapshot panics on an illegal layout. Tables are generated from the simulation and a test fails if they drift.' },
@@ -124,13 +125,13 @@ export default function Verify() {
               <thead><tr><th></th><th>Chain says</th><th>Recomputed here</th><th></th></tr></thead>
               <tbody>
                 <Row k="City index (Σ √gold)" chain={a.coin.city_index} here={coinAudit.cityIndex.toString()} />
-                <Row k="NAV per METRO (NEAR)" chain={fmt(a.coin.nav)} here={fmt(coinAudit.nav)} exact={[a.coin.nav, coinAudit.nav.toString()]} />
-                <Row k="Pool price (NEAR)" chain={fmt(a.coin.price)} here={fmt(coinAudit.price)} exact={[a.coin.price, coinAudit.price.toString()]} />
+                <Row k="NAV (NEAR per METRO)" chain={near(a.coin.nav)} here={near(coinAudit.nav)} exact={[a.coin.nav, coinAudit.nav.toString()]} />
+                <Row k="Pool price (NEAR per METRO)" chain={near(a.coin.price)} here={near(coinAudit.price)} exact={[a.coin.price, coinAudit.price.toString()]} />
                 <Row k="mNAV (price / NAV, permille)" chain={a.coin.mnav_pm} here={coinAudit.mnavPm.toString()} />
               </tbody>
             </table></div>
           )}
-          <p className="note">Supply {fmt(a.coin.supply)} METRO · treasury {fmt(a.coin.treasury)} NEAR · {a.coin.swaps} swaps. Above 2x mNAV the contract issues new METRO into the pool; below 0.9x it buys back and burns.</p>
+          <p className="note">Supply {fmt(a.coin.supply)} METRO · treasury {near(a.coin.treasury)} NEAR · {a.coin.swaps} swaps. Above 2x mNAV the contract issues new METRO into the pool; below 0.9x it buys back and burns.</p>
         </section>
       </>)}
 

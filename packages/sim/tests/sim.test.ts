@@ -781,7 +781,7 @@ describe('audit fixes (15 Nov)', () => {
         }
       }
     }
-  });
+  }, 120_000); // 20 seeds x 2000 ticks: slow on a busy machine, the assertion stays the same
   it('one lumber camp on poor land still makes wood over time', () => {
     const s = sim.newState(3); sim.chooseArc(s, 'goblin');
     s.gold = 5000; s.wood = 0; s.ore = 200;

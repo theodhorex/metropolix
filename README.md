@@ -34,7 +34,7 @@ Metropolix is for **anyone who likes a city builder but is tired of a city that 
 > - One Rust contract on NEAR testnet, [`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet), holds every player's saved city, runs raids between them, issues the **$METRO** coin and mints treasure **NFTs**.
 > - Every save is bounded by the contract: layout and troops are validated, and the clock, gold and XP are clamped to what the city could have earned.
 > - A raid is a real battle: the contract runs it with on-chain randomness and moves gold out of the other player's saved treasury.
-> - **Don't take our word for it.** [`/verify`](https://metropolix-city.vercel.app/verify) reads raw views from a NEAR RPC node and recomputes every city's ChainPower and the coin's NAV in your browser. Today: 2 cities, 1 coin, 0 mismatches.
+> - **Don't take our word for it.** [`/verify`](https://metropolix-city.vercel.app/verify) reads raw views from a NEAR RPC node and recomputes every city's ChainPower and the coin's NAV in your browser. Today: 3 cities, 1 coin, 0 mismatches.
 
 <img src="docs/screenshots/city.jpg" width="1440" alt="An elven city in Metropolix: tree houses, fountains, farms and barracks on a pixel isometric map">
 
@@ -120,9 +120,9 @@ Metropolix splits the game along one line. Four pieces.
 | Claim | A typical browser game | Metropolix | Evidence |
 |---|---|---|---|
 | Who holds your city | The studio's server | A contract state keyed by your NEAR account; read it from any RPC node | `get_city`, [`/verify`](https://metropolix-city.vercel.app/verify) |
-| A raid between players | A bot, or a server-side roll you cannot see | Run by the contract with on-chain randomness; 2 real battles recorded (a 3 star win that took 7,000 gold, and a raid with no star that took nothing) | `get_battles`, [`/api/chain/battles`](https://metropolix-city.vercel.app/api/chain/battles) |
-| What backs the coin | A database row | Treasury plus the gold of every saved city; mNAV 1.57x on 15 Nov 2026, 2 swaps recorded | `get_coin`, `/verify` section 3 |
-| ChainPower ranking | "Trust us" | Computed by the contract and recomputed in your browser: **2 of 2 cities match, to the digit** | `/verify`, `packages/sim/tests/verify.test.ts` |
+| A raid between players | A bot, or a server-side roll you cannot see | Run by the contract with on-chain randomness; 3 real battles recorded (two 3 star wins that took 7,000 and 2,177 gold, and a raid with no star that took nothing) | `get_battles`, [`/api/chain/battles`](https://metropolix-city.vercel.app/api/chain/battles) |
+| What backs the coin | A database row | Treasury plus the gold of every saved city; mNAV 1.18x on 15 Nov 2026, 4 swaps recorded | `get_coin`, `/verify` section 3 |
+| ChainPower ranking | "Trust us" | Computed by the contract and recomputed in your browser: **3 of 3 cities match, to the digit** | `/verify`, `packages/sim/tests/verify.test.ts` |
 | Client cheating | Whatever the client sends | Layout validated, troops and XP bounded, gold and clock clamped to what could have been earned | `commit_snapshot`, 34 contract tests |
 | Contract review | Unknown | Two AI audit rounds, every finding fixed with a test; deployed code hash equals a fresh build | [Limits](#limits-stated-plainly), the terminal check above |
 
@@ -215,7 +215,8 @@ What NEAR makes possible here, concretely:
 | Account | Role |
 |---|---|
 | [`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet) | The contract: cities, raids, $METRO, relic NFTs |
-| `metropolix-p1.testnet`, `metropolix-p2.testnet` | Two test players that founded cities and fought the recorded battles |
+| `metropolix-p1.testnet`, `metropolix-p2.testnet` | Two test players that founded cities and fought the first recorded battles |
+| `metropolix-p3.testnet` | A third test player, founded from scratch in an end-to-end run: found, save, raid, swap, mint, transfer and return a relic NFT |
 
 The contract's methods:
 
@@ -377,7 +378,7 @@ docs/                   logo and README screenshots
 
 **Not proven:**
 - The contract went through two AI audit rounds before the deadline (storage refunds, first-save bounds, stacked grace on quick saves, unpaid buildings, buyback size, alt-account shields and trophies, double-counted loot, overflow); every finding is fixed and has a test. There was no external commercial audit and no formal proof.
-- Testnet only: $METRO and the NFTs have no real value, and only two test players have fought on chain so far.
+- Testnet only: $METRO and the NFTs have no real value, and only three test players have fought on chain so far.
 - Built for desktop: it runs in a mobile browser and you can tap to build, but the map and side panels are cramped on a phone.
 - Desktop only for now.
 
