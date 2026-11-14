@@ -5,87 +5,142 @@ from kit import box, cone, cyl, sphere, mat
 
 
 def barracks(S, rng):
-    # Sim height: 1.4. LONG two-storey hall filling one axis (X) + training yard with dummy, weapon rack, banner
-    # Footprint: long hall along X filling the axis (|x| up to 0.43)
-    bx, by = 0.0, -0.18
+    # Sim height: 1.4. LONG two-storey block filling X axis (0.84 x 0.38), flat roof with
+    # parapet + crenellations and raised watch platform, row of doors and shuttered windows,
+    # training yard on the +Y half with two straw dummies, weapon rack, archery target, waving banner.
+    bx, by = -0.02, -0.21
     sx, sy = 0.84, 0.38
-    h_stone = 0.44
-    h_plank = 0.40
-    S.footing(bx, by, sx, sy, 0.12, rng)
-    # Ground floor: sturdy stone walls with corner quoins
-    S.walls(bx, by, 0.12, sx, sy, h_stone, rng, kind='stone')
-    # Timber belt course separating storeys
-    box(bx, by, 0.12 + h_stone, sx + 0.04, sy + 0.04, 0.035, S.m('trim'), 'belt_beam')
-    # Second floor: timber dormitory
-    S.walls(bx, by, 0.12 + h_stone + 0.035, sx, sy, h_plank, rng, kind='plank')
-    # Long gable roof running along X, ridge reaching height 1.35 (sim height 1.4)
-    S.roof(bx, by, 0.12 + h_stone + 0.035 + h_plank, sx, sy, 0.36, rng, shape='gable', along='x')
+    h1, h2 = 0.38, 0.36
+    z1 = 0.10
+    z2 = z1 + h1 + 0.03
+    z_roof = z2 + h2
 
-    # Main arched stone entrance door and secondary quartermaster door
-    S.door('y', -0.14, by + sy / 2, 0.12, w=0.18, h=0.28)
-    box(-0.14, by + sy / 2 + 0.04, 0.0, 0.24, 0.08, 0.03, S.m('stone_light'), 'door_step')
-    S.door('x', bx + sx / 2, by + 0.04, 0.12, w=0.14, h=0.24)
+    S.footing(bx, by, sx, sy, z1, rng)
+    # Ground storey: heavy stone walls
+    S.walls(bx, by, z1, sx, sy, h1, rng, kind='stone')
+    # Belt course between storeys
+    box(bx, by, z1 + h1, sx + 0.03, sy + 0.03, 0.03, S.m('trim'), 'belt_beam')
+    # Upper storey: main walls
+    S.walls(bx, by, z2, sx, sy, h2, rng, kind='main')
 
-    # Ground floor barred windows and arrow slits
-    S.window('y', 0.18, by + sy / 2, 0.24, w=0.10, h=0.14)
-    S.window('y', 0.32, by + sy / 2, 0.24, w=0.10, h=0.14)
-    S.window('x', bx - sx / 2, by, 0.24, w=0.10, h=0.14)
+    # Flat roof with parapet (no gable roof!)
+    over = 0.025
+    S.roof(bx, by, z_roof, sx, sy, 0.05, rng, shape='flat', over=over)
+    rx, ry = sx + over, sy + over
+    z_merlon = z_roof + 0.09
+    # Crenellations (merlons) along the flat roof parapet
+    for i in range(7):
+        mx = bx - rx / 2 + 0.05 + i * (rx - 0.10) / 6
+        box(mx, by + ry / 2, z_merlon, 0.06, 0.035, 0.045, S.m('stone_dark'), f'merlon_fy_{i}')
+        box(mx, by - ry / 2, z_merlon, 0.06, 0.035, 0.045, S.m('stone_dark'), f'merlon_by_{i}')
+    for j in range(3):
+        my = by - ry / 2 + 0.06 + j * (ry - 0.12) / 2
+        box(bx + rx / 2, my, z_merlon, 0.035, 0.06, 0.045, S.m('stone_dark'), f'merlon_fx_{j}')
+        box(bx - rx / 2, my, z_merlon, 0.035, 0.06, 0.045, S.m('stone_dark'), f'merlon_bx_{j}')
 
-    # Long row of 4 upper dormitory windows along +Y face
-    for wx_pos in (-0.28, -0.10, 0.10, 0.28):
-        S.window('y', wx_pos, by + sy / 2, 0.68, w=0.10, h=0.14)
-    S.window('x', bx + sx / 2, by, 0.68, w=0.10, h=0.14)
+    # Raised watch platform on the -X end of the flat roof (reaching sim height ~1.35)
+    wx, wy = bx - 0.24, by
+    wsx, wsy = 0.26, 0.24
+    for px, py in ((wx - wsx / 2 + 0.02, wy - wsy / 2 + 0.02),
+                   (wx + wsx / 2 - 0.02, wy - wsy / 2 + 0.02),
+                   (wx - wsx / 2 + 0.02, wy + wsy / 2 - 0.02),
+                   (wx + wsx / 2 - 0.02, wy + wsy / 2 - 0.02)):
+        box(px, py, z_roof + 0.04, 0.035, 0.035, 0.22, S.m('trim'), 'watch_post')
+    # Watch platform deck & parapet rails
+    z_wdeck = z_roof + 0.24
+    box(wx, wy, z_wdeck, wsx + 0.04, wsy + 0.04, 0.03, S.m('wood_light'), 'watch_deck')
+    for px, py in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        box(wx + px * (wsx + 0.02) / 2, wy + py * (wsy + 0.02) / 2, z_wdeck + 0.03,
+            (wsx + 0.04) if py else 0.025, (wsy + 0.04) if px else 0.025, 0.06, S.m('wood_dark'), 'watch_rail')
+    # Access ladder up to watch platform on +X side of platform
+    for lx_off in (-0.04, 0.04):
+        box(wx + wsx / 2 + 0.02, wy + lx_off, z_roof + 0.04, 0.015, 0.015, 0.24, S.m('wood_dark'), 'wladder')
+    # Waving flag on watch platform
+    S.flag(wx - 0.08, wy + 0.06, z_wdeck + 0.08, h=0.22)
 
-    # Regiment banners hanging from upper facade
-    S.banner('y', 0.04, by + sy / 2, 0.44, w=0.12, h=0.24)
-    S.banner('x', bx + sx / 2, by - 0.06, 0.44, w=0.10, h=0.22)
+    # Row of 3 doors along the +Y facade + 1 door on the +X end
+    y_front = by + sy / 2
+    x_front = bx + sx / 2
+    for dx in (-0.28, 0.0, 0.26):
+        S.door('y', dx, y_front, z1, w=0.12, h=0.23)
+        box(dx, y_front + 0.035, 0.0, 0.16, 0.06, 0.025, S.m('stone_light'), 'door_step')
+    S.door('x', x_front, by - 0.02, z1, w=0.13, h=0.23)
 
-    # Heavy stone barracks chimney at rear corner
-    S.chimney(bx - 0.30, by - 0.12, 1.05, 0.28, rng)
+    # Helper for shuttered windows (window + left/right wooden shutters)
+    def shuttered_window(face, x, y, z, w=0.09, h=0.11):
+        S.window(face, x, y, z, w=w, h=h)
+        sh_w = 0.032
+        if face == 'y':
+            for side in (-1, 1):
+                box(x + side * (w / 2 + sh_w / 2 + 0.008), y + 0.022, z - 0.005,
+                    sh_w, 0.018, h + 0.015, S.m('wood_light'), 'shutter')
+        else:
+            for side in (-1, 1):
+                box(x + 0.022, y + side * (w / 2 + sh_w / 2 + 0.008), z - 0.005,
+                    0.018, sh_w, h + 0.015, S.m('wood_light'), 'shutter')
 
-    # Expansive training yard out front (+Y: y from 0.04 to 0.44)
-    # Weapon rack filled with polearms and halberds
-    box(0.06, 0.26, 0.0, 0.02, 0.08, 0.24, S.m('trim'), 'wrack_l')
-    box(0.24, 0.26, 0.0, 0.02, 0.08, 0.24, S.m('trim'), 'wrack_r')
-    box(0.15, 0.26, 0.14, 0.20, 0.02, 0.015, S.m('wood_dark'), 'wrack_rail')
-    for spx in (0.09, 0.14, 0.19):
-        cyl(spx, 0.26, 0.02, 0.008, 0.30, S.m('wood_light'), seg=6, name='spear_shaft')
-        cone(spx, 0.26, 0.32, 0.018, 0.05, S.m('metal'), seg=4, name='spear_tip')
+    # Ground floor shuttered windows between the doors
+    for wx_pos in (-0.14, 0.13):
+        shuttered_window('y', wx_pos, y_front, z1 + 0.12, w=0.08, h=0.11)
+    # Upper floor row of 4 shuttered windows along +Y and 2 on +X
+    for wx_pos in (-0.30, -0.10, 0.10, 0.28):
+        shuttered_window('y', wx_pos, y_front, z2 + 0.10, w=0.09, h=0.12)
+    for wy_pos in (by - 0.09, by + 0.09):
+        shuttered_window('x', x_front, wy_pos, z2 + 0.10, w=0.08, h=0.12)
 
-    # Training dummy in yard that wobbles when struck (animated with kit.anim)
-    dx, dy = -0.22, 0.26
-    cyl(dx, dy, 0.0, 0.03, 0.28, S.m('wood_dark'), seg=8, name='dummy_post')
-    dummy = box(0, 0, 0.14, 0.10, 0.08, 0.14, S.m('cloth'), 'dummy_torso')
-    dummy.location = (dx, dy, 0)
-    d_arms = box(0, 0, 0.22, 0.22, 0.03, 0.03, S.m('wood'), 'dummy_arms')
-    d_arms.parent = dummy
-    d_head = sphere(0, 0, 0.31, 0.045, S.m('crop'), 'dummy_head', squash=0.9)
-    d_head.parent = dummy
-    d_helm = cone(0, 0, 0.34, 0.05, 0.04, S.m('metal'), seg=8, name='dummy_helm')
-    d_helm.parent = dummy
-    d_sh = cyl(-0.09, 0, 0.22, 0.045, 0.015, S.m('wood_light'), seg=8, name='dummy_shield')
-    d_sh.rotation_euler = (0, math.radians(90), 0)
-    d_sh.parent = dummy
-    d_eye = sphere(-0.10, 0, 0.22, 0.016, S.m('emblem'), 'target_eye')
-    d_eye.parent = dummy
+    # Waving regiment banners on both visible walls
+    S.banner('y', -0.01, y_front, z2 - 0.04, w=0.11, h=0.22)
+    S.banner('x', x_front, by, z2 - 0.04, w=0.10, h=0.20)
 
-    kit.anim(lambda f, n: setattr(dummy, 'rotation_euler', (
-        0,
-        0,
-        (0.0, math.radians(18), math.radians(-12))[f % 3]
-    )))
+    # Training yard on the +Y half (y from 0.04 to 0.42):
+    # Two straw dummies well separated so both read clearly
+    dummies = []
+    for idx, (dx, dy) in enumerate(((-0.26, 0.28), (-0.04, 0.20))):
+        cyl(dx, dy, 0.0, 0.024, 0.28, S.m('wood_dark'), seg=8, name=f'dummy_post_{idx}')
+        torso = box(0, 0, 0.0, 0.09, 0.07, 0.13, S.m('crop'), f'dummy_straw_{idx}')
+        torso.location = (dx, dy, 0.12)
+        tunic = box(0, 0, 0.02, 0.096, 0.076, 0.08, S.m('cloth' if idx == 0 else 'accent'), f'dummy_tunic_{idx}')
+        tunic.parent = torso
+        arms = box(0, 0, 0.08, 0.21, 0.026, 0.026, S.m('wood'), f'dummy_arms_{idx}')
+        arms.parent = torso
+        head = sphere(0, 0, 0.17, 0.042, S.m('crop'), f'dummy_head_{idx}', squash=0.95)
+        head.parent = torso
+        helm = cone(0, 0, 0.19, 0.046, 0.038, S.m('metal'), seg=8, name=f'dummy_helm_{idx}')
+        helm.parent = torso
+        sh = cyl(-0.08, 0.02, 0.07, 0.04, 0.014, S.m('wood_light'), seg=8, name=f'dummy_shield_{idx}')
+        sh.rotation_euler = (math.radians(80), 0, math.radians(-20))
+        sh.parent = torso
+        dummies.append(torso)
 
-    # Straw archery target on stand in yard
-    cyl(0.36, 0.12, 0.0, 0.02, 0.22, S.m('wood'), seg=6, name='target_stand')
-    target = cyl(0.36, 0.12, 0.18, 0.07, 0.02, S.m('crop'), seg=12, name='straw_target')
-    target.rotation_euler = (math.radians(85), 0, 0)
-    sphere(0.36, 0.13, 0.18, 0.022, S.m('accent'), 'bullseye')
+    kit.anim(lambda f, n: [
+        setattr(dummies[0], 'rotation_euler', (0, 0, (0.0, math.radians(16), math.radians(-12))[f % 3])),
+        setattr(dummies[1], 'rotation_euler', (0, 0, (math.radians(-10), 0.0, math.radians(15))[f % 3])),
+    ])
+
+    # Weapon rack in yard (x ~ 0.16, y ~ 0.14)
+    box(0.08, 0.14, 0.0, 0.022, 0.06, 0.22, S.m('trim'), 'wrack_l')
+    box(0.26, 0.14, 0.0, 0.022, 0.06, 0.22, S.m('trim'), 'wrack_r')
+    box(0.17, 0.14, 0.13, 0.20, 0.02, 0.018, S.m('wood_dark'), 'wrack_rail')
+    for spx in (0.11, 0.16, 0.21, 0.24):
+        cyl(spx, 0.14, 0.02, 0.008, 0.28, S.m('wood_light'), seg=6, name='spear_shaft')
+        cone(spx, 0.14, 0.30, 0.018, 0.05, S.m('metal'), seg=4, name='spear_tip')
+
+    # Straw archery target on stand in yard (x ~ 0.28, y ~ 0.30)
+    tx, ty = 0.28, 0.30
+    cyl(tx, ty - 0.03, 0.0, 0.02, 0.24, S.m('wood_dark'), seg=6, name='target_stand_b')
+    cyl(tx - 0.04, ty, 0.0, 0.016, 0.22, S.m('wood'), seg=6, name='target_leg_l')
+    cyl(tx + 0.04, ty, 0.0, 0.016, 0.22, S.m('wood'), seg=6, name='target_leg_r')
+    t_straw = cyl(tx, ty + 0.01, 0.17, 0.085, 0.025, S.m('crop'), seg=14, name='straw_target')
+    t_straw.rotation_euler = (math.radians(80), 0, math.radians(-20))
+    t_ring = cyl(tx + 0.004, ty + 0.02, 0.17, 0.055, 0.012, S.m('cloth'), seg=12, name='target_ring')
+    t_ring.rotation_euler = (math.radians(80), 0, math.radians(-20))
+    sphere(tx + 0.008, ty + 0.028, 0.17, 0.024, S.m('accent'), 'bullseye')
 
     # Yard perimeter fence and muster props
-    S.fence([(-0.40, 0.04), (-0.40, 0.40), (-0.08, 0.40)], rng, h=0.10)
-    S.barrel(0.34, 0.28)
-    S.crate(-0.04, 0.30, rng=rng)
-    S.lamp(0.34, 0.36)
+    S.fence([(-0.40, 0.06), (-0.40, 0.38), (-0.16, 0.38)], rng, h=0.10)
+    S.barrel(0.36, 0.16)
+    S.crate(-0.34, 0.12, rng=rng)
+    S.lamp(0.08, 0.36)
 
 
 def tower(S, rng):
@@ -201,101 +256,132 @@ def watchtower(S, rng):
 
 
 def armory(S, rng):
-    # Fortified stone armoury with heavy iron bands, big shields on walls, weapon racks
-    # Substantial stone bastion filling the footprint (sim height 1.3)
-    ax, ay = -0.02, -0.04
-    sx, sy = 0.70, 0.58
-    S.footing(ax, ay, sx, sy, 0.14, rng)
-    S.stone_walls(ax, ay, 0.14, sx, sy, 0.54, rng)
+    # Squat stone keep-like block with iron bands (metal strips), heavy iron door,
+    # big round shields with S.emblem on both visible walls, weapon racks with spears
+    # and axes outside, an anvil with a small glowing forge (S.fire) for motion.
+    # Flat roof with crenellations, not a hip roof. (Sim height: 1.3)
+    ax, ay = -0.05, -0.06
+    sx, sy = 0.66, 0.58
+    h_foot = 0.14
+    h_wall = 0.56
+    z_roof = h_foot + h_wall  # 0.70
 
-    # Heavy iron reinforcement bands strapped across the stone walls (task: "stone with iron bands")
-    for bz in (0.26, 0.42, 0.58):
-        box(ax, ay, bz, sx + 0.025, sy + 0.025, 0.03, S.m('metal'), f'iron_band_{bz}')
-    # Corner iron angle brackets and vertical reinforcement straps
+    # Battered stone foundation and squat stone keep walls
+    S.footing(ax, ay, sx + 0.03, sy + 0.03, h_foot, rng)
+    S.stone_walls(ax, ay, h_foot, sx, sy, h_wall, rng)
+
+    # Heavy corner stone buttresses / pilasters
     for cx in (ax - sx / 2, ax + sx / 2):
         for cy in (ay - sy / 2, ay + sy / 2):
-            box(cx, cy, 0.14, 0.04, 0.04, 0.54, S.m('metal'), 'corner_iron')
-            for rz in (0.22, 0.34, 0.50):
-                sphere(cx, cy, rz, 0.012, S.m('trim'), 'iron_rivet')
+            box(cx, cy, 0.0, 0.08, 0.08, z_roof + 0.02, S.m('stone_dark'), 'keep_pilaster', bevel=0.008)
 
-    # Crenellated stone parapet cornice at z=0.68
-    box(ax, ay, 0.68, sx + 0.04, sy + 0.04, 0.035, S.m('stone_dark'), 'parapet_cornice')
+    # Heavy horizontal iron bands (metal strips) strapped across the stone walls
+    iron_mat = S.m('metal', metal=0.7, rough=0.4)
+    for bz in (0.24, 0.42, 0.58):
+        box(ax, ay, bz, sx + 0.035, sy + 0.035, 0.032, iron_mat, f'iron_band_{bz}')
+    # Vertical iron reinforcement straps & rivets on visible walls
+    for vx in (ax - 0.16, ax + 0.16):
+        box(vx, ay + sy / 2 + 0.012, h_foot, 0.03, 0.016, h_wall, iron_mat, 'vstrap_y')
+        for rz in (0.255, 0.435, 0.595):
+            sphere(vx, ay + sy / 2 + 0.024, rz, 0.014, S.m('stone_light'), 'rivet_y')
+    for vy in (ay - 0.14, ay + 0.14):
+        box(ax + sx / 2 + 0.012, vy, h_foot, 0.016, 0.03, h_wall, iron_mat, 'vstrap_x')
+        for rz in (0.255, 0.435, 0.595):
+            sphere(ax + sx / 2 + 0.024, vy, rz, 0.014, S.m('stone_light'), 'rivet_x')
 
-    # Heavy hip roof from z=0.71, height 0.38 (ridge at z=1.09)
-    S.roof(ax, ay, 0.71, sx, sy, 0.38, rng, shape='hip')
+    # Flat roof with overhanging stone cornice, parapet, and heavy crenellations (no hip roof!)
+    rx, ry = sx + 0.06, sy + 0.06
+    box(ax, ay, z_roof - 0.02, rx, ry, 0.04, S.m('stone_dark'), 'machicolation_cornice')
+    box(ax, ay, z_roof + 0.02, rx - 0.02, ry - 0.02, 0.04, S.m('stone_light'), 'flat_roof_deck')
+    # Parapet wall around flat roof
+    z_para = z_roof + 0.06
+    for px, py in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        box(ax + px * (rx / 2 - 0.025), ay + py * (ry / 2 - 0.025), z_para,
+            rx if py else 0.05, ry if px else 0.05, 0.05, S.m('stone'), 'keep_parapet')
+    # Chunky stone merlons (crenellations) along all 4 sides
+    z_merlon = z_para + 0.05
+    for i in range(5):
+        mx = ax - rx / 2 + 0.05 + i * (rx - 0.10) / 4
+        for side_y in (ay + ry / 2 - 0.025, ay - ry / 2 + 0.025):
+            box(mx, side_y, z_merlon, 0.08, 0.055, 0.065, S.m('stone_dark'), f'merlon_y_{i}')
+            box(mx, side_y, z_merlon + 0.065, 0.09, 0.065, 0.015, S.m('stone_light'), f'merlon_cap_y_{i}')
+    for j in range(4):
+        my = ay - ry / 2 + 0.06 + j * (ry - 0.12) / 3
+        for side_x in (ax + rx / 2 - 0.025, ax - rx / 2 + 0.025):
+            box(side_x, my, z_merlon, 0.055, 0.08, 0.065, S.m('stone_dark'), f'merlon_x_{j}')
+            box(side_x, my, z_merlon + 0.065, 0.065, 0.09, 0.015, S.m('stone_light'), f'merlon_cap_x_{j}')
 
-    # Central watch cupola / lantern turret on roof peak reaching height 1.28 (sim height 1.3)
-    cyl(ax, ay, 1.05, 0.07, 0.12, S.m('metal'), seg=8, name='armory_cupola')
-    cone(ax, ay, 1.17, 0.085, 0.11, S.m('stone_dark'), seg=8, name='armory_cap')
-    sphere(ax, ay, 1.28, 0.015, S.m('accent'), 'armory_finial')
+    # Squat armored rooftop watch-turret / vent at rear corner + flag (reaches ~1.14)
+    box(ax - 0.16, ay - 0.12, z_para, 0.20, 0.20, 0.18, S.m('stone_dark'), 'roof_turret')
+    box(ax - 0.16, ay - 0.12, z_para + 0.18, 0.23, 0.23, 0.03, iron_mat, 'turret_rim')
+    S.flag(ax - 0.16, ay - 0.12, z_para + 0.21, h=0.22)
 
-    # Reinforced iron-studded door on +Y face with heavy iron hinges
-    S.door('y', -0.12, ay + sy / 2, 0.14, w=0.20, h=0.30)
-    box(-0.12, ay + sy / 2 + 0.04, 0.0, 0.26, 0.08, 0.03, S.m('stone_dark'), 'armory_step')
-    # Narrow barred arrowslits in stone
-    S.window('y', 0.18, ay + sy / 2, 0.34, w=0.08, h=0.18)
-    S.window('x', ax + sx / 2, ay - 0.08, 0.34, w=0.08, h=0.18)
+    # Heavy iron door on +Y face (left-center so it is 100% unobstructed from camera)
+    dx, dy = ax + 0.11, ay + sy / 2
+    box(dx, dy + 0.012, h_foot, 0.24, 0.04, 0.34, S.m('stone_dark'), 'iron_door_arch')
+    box(dx, dy + 0.026, h_foot, 0.18, 0.025, 0.30, iron_mat, 'heavy_iron_door')
+    for dz in (h_foot + 0.07, h_foot + 0.16, h_foot + 0.25):
+        box(dx, dy + 0.038, dz, 0.17, 0.012, 0.022, S.m('trim'), 'door_bar')
+    sphere(dx + 0.05, dy + 0.044, h_foot + 0.13, 0.018, S.m('accent2'), 'door_ring')
+    box(dx, dy + 0.05, 0.0, 0.26, 0.09, 0.035, S.m('stone_dark'), 'armory_step')
 
-    # BIG heraldic shields mounted on visible stone walls (task: "big shields (S.emblem) on walls")
-    # Big shield on +Y wall with crossed battleaxes
-    sh_y_x, sh_y_y, sh_y_z = 0.08, ay + sy / 2 + 0.015, 0.50
-    # Crossed axe handles behind shield
-    a1 = cyl(sh_y_x, sh_y_y - 0.005, sh_y_z, 0.007, 0.32, S.m('wood_dark'), seg=6, name='axe_shaft_1')
-    a1.rotation_euler = (0, 0, math.radians(40))
-    a2 = cyl(sh_y_x, sh_y_y - 0.005, sh_y_z, 0.007, 0.32, S.m('wood_dark'), seg=6, name='axe_shaft_2')
-    a2.rotation_euler = (0, 0, math.radians(-40))
-    # Big heraldic round shield
-    sh1 = cyl(sh_y_x, sh_y_y, sh_y_z, 0.09, 0.02, S.m('cloth'), seg=14, name='w_shield1')
-    sh1.rotation_euler = (math.radians(90), 0, 0)
-    cyl(sh_y_x, sh_y_y + 0.012, sh_y_z, 0.094, 0.008, S.m('metal'), seg=14, name='w_shield1_rim').rotation_euler = (math.radians(90), 0, 0)
-    cyl(sh_y_x, sh_y_y + 0.016, sh_y_z, 0.028, 0.012, S.m('metal'), seg=8, name='w_boss1').rotation_euler = (math.radians(90), 0, 0)
-    S.emblem('y', sh_y_x, sh_y_y + 0.025, sh_y_z, 0.10)
+    # BIG round shields with S.emblem on BOTH visible walls (+Y and +X)
+    # 1. Big round shield on +Y wall (right half of +Y wall)
+    sh_yx, sh_yy, sh_yz = ax - 0.15, ay + sy / 2 + 0.022, 0.47
+    cyl(sh_yx, sh_yy, sh_yz, 0.125, 0.018, iron_mat, seg=16, name='shield_y_rim').rotation_euler = (math.radians(90), 0, 0)
+    cyl(sh_yx, sh_yy + 0.008, sh_yz, 0.102, 0.018, S.m('cloth'), seg=16, name='shield_y_face').rotation_euler = (math.radians(90), 0, 0)
+    S.emblem('y', sh_yx, sh_yy + 0.024, sh_yz, 0.13)
 
-    # Big shield on +X wall with crossed longswords
-    sh_x_x, sh_x_y, sh_x_z = ax + sx / 2 + 0.015, -0.16, 0.50
-    # Crossed swords behind shield
-    s1 = box(sh_x_x - 0.005, sh_x_y, sh_x_z, 0.01, 0.02, 0.34, S.m('metal'), 'xsword_1')
-    s1.rotation_euler = (0, math.radians(35), 0)
-    s2 = box(sh_x_x - 0.005, sh_x_y, sh_x_z, 0.01, 0.02, 0.34, S.m('metal'), 'xsword_2')
-    s2.rotation_euler = (0, math.radians(-35), 0)
-    sh2 = cyl(sh_x_x, sh_x_y, sh_x_z, 0.09, 0.02, S.m('cloth'), seg=14, name='w_shield2')
-    sh2.rotation_euler = (0, math.radians(90), 0)
-    cyl(sh_x_x + 0.012, sh_x_y, sh_x_z, 0.094, 0.008, S.m('metal'), seg=14, name='w_shield2_rim').rotation_euler = (0, math.radians(90), 0)
-    cyl(sh_x_x + 0.016, sh_x_y, sh_x_z, 0.028, 0.012, S.m('metal'), seg=8, name='w_boss2').rotation_euler = (0, math.radians(90), 0)
-    S.emblem('x', sh_x_x + 0.025, sh_x_y, sh_x_z, 0.10)
+    # 2. Big round shield on +X wall
+    sh_xx, sh_xy, sh_xz = ax + sx / 2 + 0.022, ay - 0.08, 0.47
+    cyl(sh_xx, sh_xy, sh_xz, 0.125, 0.018, iron_mat, seg=16, name='shield_x_rim').rotation_euler = (0, math.radians(90), 0)
+    cyl(sh_xx + 0.008, sh_xy, sh_xz, 0.102, 0.018, S.m('cloth'), seg=16, name='shield_x_face').rotation_euler = (0, math.radians(90), 0)
+    S.emblem('x', sh_xx + 0.024, sh_xy, sh_xz, 0.13)
 
-    # Weapon racks out front (task: "weapon racks out front")
-    # Spear / pike rack
-    box(-0.28, 0.30, 0.0, 0.025, 0.025, 0.28, S.m('trim'), 'wr_p1')
-    box(-0.06, 0.30, 0.0, 0.025, 0.025, 0.28, S.m('trim'), 'wr_p2')
-    box(-0.17, 0.30, 0.16, 0.24, 0.02, 0.02, S.m('trim'), 'wr_bar')
-    for hx in (-0.23, -0.17, -0.11):
-        cyl(hx, 0.30, 0.02, 0.008, 0.32, S.m('wood_light'), seg=6, name='halberd_shaft')
-        cone(hx, 0.30, 0.34, 0.022, 0.06, S.m('metal'), seg=4, name='halberd_tip')
+    # Barred arrow-slit window on +X wall
+    S.window('x', ax + sx / 2, ay + 0.14, 0.34, w=0.08, h=0.16)
 
-    # Iron-banded weapon chest with swords
-    box(0.18, 0.30, 0.0, 0.18, 0.12, 0.11, S.m('wood_dark'), 'wchest', bevel=0.005)
-    box(0.18, 0.30, 0.11, 0.185, 0.125, 0.012, S.m('metal'), 'wchest_band')
-    sw1 = box(0.14, 0.30, 0.09, 0.012, 0.022, 0.16, S.m('metal'), 'sword1')
-    sw1.rotation_euler = (0, math.radians(15), 0)
-    sw2 = box(0.22, 0.30, 0.09, 0.012, 0.022, 0.16, S.m('metal'), 'sword2')
-    sw2.rotation_euler = (0, math.radians(-15), 0)
+    # Weapon racks with spears and axes outside:
+    # Rack 1 (front-right +Y yard in front of shield, keeping doorway clear): spears and battleaxes
+    box(-0.34, 0.32, 0.0, 0.025, 0.05, 0.26, S.m('trim'), 'wr1_p1')
+    box(-0.08, 0.32, 0.0, 0.025, 0.05, 0.26, S.m('trim'), 'wr1_p2')
+    box(-0.21, 0.32, 0.15, 0.28, 0.022, 0.022, S.m('wood_dark'), 'wr1_bar')
+    for sx_pos in (-0.30, -0.25, -0.20):
+        cyl(sx_pos, 0.32, 0.02, 0.008, 0.32, S.m('wood_light'), seg=6, name='rack_spear')
+        cone(sx_pos, 0.32, 0.34, 0.022, 0.06, iron_mat, seg=4, name='rack_spear_tip')
+    for ax_pos in (-0.15, -0.11):
+        cyl(ax_pos, 0.32, 0.02, 0.009, 0.28, S.m('wood_dark'), seg=6, name='rack_axe_shaft')
+        box(ax_pos, 0.32, 0.24, 0.055, 0.016, 0.045, iron_mat, 'rack_axe_blade')
 
-    # Blacksmith anvil & whetstone sharpening trough
-    cyl(0.32, 0.16, 0.0, 0.05, 0.10, S.m('wood_dark'), seg=8, name='anvil_block')
-    box(0.32, 0.16, 0.10, 0.08, 0.05, 0.04, S.m('metal'), 'anvil_top')
-    cone(0.37, 0.16, 0.11, 0.02, 0.05, S.m('metal'), seg=6, name='anvil_horn').rotation_euler = (0, math.radians(90), 0)
+    # Rack 2 (+X yard): spears and battleaxes along +X wall
+    box(0.35, -0.28, 0.0, 0.05, 0.025, 0.26, S.m('trim'), 'wr2_p1')
+    box(0.35, -0.04, 0.0, 0.05, 0.025, 0.26, S.m('trim'), 'wr2_p2')
+    box(0.35, -0.16, 0.15, 0.022, 0.26, 0.022, S.m('wood_dark'), 'wr2_bar')
+    for sy_pos in (-0.24, -0.16, -0.08):
+        cyl(0.35, sy_pos, 0.02, 0.008, 0.30, S.m('wood_light'), seg=6, name='rack2_shaft')
+        cone(0.35, sy_pos, 0.32, 0.020, 0.055, iron_mat, seg=4, name='rack2_tip')
+        box(0.35, sy_pos, 0.26, 0.016, 0.05, 0.04, iron_mat, 'rack2_axe_blade')
 
-    # Forge chimney with animated smoke
-    S.chimney(ax - 0.24, ay - 0.18, 0.90, 0.28, rng)
+    # Small glowing forge (S.fire) + prominent blacksmith anvil at front (+X, +Y) corner for motion
+    fx, fy = 0.28, 0.26
+    box(fx, fy, 0.0, 0.16, 0.16, 0.13, S.m('stone_dark'), 'forge_hearth', bevel=0.008)
+    box(fx - 0.05, fy, 0.13, 0.05, 0.16, 0.10, S.m('stone'), 'forge_hood_back')
+    box(fx + 0.01, fy, 0.125, 0.10, 0.11, 0.02, S.m('glow', emit=4.5), 'noink_forge_coals')
+    S.fire(fx + 0.01, fy, 0.14, s=1.05)
 
-    # Waving heraldic banner out front
-    S.banner('y', 0.28, ay + sy / 2, 0.36, w=0.10, h=0.22)
+    # Prominent blacksmith anvil right in front of the forge
+    anv_x, anv_y = 0.18, 0.36
+    cyl(anv_x, anv_y, 0.0, 0.055, 0.09, S.m('wood_dark'), seg=8, name='anvil_block')
+    box(anv_x, anv_y, 0.09, 0.10, 0.06, 0.05, iron_mat, 'anvil_top')
+    cone(anv_x + 0.065, anv_y, 0.115, 0.024, 0.06, iron_mat, seg=6, name='anvil_horn').rotation_euler = (0, math.radians(90), 0)
+    # Glowing hot metal bar on the anvil that pulses
+    hot_bar = box(0, 0, 0, 0.055, 0.02, 0.014, S.m('glow', emit=4.0), 'noink_hot_bar')
+    hot_bar.location = (anv_x, anv_y, 0.142)
+    kit.anim(lambda f, n: setattr(hot_bar, 'scale', ((1.0, 1.18, 0.88)[f % 3],) * 3))
 
-    # Yard props: barrel, crates, lamp
-    S.barrel(-0.35, 0.18)
-    S.crate(-0.34, 0.30, rng=rng)
-    S.lamp(0.34, 0.34)
+    # Quench barrel & crate
+    S.barrel(0.35, 0.10, r=0.045, h=0.09)
+    S.crate(-0.36, 0.18, s=0.075, rng=rng)
 
 
 def warcamp(S, rng):

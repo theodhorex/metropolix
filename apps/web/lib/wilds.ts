@@ -5,7 +5,8 @@
 import type { ArcId } from '@metropolix/sim';
 import { goblinPlace, goblinWildArt, type Placement } from './wilds-goblin';
 import { disc, isoDiamond, makeCanvas, OUT, px, rect, tileHash } from './sprites';
-import { paintedWild } from './painted';
+import { paintedLand, paintedWild } from './painted';
+import { createLandWater, landPlace, LANDMARK_SPOTS } from './wilds-land';
 
 /** Prop canvases are 64 px wide; the ground diamond's centre sits at (32, H - 16). */
 export const PROP_W = 64;
@@ -361,6 +362,7 @@ export function wildTheme(arc: ArcId | null): WildTheme {
   if (arc === 'goblin') return goblinTheme();
   const t = THEMES[arc ?? 'none'];
   const props = bakeAll(t.recipes);
+  const baseCount = props.length;
   if (arc) {
     for (let p = 0; p < props.length; p++) {
       const i = Math.floor(p / 2);
@@ -371,10 +373,42 @@ export function wildTheme(arc: ArcId | null): WildTheme {
       }
     }
   }
+
+  let water: HTMLCanvasElement[][] | undefined;
+  let place: ((x: number, y: number, ring: number) => Placement) | undefined;
+  let scatter: { tall: number[]; low: number[] } | undefined;
+
+  if (arc) {
+    water = createLandWater(arc);
+    const landmarkIdx: (number | undefined)[] = [undefined, undefined, undefined];
+    for (let k = 0; k < 3; k++) {
+      const frames = paintedLand(arc, k);
+      if (frames && frames.length > 0) {
+        props.push({ frames, tall: true });
+        landmarkIdx[k] = props.length - 1;
+      }
+    }
+
+    let lavaGlowIdx: number | undefined;
+    if (arc === 'dragon') {
+      const [cv] = makeCanvas(PROP_W, 34);
+      props.push({ frames: [cv], tall: false, water: 'lava', glow: 0xff6a1a });
+      lavaGlowIdx = props.length - 1;
+    }
+
+    const tallBase = props.slice(0, baseCount).map((p, i) => (p.tall ? i : -1)).filter((i) => i >= 0);
+    const lowBase = props.slice(0, baseCount).map((p, i) => (!p.tall ? i : -1)).filter((i) => i >= 0);
+    scatter = { tall: tallBase, low: lowBase };
+    place = (x, y, ring) => landPlace(arc, x, y, ring, landmarkIdx, lavaGlowIdx, lowBase[0]);
+  }
+
   return {
     backdrop: mulColor(hex(t.ground[0]), WILD_FLOOR),
     ground: [0, 1, 2, 3].map((v) => groundTile(t.ground, v)),
+    water,
     props,
+    place,
+    scatter,
   };
 }
 
@@ -422,9 +456,27 @@ function goblinTheme(): WildTheme {
     const rendered = paintedWild('goblin', p, 0);
     if (rendered && props[p]) props[p]!.frames = rendered;
   }
+  const landmarkIdx: (number | undefined)[] = [undefined, undefined, undefined];
+  for (let k = 0; k < 3; k++) {
+    const frames = paintedLand('goblin', k);
+    if (frames && frames.length > 0) {
+      props.push({ frames, tall: true });
+      landmarkIdx[k] = props.length - 1;
+    }
+  }
   return {
     backdrop: 0x4f7d34, ground: a.ground, water: a.water, props, day: true,
-    place: (x, y, ring) => goblinPlace(a, x, y, ring),
+    place: (x, y, ring) => {
+      const spots = LANDMARK_SPOTS.goblin;
+      for (let k = 0; k < 3; k++) {
+        const s = spots[k];
+        if (s && s.x === x && s.y === y) {
+          if (landmarkIdx[k] !== undefined) return { prop: landmarkIdx[k] };
+          return {};
+        }
+      }
+      return goblinPlace(a, x, y, ring);
+    },
     scatter: { tall: a.tall, low: a.low },
   };
 }

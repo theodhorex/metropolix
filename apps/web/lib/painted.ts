@@ -40,6 +40,12 @@ async function loadWildPiece(arc: string, key: string, frames: number) {
   if (imgs.every(Boolean)) cache.set(`${arc}/_wild/${key}`, imgs as HTMLCanvasElement[]);
 }
 
+async function loadLandPiece(arc: string, key: string, frames: number) {
+  const srcs = Array.from({ length: frames }, (_, f) => `/art/${arc}/land_${key}_${f}.webp`);
+  const imgs = await Promise.all(srcs.map(loadImage));
+  if (imgs.every(Boolean)) cache.set(`${arc}/_land/${key}`, imgs as HTMLCanvasElement[]);
+}
+
 function loadManifest(): Promise<Manifest> {
   manifestP ??= fetch('/art/manifest.json', { cache: 'no-cache' })
     .then((r) => (r.ok ? (r.json() as Promise<Manifest>) : {}))
@@ -63,6 +69,10 @@ export function preloadPaintedArt(arc: string | null): Promise<void> {
           for (const [iv, frames] of Object.entries(v as Record<string, number>)) {
             loads.push(loadWildPiece(arc, iv, frames));
           }
+        } else if (k === '_land' && typeof v === 'object' && v !== null) {
+          for (const [key, frames] of Object.entries(v as Record<string, number>)) {
+            loads.push(loadLandPiece(arc, key, frames));
+          }
         } else if (typeof v === 'number') {
           loads.push(loadKind(arc, k, v));
         }
@@ -75,7 +85,7 @@ export function preloadPaintedArt(arc: string | null): Promise<void> {
 }
 
 /** Kinds with rendered art for this people (after preloadPaintedArt). */
-export const paintedNames = (arc: string) => Object.keys(manifest[arc] ?? {}).filter((k) => k !== '_wild' && cache.has(`${arc}/${k}`));
+export const paintedNames = (arc: string) => Object.keys(manifest[arc] ?? {}).filter((k) => k !== '_wild' && k !== '_land' && cache.has(`${arc}/${k}`));
 
 /** The rendered frames (shared: callers must not draw on them), or undefined when there is no art. */
 export function paintedFrames(arc: string, kind: string): HTMLCanvasElement[] | undefined {
@@ -90,4 +100,9 @@ export function paintedArt(arc: string, kind: string): HTMLCanvasElement | undef
 /** Rendered wild scenery frames for recipe index i and copy variant v, or undefined when missing. */
 export function paintedWild(arc: string, i: number, v: number): HTMLCanvasElement[] | undefined {
   return cache.get(`${arc}/_wild/${i}_${v}`);
+}
+
+/** Rendered land piece frames for index k (0..2), or undefined when missing. */
+export function paintedLand(arc: string, k: number | string): HTMLCanvasElement[] | undefined {
+  return cache.get(`${arc}/_land/${k}`);
 }

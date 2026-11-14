@@ -55,15 +55,16 @@ def write_manifest():
             continue
         kinds = {}
         for f in os.listdir(d):
-            if f.startswith('wild_'):
+            if f.startswith(('wild_', 'land_')):
                 continue
             m = FRAME.match(f)
             if m:
                 kinds[m.group(1)] = max(kinds.get(m.group(1), 0), int(m.group(2)) + 1)
             elif f.endswith(EXT):
                 kinds.setdefault(f[:-len(EXT)], 1)
-        if '_wild' in old.get(arc, {}):
-            kinds['_wild'] = old[arc]['_wild']
+        for s in ('_wild', '_land'):
+            if s in old.get(arc, {}):
+                kinds[s] = old[arc][s]
         if kinds:
             man[arc] = dict(sorted(kinds.items()))
     with open(path, 'w') as f:

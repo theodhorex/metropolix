@@ -7,115 +7,162 @@ from kit import box, poly, cyl, cone, sphere, mat
 
 def suntemple(S, rng):
     # Sunken Temple (lizard, height 2.0): stepped ziggurat half sunk in a sacred pool,
-    # jade serpent heads spouting water, and altar fire on top.
+    # irregular moat made of several S.water pieces (z just above 0) wrapping the front two sides,
+    # lily pads (flat green discs), reeds, two jade serpent heads that pour water (a thin
+    # falling water strip that changes over the frames), and altar fire on top.
+    zx, zy = -0.09, -0.09
 
-    # 1. Clear irregular water moat / pool around the base
-    # Low pool curb stones around the outer boundary (|x|, |y| ~ 0.44)
-    # The water surface is prominent at z=0.045 with glints and ripples
-    S.water(0.22, 0.0, 0.045, 0.40, 0.78)
-    S.water(0.0, 0.22, 0.045, 0.78, 0.40)
-    S.water(-0.20, -0.20, 0.045, 0.42, 0.42)
-    # Outer stone curbs holding the pool (z=0.04, low so water is visible)
-    box(0.44, 0.0, 0.0, 0.04, 0.88, 0.04, S.m('stone_dark'), 'moat_rim_x')
-    box(0.0, 0.44, 0.0, 0.88, 0.04, 0.04, S.m('stone_dark'), 'moat_rim_y')
-    box(-0.44, 0.0, 0.0, 0.04, 0.88, 0.04, S.m('stone_dark'), 'moat_rim_nx')
-    box(0.0, -0.44, 0.0, 0.88, 0.04, 0.04, S.m('stone_dark'), 'moat_rim_ny')
+    # 1. Irregular moat made of 5 overlapping S.water pieces (z just above 0) wrapping +X and +Y
+    z_w = 0.012
+    S.water(0.27, -0.02, z_w, 0.32, 0.64)   # +X main channel
+    S.water(-0.02, 0.27, z_w, 0.64, 0.32)   # +Y main channel
+    S.water(0.24, 0.24, z_w, 0.38, 0.38)    # (+X, +Y) front corner lagoon
+    S.water(0.31, -0.25, z_w, 0.22, 0.26)   # +X rear cove
+    S.water(-0.25, 0.31, z_w, 0.26, 0.22)   # +Y rear cove
 
-    # Stepping stone causeway / entrance steps approaching across the water on +X and +Y
-    for st_i in range(3):
-        sx_pos = 0.32 + st_i * 0.05
-        box(sx_pos, 0.0, 0.045, 0.05, 0.18, 0.03, S.m('stone_light'), f'causeway_x_{st_i}', bevel=0.005)
-        box(0.0, sx_pos, 0.045, 0.18, 0.05, 0.03, S.m('stone_light'), f'causeway_y_{st_i}', bevel=0.005)
+    # Natural mossy shoreline rocks along outer moat pockets (no square curb slab!)
+    for rx, ry, rr in ((0.38, -0.34, 0.038), (-0.34, 0.38, 0.038), (0.38, 0.08, 0.035), (0.08, 0.38, 0.035)):
+        S.rock(rx, ry, rr, rng=rng)
 
-    # 2. Stepped ziggurat tiers (centered, compact enough for moat to breathe)
-    # Tier 1: from z=0.04 to z=0.36 (size 0.52)
-    box(0.0, 0.0, 0.04, 0.52, 0.52, 0.32, S.m('stone'), 'ziggurat_t1', bevel=0.01)
-    # Tier 2: from z=0.36 to z=0.70 (size 0.40)
-    box(0.0, 0.0, 0.36, 0.40, 0.40, 0.34, S.m('stone_dark'), 'ziggurat_t2', bevel=0.01)
-    # Tier 3: from z=0.70 to z=1.04 (size 0.30)
-    box(0.0, 0.0, 0.70, 0.30, 0.30, 0.34, S.m('stone_light'), 'ziggurat_t3', bevel=0.01)
-    # Tier 4: from z=1.04 to z=1.36 (size 0.22)
-    box(0.0, 0.0, 1.04, 0.22, 0.22, 0.32, S.m('stone'), 'ziggurat_t4', bevel=0.008)
-    # Tier 5 (Summit altar dais): from z=1.36 to z=1.52 (size 0.16)
-    box(0.0, 0.0, 1.36, 0.16, 0.16, 0.16, S.m('stone_dark'), 'summit_platform', bevel=0.008)
-    box(0.0, 0.0, 1.50, 0.18, 0.18, 0.025, S.m('accent'), 'summit_cornice')
+    # 2. Lily pads (flat green discs) & reeds in the moat
+    lily_specs = (
+        (0.32, 0.18, 0.048, 'foliage2', True),
+        (0.18, 0.33, 0.045, 'foliage', True),
+        (0.34, -0.06, 0.044, 'foliage2', False),
+        (-0.06, 0.34, 0.042, 'foliage', False),
+        (0.25, 0.26, 0.038, 'foliage2', False),
+        (0.34, -0.22, 0.040, 'foliage', True),
+        (-0.22, 0.34, 0.040, 'foliage2', False),
+    )
+    for li, (lx, ly, lr, lmat, has_bloom) in enumerate(lily_specs):
+        cyl(lx, ly, z_w + 0.01, lr, 0.008, S.m(lmat), seg=10, name=f'lily_pad_{li}')
+        if has_bloom:
+            sphere(lx, ly, z_w + 0.022, 0.016, S.m('accent2'), f'lily_bloom_{li}', squash=0.6)
 
-    # Ceremonial staircases climbing front +X and +Y faces
-    for st_i in range(6):
-        sz = 0.20 + st_i * 0.20
-        spos = 0.30 - st_i * 0.035
-        box(spos, 0.0, sz, 0.06, 0.12, 0.05, S.m('stone_light'), f'stair_x_{st_i}')
-        box(0.0, spos, sz, 0.12, 0.06, 0.05, S.m('stone_light'), f'stair_y_{st_i}')
+    # Swamp reeds growing in clusters at the water margins
+    reed_clusters = (
+        (0.38, -0.16), (0.37, 0.28), (0.28, 0.37), (-0.16, 0.38), (-0.32, 0.28), (0.28, -0.32)
+    )
+    for ci, (cx, cy) in enumerate(reed_clusters):
+        for ri, (dx, dy, rh) in enumerate(((0.0, 0.0, 0.16), (0.018, -0.012, 0.13), (-0.015, 0.016, 0.14))):
+            cyl(cx + dx, cy + dy, z_w, 0.006, rh, S.m('foliage_dark' if ri == 0 else 'foliage'), seg=5, name=f'reed_{ci}_{ri}')
+            if ri == 0:
+                cyl(cx + dx, cy + dy, z_w + rh - 0.035, 0.011, 0.032, S.m('wood_dark'), seg=5, name=f'cattail_{ci}')
 
-    # 3. Jade serpent heads spouting water
-    spout_droplets = []
-    def serpent_head_spout(hx, hy, hz, facing):
-        s = 1.15
-        if facing == 'x':
-            box(hx + 0.025 * s, hy, hz, 0.06 * s, 0.04 * s, 0.035 * s, S.m('accent'), 'serpent_snout')
-            box(hx + 0.04 * s, hy, hz + 0.01 * s, 0.03 * s, 0.035 * s, 0.02 * s, S.m('emblem'), 'serpent_brow')
-            sphere(hx + 0.025 * s, hy - 0.022 * s, hz + 0.012 * s, 0.012 * s, S.m('glow', emit=4), 'serpent_eye')
-            sphere(hx + 0.025 * s, hy + 0.022 * s, hz + 0.012 * s, 0.012 * s, S.m('glow', emit=4), 'serpent_eye')
-            # Water jet arching out and down into the pool
-            stream = cyl(hx + 0.07, hy, 0.05 + (hz - 0.05) / 2, 0.012, hz - 0.05, S.m('water', rough=0.1), seg=6, name='noink_spout_stream')
-            stream.rotation_euler = (0, 0.22, 0)
-            # Splash drops at impact in pool
-            for di in range(2):
-                drop = sphere(hx + 0.10 + di * 0.02, hy, 0.06, 0.016, mat('#ffffff', emit=2.0), f'noink_spout_drop_{hx}_{hy}_{di}')
-                spout_droplets.append((drop, hx + 0.10 + di * 0.02, hy, 0.06))
+    # 3. Stepped Ziggurat rising out of the sacred pool (5 broad stepped tiers)
+    tiers = (
+        (0.00, 0.24, 0.56, 'stone', 'wall2'),
+        (0.24, 0.23, 0.45, 'wall', 'accent'),
+        (0.47, 0.22, 0.35, 'stone', 'wall2'),
+        (0.69, 0.21, 0.25, 'wall', 'accent'),
+        (0.90, 0.19, 0.17, 'stone_dark', 'accent'),
+    )
+    for ti, (tz, th, ts, body_k, trim_k) in enumerate(tiers):
+        box(zx, zy, tz, ts, ts, th, S.m(body_k), f'ziggurat_t{ti}', bevel=0.008)
+        box(zx, zy, tz + th - 0.025, ts + 0.018, ts + 0.018, 0.025, S.m(trim_k), f'ziggurat_cornice_{ti}')
+
+    # Continuous stepped ceremonial staircases climbing the +X and +Y faces from the water up to Tier 4
+    n_steps = 11
+    for si in range(n_steps):
+        t_frac = si / (n_steps - 1)
+        sz = 0.015 + si * 0.078
+        reach = 0.32 - t_frac * 0.175
+        box(zx + reach - 0.035, zy, sz, 0.075, 0.10, 0.08, S.m('stone_light'), f'stair_x_{si}')
+        box(zx, zy + reach - 0.035, sz, 0.10, 0.075, 0.08, S.m('stone_light'), f'stair_y_{si}')
+        # Stepped balustrade blocks flanking the stairs
+        for bside in (-0.058, 0.058):
+            box(zx + reach - 0.03, zy + bside, sz, 0.08, 0.018, 0.095, S.m('wall2'), f'bal_x_{si}_{bside}')
+            box(zx + bside, zy + reach - 0.03, sz, 0.018, 0.08, 0.095, S.m('wall2'), f'bal_y_{si}_{bside}')
+
+    # 4. Two jade serpent heads that pour water (a thin falling water strip that changes over the frames)
+    water_strips = []
+
+    def jade_serpent_spout(face):
+        hz = 0.39
+        if face == 'x':
+            hx, hy = zx + 0.225, zy - 0.13
+            # Sculpted jade serpent head jutting over the +X pool
+            box(hx + 0.04, hy, hz, 0.09, 0.075, 0.06, S.m('accent'), 'serpent_head_x', bevel=0.006)
+            box(hx + 0.03, hy, hz + 0.055, 0.065, 0.06, 0.025, S.m('emblem'), 'serpent_crest_x')
+            box(hx + 0.055, hy, hz - 0.015, 0.06, 0.05, 0.02, S.m('stone_dark'), 'serpent_jaw_x')
+            for side in (-1, 1):
+                sphere(hx + 0.045, hy + side * 0.036, hz + 0.035, 0.014, S.m('glow', emit=4.5), 'serpent_eye_x')
+                cone(hx + 0.075, hy + side * 0.018, hz - 0.01, 0.007, 0.02, S.m('stone_light'), seg=4, name='fang_x')
+            sx, sy = hx + 0.082, hy
         else:
-            box(hx, hy + 0.025 * s, hz, 0.04 * s, 0.06 * s, 0.035 * s, S.m('accent'), 'serpent_snout')
-            box(hx, hy + 0.04 * s, hz + 0.01 * s, 0.035 * s, 0.03 * s, 0.02 * s, S.m('emblem'), 'serpent_brow')
-            sphere(hx - 0.022 * s, hy + 0.025 * s, hz + 0.012 * s, 0.012 * s, S.m('glow', emit=4), 'serpent_eye')
-            sphere(hx + 0.022 * s, hy + 0.025 * s, hz + 0.012 * s, 0.012 * s, S.m('glow', emit=4), 'serpent_eye')
-            stream = cyl(hx, hy + 0.07, 0.05 + (hz - 0.05) / 2, 0.012, hz - 0.05, S.m('water', rough=0.1), seg=6, name='noink_spout_stream')
-            stream.rotation_euler = (-0.22, 0, 0)
-            for di in range(2):
-                drop = sphere(hx, hy + 0.10 + di * 0.02, 0.06, 0.016, mat('#ffffff', emit=2.0), f'noink_spout_drop_{hx}_{hy}_{di}')
-                spout_droplets.append((drop, hx, hy + 0.10 + di * 0.02, 0.06))
+            hx, hy = zx - 0.13, zy + 0.225
+            # Sculpted jade serpent head jutting over the +Y pool
+            box(hx, hy + 0.04, hz, 0.075, 0.09, 0.06, S.m('accent'), 'serpent_head_y', bevel=0.006)
+            box(hx, hy + 0.03, hz + 0.055, 0.06, 0.065, 0.025, S.m('emblem'), 'serpent_crest_y')
+            box(hx, hy + 0.055, hz - 0.015, 0.05, 0.06, 0.02, S.m('stone_dark'), 'serpent_jaw_y')
+            for side in (-1, 1):
+                sphere(hx + side * 0.036, hy + 0.045, hz + 0.035, 0.014, S.m('glow', emit=4.5), 'serpent_eye_y')
+                cone(hx + side * 0.018, hy + 0.075, hz - 0.01, 0.007, 0.02, S.m('stone_light'), seg=4, name='fang_y')
+            sx, sy = hx, hy + 0.082
 
-    # Jade serpent heads spouting water into moat from tier 2 (z=0.42)
-    serpent_head_spout(0.20, -0.12, 0.42, 'x')
-    serpent_head_spout(0.20, 0.12, 0.42, 'x')
-    serpent_head_spout(-0.12, 0.20, 0.42, 'y')
-    serpent_head_spout(0.12, 0.20, 0.42, 'y')
+        # Thin falling water strip from serpent mouth (z=0.38) down into moat (z=0.02)
+        strip_h = hz - 0.02
+        segs = []
+        n_seg = 4
+        seg_h = strip_h / n_seg
+        for k in range(n_seg):
+            sz_k = 0.02 + k * seg_h
+            w_size = (0.018, 0.042) if face == 'x' else (0.042, 0.018)
+            seg = box(0, 0, 0, w_size[0], w_size[1], seg_h + 0.008, S.m('water', rough=0.1, emit=1.8), f'noink_pour_{face}_{k}')
+            seg.location = (sx, sy, sz_k)
+            foam_s = (0.022, 0.022) if face == 'x' else (0.022, 0.022)
+            foam = box(0, 0, 0, foam_s[0], foam_s[1], 0.042, mat('#e0ffff', emit=3.0), f'noink_foam_{face}_{k}')
+            foam.location = (sx, sy, sz_k + 0.02)
+            segs.append((seg, foam, sz_k, seg_h))
+        # Splash ring in the moat where the falling water strip hits
+        splash = cyl(sx, sy, z_w + 0.012, 0.038, 0.008, mat('#e0ffff', emit=2.5), seg=10, name=f'noink_splash_{face}')
+        water_strips.append((face, sx, sy, segs, splash))
 
-    # 4. Summit altar fire
-    cyl(0.0, 0.0, 1.52, 0.055, 0.08, S.m('stone_dark'), seg=8, name='altar_base')
-    cyl(0.0, 0.0, 1.60, 0.075, 0.03, S.m('metal'), seg=8, name='altar_bowl')
-    for px, py in ((-0.06, -0.06), (-0.06, 0.06), (0.06, -0.06), (0.06, 0.06)):
-        cone(px, py, 1.52, 0.015, 0.18, S.m('stone_light'), seg=4, r_top=0.012, name='altar_pillar')
-        sphere(px, py, 1.70, 0.015, S.m('accent'), 'pillar_jade_cap')
+    jade_serpent_spout('x')
+    jade_serpent_spout('y')
 
-    S.fire(0.0, 0.0, 1.63, s=1.6)
+    # 5. Summit Altar Fire on top (z = 1.09 to ~1.65, sim height 2.0)
+    z_top = 1.09
+    cyl(zx, zy, z_top, 0.055, 0.08, S.m('stone_dark'), seg=8, name='altar_pedestal')
+    cyl(zx, zy, z_top + 0.08, 0.075, 0.03, S.m('metal'), seg=8, name='altar_brazier')
+    for px, py in ((zx - 0.06, zy - 0.06), (zx - 0.06, zy + 0.06), (zx + 0.06, zy - 0.06), (zx + 0.06, zy + 0.06)):
+        cone(px, py, z_top, 0.015, 0.18, S.m('stone_light'), seg=4, r_top=0.010, name='altar_pillar')
+        sphere(px, py, z_top + 0.18, 0.015, S.m('emblem'), 'pillar_jade_cap')
 
-    # Animated motes and water splashes
-    motes = [sphere(0.0, 0.0, 1.72, 0.018, S.m('glow', emit=6.0), f'noink_ember_{mi}') for mi in range(4)]
+    S.fire(zx, zy, z_top + 0.11, s=1.7)
+
+    # Animated falling water strips + rising altar fire motes
+    motes = [sphere(zx, zy, z_top + 0.25, 0.018, S.m('glow', emit=6.0), f'noink_ember_{mi}') for mi in range(4)]
 
     def step_suntemple(f, n):
         for mi, m in enumerate(motes):
             phase = (mi / 4 + f / n) % 1.0
-            mx = 0.03 * math.sin(2 * math.pi * (phase + mi * 0.25))
-            my = 0.03 * math.cos(2 * math.pi * (phase + mi * 0.25))
-            mz = 1.68 + phase * 0.26
+            mx = zx + 0.03 * math.sin(2 * math.pi * (phase + mi * 0.25))
+            my = zy + 0.03 * math.cos(2 * math.pi * (phase + mi * 0.25))
+            mz = z_top + 0.22 + phase * 0.28
             m.location = (mx, my, mz)
             s = 0.6 + 0.6 * math.sin(math.pi * phase)
             m.scale = (s, s, s)
-        for di, (drop, dx, dy, dz) in enumerate(spout_droplets):
-            phase = (di * 0.2 + f / n) % 1.0
-            scale = 0.6 + 0.8 * math.sin(math.pi * phase)
-            drop.scale = (scale, scale, scale * 0.7)
-            drop.location = (dx, dy, dz + 0.02 * math.sin(math.pi * phase))
+        for face, sx, sy, segs, splash in water_strips:
+            for k, (seg, foam, sz_k, seg_h) in enumerate(segs):
+                w_scale = (0.75, 1.35, 0.95)[(f + k) % 3]
+                if face == 'x':
+                    seg.scale = (1.0, w_scale, 1.0)
+                else:
+                    seg.scale = (w_scale, 1.0, 1.0)
+                drop_t = ((f + k) % 3) / 3.0
+                foam.location = (sx, sy, sz_k + (1.0 - drop_t) * seg_h * 0.65)
+                foam.scale = (1.0, 1.0, (0.7, 1.3, 0.9)[(f + k) % 3])
+            sp_scale = (0.85, 1.3, 1.05)[f % 3]
+            splash.scale = (sp_scale, sp_scale, 1.0)
 
     kit.anim(step_suntemple)
 
-    # 5. Props: banners, urns, water plants
-    S.banner('x', 0.38, -0.28, 0.06, w=0.08, h=0.20)
-    S.banner('y', -0.28, 0.38, 0.06, w=0.08, h=0.20)
-    sphere(0.24, 0.24, 0.06, 0.04, S.m('accent2'), 'lily_cluster', squash=0.3)
-    sphere(-0.24, 0.26, 0.06, 0.035, S.m('accent2'), 'lily_cluster_2', squash=0.3)
-    sphere(0.16, 0.14, 0.72, 0.028, S.m('accent'), 'offering_urn', squash=1.2)
-    sphere(-0.14, 0.16, 0.72, 0.026, S.m('accent'), 'offering_urn_2', squash=1.2)
+    # 6. Temple banners & terracotta offering urns
+    S.banner('x', zx + 0.28, zy + 0.18, 0.05, w=0.08, h=0.20)
+    S.banner('y', zx + 0.18, zy + 0.28, 0.05, w=0.08, h=0.20)
+    sphere(zx + 0.15, zy + 0.15, 0.49, 0.028, S.m('accent2'), 'offering_urn_1', squash=1.2)
+    sphere(zx + 0.21, zy + 0.21, 0.26, 0.030, S.m('accent2'), 'offering_urn_2', squash=1.2)
 
 
 def moontree(S, rng):

@@ -6,106 +6,181 @@ from style import Style  # noqa: F401
 
 
 def school(S, rng):
-    # Small schoolhouse with a bell tower and animated bell
-    x0, y0 = -0.05, -0.04
-    sx, sy = 0.52, 0.46
-    S.footing(x0, y0, sx, sy, 0.1, rng)
-    S.walls(x0, y0, 0.1, sx, sy, 0.38, rng, kind='main')
-    S.roof(x0, y0, 0.48, sx, sy, 0.32, rng, shape='gable', along='x')
+    # Sim height: 1.3. Wide one-storey classroom hall along X + tall open bell tower + fenced yard with easel slate board & small tree. No chimney.
+    hx, hy = -0.09, -0.18
+    sx, sy = 0.60, 0.28
+    S.footing(hx, hy, sx, sy, 0.08, rng)
+    S.walls(hx, hy, 0.08, sx, sy, 0.26, rng, kind='main')
+    S.roof(hx, hy, 0.34, sx, sy, 0.17, rng, shape='hip', over=0.04)
 
-    # Front door with small porch roof and stone doorstep
-    S.door('y', x0 + 0.1, y0 + sy / 2, 0.1, w=0.14, h=0.24)
-    box(x0 + 0.1, y0 + sy / 2 + 0.06, 0.36, 0.22, 0.1, 0.02, S.m('roof'), 'awning')
-    box(x0 + 0.1, y0 + sy / 2 + 0.03, 0.0, 0.18, 0.06, 0.02, S.m('stone_light'), 'doorstep')
+    # Hall entrance door & classroom windows on +Y face opening into the yard
+    S.door('y', 0.00, hy + sy / 2, 0.08, w=0.13, h=0.22)
+    box(0.00, hy + sy / 2 + 0.04, 0.0, 0.16, 0.08, 0.02, S.m('stone_light'), 'doorstep')
+    box(0.00, hy + sy / 2 + 0.04, 0.31, 0.18, 0.09, 0.02, S.m('roof'), 'awning')
+    for wx in (-0.30, -0.15):
+        S.window('y', wx, hy + sy / 2, 0.15, w=0.09, h=0.13)
 
-    # Stepping stone pathway to the door
-    for i, (px, py) in enumerate(((x0 + 0.1, y0 + sy / 2 + 0.09), (x0 + 0.1, y0 + sy / 2 + 0.16))):
-        box(px, py, 0.0, 0.11, 0.08, 0.01, S.m('stone_light'), f'path_{i}')
+    # Tall open BELL TOWER at the +X end of the hall (top ~1.21 for sim height 1.3)
+    bx, by = 0.24, -0.16
+    bsx, bsy = 0.25, 0.25
+    S.footing(bx, by, bsx, bsy, 0.10, rng)
+    S.walls(bx, by, 0.10, bsx, bsy, 0.52, rng, kind='stone')
+    S.window('x', bx + bsx / 2, by, 0.34, w=0.08, h=0.14)
+    S.banner('x', bx + bsx / 2, by, 0.14, w=0.08, h=0.16)
 
-    # Classroom windows
-    S.window('y', x0 - 0.14, y0 + sy / 2, 0.22, w=0.1, h=0.14)
-    S.window('x', x0 + sx / 2, y0 - 0.08, 0.22, w=0.1, h=0.14)
-    S.window('x', x0 + sx / 2, y0 + 0.1, 0.22, w=0.1, h=0.14)
+    # Open belfry stage (z=0.62..0.96) with 4 slim corner posts so the bell is unobstructed
+    box(bx, by, 0.62, 0.28, 0.28, 0.04, S.m('stone_light'), 'belfry_deck', bevel=0.008)
+    for px in (-0.105, 0.105):
+        for py in (-0.105, 0.105):
+            box(bx + px, by + py, 0.66, 0.020, 0.020, 0.30, S.m('trim'), 'belfry_post')
+    box(bx, by, 0.96, 0.27, 0.27, 0.035, S.m('trim'), 'belfry_top')
+    S.roof(bx, by, 0.995, 0.24, 0.24, 0.22, rng, shape='spire', over=0.04)
 
-    # Window flowerbox under classroom window
-    box(x0 - 0.14, y0 + sy / 2 + 0.02, 0.18, 0.12, 0.03, 0.03, S.m('wood_dark'), 'flowerbox')
-    sphere(x0 - 0.14, y0 + sy / 2 + 0.03, 0.21, 0.025, S.m('accent'), 'flowers')
+    # Yoke and large visible swinging bell inside the open belfry
+    box(bx, by, 0.92, 0.20, 0.025, 0.025, S.m('wood_dark'), 'bell_yoke')
+    bell = cone(bx, by, 0.72, 0.08, 0.15, S.m('accent2', metal=0.8, rough=0.2), seg=10, name='bell')
+    clapper = sphere(bx, by, 0.70, 0.026, S.m('glow', emit=2.0), 'bell_clapper')
 
-    # Belfry on the roof ridge
-    bx, by, bz = x0 + 0.14, y0, 0.78
-    box(bx, by, bz, 0.14, 0.14, 0.03, S.m('wood_dark'), 'belfry_floor')
-    for px in (-0.05, 0.05):
-        for py in (-0.05, 0.05):
-            box(bx + px, by + py, bz + 0.03, 0.02, 0.02, 0.16, S.m('trim'), 'belfry_post')
-    cone(bx, by, bz + 0.19, 0.11, 0.12, S.m('roof'), seg=4, name='belfry_roof').rotation_euler.z = math.radians(45)
+    def swing_bell(f, n):
+        # Swing across screen diagonal (+X,-Y) so silhouette shift is maximal in isometric view
+        ang = (-0.38, 0.45, -0.05)[f % 3]
+        dx = 0.10 * math.sin(ang)
+        dz = 0.90 - 0.10 * math.cos(ang)
+        bell.location = (bx + dx, by - dx, dz)
+        bell.rotation_euler = (ang * 0.7, ang * 0.7, 0)
+        cdx = 0.16 * math.sin(ang)
+        cdz = 0.90 - 0.16 * math.cos(ang)
+        clapper.location = (bx + cdx, by - cdx, cdz)
 
-    # Golden bell that rings (animated)
-    bell = cone(bx, by, bz + 0.08, 0.04, 0.06, S.m('accent2', metal=0.7, rough=0.3), seg=8, name='bell')
-    kit.anim(lambda f, n: setattr(bell, 'rotation_euler', (0.22 * math.sin(2 * math.pi * f / n), 0, 0)))
+    kit.anim(swing_bell)
 
-    # Warm classroom chimney (always smoking)
-    S.chimney(x0 - 0.16, y0 - 0.12, 0.65, 0.28, rng, smoke='always')
+    # Fenced front schoolyard with front-left gateway
+    S.fence([(0.36, -0.04), (0.36, 0.16)], rng, h=0.09)
+    S.fence([(0.36, 0.32), (0.04, 0.36), (-0.34, 0.36), (-0.34, -0.04)], rng, h=0.09)
 
-    # Outdoor props: school bench, chalkboard sign, lamp, barrel, crate
-    box(0.24, 0.22, 0.0, 0.08, 0.22, 0.06, S.m('wood'), 'bench')
-    box(0.24, 0.22, 0.06, 0.02, 0.2, 0.08, S.m('wood_light'), 'bench_back')
-    # Notice board
-    box(0.32, 0.02, 0.0, 0.02, 0.02, 0.2, S.m('trim'), 'signpost')
-    box(0.32, 0.02, 0.13, 0.015, 0.12, 0.09, S.m('wood_dark'), 'chalkboard')
-    box(0.32, 0.02, 0.13, 0.018, 0.1, 0.07, S.m('stone_dark'), 'slate')
+    # Slate board on a tripod easel in the yard (angled toward camera (+X, +Y))
+    ex, ey = 0.04, 0.14
+    ang_e = math.radians(45)
+    for lx, ly in ((0.05, -0.05), (-0.05, 0.05), (-0.05, -0.05)):
+        leg = box(0, 0, 0, 0.02, 0.02, 0.25, S.m('wood'), 'easel_leg')
+        leg.location = (ex + lx, ey + ly, 0.0)
+        leg.rotation_euler.z = ang_e
+    frame = box(0, 0, 0, 0.025, 0.20, 0.15, S.m('wood_dark'), 'easel_frame')
+    frame.location = (ex, ey, 0.10)
+    frame.rotation_euler.z = ang_e
+    slate = box(0, 0, 0, 0.018, 0.17, 0.12, S.m('stone_dark'), 'easel_slate')
+    slate.location = (ex + 0.01, ey + 0.01, 0.115)
+    slate.rotation_euler.z = ang_e
+    chalk1 = box(0, 0, 0, 0.012, 0.11, 0.014, S.m('emblem'), 'chalk_line1')
+    chalk1.location = (ex + 0.016, ey + 0.016, 0.18)
+    chalk1.rotation_euler.z = ang_e
+    chalk2 = box(0, 0, 0, 0.012, 0.08, 0.012, S.m('accent2'), 'chalk_line2')
+    chalk2.location = (ex + 0.016, ey + 0.016, 0.145)
+    chalk2.rotation_euler.z = ang_e
 
-    S.lamp(x0 - 0.24, 0.35)
-    S.barrel(0.36, -0.22)
-    S.crate(0.34, -0.12, s=0.07, rng=rng)
+    # Student bench facing the easel
+    bench = box(0, 0, 0, 0.06, 0.18, 0.05, S.m('wood_light'), 'student_bench')
+    bench.location = (0.16, 0.26, 0.0)
+    bench.rotation_euler.z = ang_e
+
+    # Small tree in the yard + props
+    S.tree(-0.24, 0.22, 0.0, s=0.68, rng=rng)
+    S.lamp(0.36, 0.18)
+    S.crate(-0.12, 0.02, s=0.065, rng=rng)
 
 
 def library(S, rng):
-    # Book-filled hall with tall windows and reading area
-    x0, y0 = -0.03, -0.02
-    sx, sy = 0.62, 0.48
+    # Sim height: 1.0. Tall narrow stone hall with big round-arched window on each visible face,
+    # small roof dome/lantern, book-stack sign, scroll racks by the door, reading bench, waving banners. No chimney.
+    x0, y0 = -0.08, -0.06
+    sx, sy = 0.36, 0.48
     S.footing(x0, y0, sx, sy, 0.12, rng)
-    S.walls(x0, y0, 0.12, sx, sy, 0.42, rng, kind='stone')
-    S.roof(x0, y0, 0.54, sx, sy, 0.34, rng, shape='gable', along='x')
+    S.walls(x0, y0, 0.12, sx, sy, 0.50, rng, kind='stone')
+    S.roof(x0, y0, 0.62, sx, sy, 0.15, rng, shape='hip', over=0.04)
 
-    # Grand front door flanked by columns and stone steps
-    S.door('y', x0 - 0.02, y0 + sy / 2, 0.12, w=0.16, h=0.28)
-    box(x0 - 0.02, y0 + sy / 2 + 0.04, 0.0, 0.22, 0.08, 0.03, S.m('stone_light'), 'lib_step1')
-    box(x0 - 0.02, y0 + sy / 2 + 0.09, 0.0, 0.26, 0.06, 0.015, S.m('stone'), 'lib_step2')
-    cyl(x0 - 0.14, y0 + sy / 2 + 0.02, 0.12, 0.025, 0.30, S.m('stone_light'), seg=8, name='col_l')
-    cyl(x0 + 0.10, y0 + sy / 2 + 0.02, 0.12, 0.025, 0.30, S.m('stone_light'), seg=8, name='col_r')
-    box(x0 - 0.02, y0 + sy / 2 + 0.02, 0.42, 0.30, 0.04, 0.03, S.m('stone_light'), 'pediment')
+    # Small roof lantern & dome on top of the hall (top ~0.98 for sim height 1.0)
+    cyl(x0, y0, 0.72, 0.11, 0.13, S.m('stone_light'), seg=8, name='lantern_drum')
+    cyl(x0, y0, 0.84, 0.125, 0.02, S.m('trim'), seg=8, name='lantern_cornice')
+    for k in range(4):
+        ang = k * math.pi / 2 + math.pi / 4
+        lx, ly = x0 + 0.102 * math.cos(ang), y0 + 0.102 * math.sin(ang)
+        w = box(0, 0, 0, 0.022, 0.045, 0.065, S.m('glow', emit=3.0), f'noink_lantern_win_{k}')
+        w.location = (lx, ly, 0.75)
+        w.rotation_euler.z = ang
+    S.roof(x0, y0, 0.85, 0.21, 0.21, 0.10, rng, shape='dome', over=0.01)
+    cone(x0, y0, 0.95, 0.022, 0.05, S.m('accent2', metal=0.6), seg=6, name='lantern_finial')
 
-    # Tall arched-look windows (high ceilings for tall bookcases)
-    S.window('y', x0 - 0.22, y0 + sy / 2, 0.24, w=0.10, h=0.22)
-    S.window('y', x0 + 0.18, y0 + sy / 2, 0.24, w=0.10, h=0.22)
-    S.window('x', x0 + sx / 2, y0 - 0.12, 0.24, w=0.10, h=0.22)
-    S.window('x', x0 + sx / 2, y0 + 0.10, 0.24, w=0.10, h=0.22)
+    x_face = x0 + sx / 2
+    y_face = y0 + sy / 2
 
-    # Window flowerboxes
-    box(x0 - 0.22, y0 + sy / 2 + 0.02, 0.20, 0.12, 0.03, 0.03, S.m('wood_dark'), 'wbox1')
-    sphere(x0 - 0.22, y0 + sy / 2 + 0.03, 0.23, 0.025, S.m('accent2'), 'wflowers1')
+    # Big round-arched window on +X face (left side of +X wall)
+    wy_x = -0.15
+    box(x_face + 0.012, wy_x, 0.22, 0.022, 0.16, 0.17, S.m('trim'), 'arch_frame_x')
+    box(x_face + 0.022, wy_x, 0.23, 0.012, 0.13, 0.16, S.m('glow', emit=2.6), 'noink_arch_pane_x')
+    af_x = cyl(0, 0, 0, 0.08, 0.022, S.m('trim'), seg=16, name='arch_top_frame_x')
+    af_x.location = (x_face + 0.012, wy_x, 0.39)
+    af_x.rotation_euler = (0, math.pi / 2, 0)
+    ap_x = cyl(0, 0, 0, 0.065, 0.012, S.m('glow', emit=2.6), seg=16, name='noink_arch_top_pane_x')
+    ap_x.location = (x_face + 0.022, wy_x, 0.39)
+    ap_x.rotation_euler = (0, math.pi / 2, 0)
+    box(x_face + 0.028, wy_x, 0.23, 0.010, 0.012, 0.22, S.m('trim'), 'mullion_vx')
+    box(x_face + 0.028, wy_x, 0.38, 0.010, 0.13, 0.012, S.m('trim'), 'mullion_hx')
 
-    # Attic archive round window in gable
-    sphere(x0 + sx / 2 + 0.01, y0, 0.66, 0.04, S.m('glow', emit=2.0), 'gable_window', squash=0.3)
+    # Big round-arched window on +Y face (centered on +Y wall)
+    wx_y = -0.06
+    box(wx_y, y_face + 0.012, 0.22, 0.16, 0.022, 0.17, S.m('trim'), 'arch_frame_y')
+    box(wx_y, y_face + 0.022, 0.23, 0.13, 0.012, 0.16, S.m('glow', emit=2.6), 'noink_arch_pane_y')
+    af_y = cyl(0, 0, 0, 0.08, 0.022, S.m('trim'), seg=16, name='arch_top_frame_y')
+    af_y.location = (wx_y, y_face + 0.012, 0.39)
+    af_y.rotation_euler = (math.pi / 2, 0, 0)
+    ap_y = cyl(0, 0, 0, 0.065, 0.012, S.m('glow', emit=2.6), seg=16, name='noink_arch_top_pane_y')
+    ap_y.location = (wx_y, y_face + 0.022, 0.39)
+    ap_y.rotation_euler = (math.pi / 2, 0, 0)
+    box(wx_y, y_face + 0.028, 0.23, 0.012, 0.010, 0.22, S.m('trim'), 'mullion_vy')
+    box(wx_y, y_face + 0.028, 0.38, 0.13, 0.010, 0.012, S.m('trim'), 'mullion_hy')
 
-    # Quiet study chimney (always smoking)
-    S.chimney(x0 - 0.20, y0 - 0.14, 0.75, 0.26, rng, smoke='always')
+    # Entrance door on +X face (right side) with stone steps
+    dy = 0.07
+    S.door('x', x_face, dy, 0.12, w=0.13, h=0.24)
+    box(x_face + 0.04, dy, 0.0, 0.08, 0.17, 0.06, S.m('stone_light'), 'lib_step1')
+    box(x_face + 0.09, dy, 0.0, 0.06, 0.19, 0.03, S.m('stone'), 'lib_step2')
 
-    # Outdoor scholar desk with book stacks
-    box(0.24, 0.22, 0.0, 0.14, 0.11, 0.08, S.m('wood_dark'), 'reading_desk')
-    box(0.22, 0.22, 0.08, 0.08, 0.06, 0.02, S.m('accent'), 'book1')
-    box(0.23, 0.21, 0.10, 0.07, 0.05, 0.018, S.m('cloth'), 'book2')
-    box(0.24, 0.23, 0.118, 0.06, 0.045, 0.015, S.m('accent2'), 'book3')
-    box(0.24, 0.32, 0.0, 0.12, 0.06, 0.06, S.m('wood'), 'bench')
+    # Scroll racks by the door (wooden cubby rack with protruding rolled parchment scrolls)
+    rx, ry = x_face + 0.04, -0.03
+    box(rx, ry, 0.12, 0.06, 0.09, 0.19, S.m('wood_dark'), 'scroll_rack')
+    for sz in (0.16, 0.21, 0.26):
+        for sy_off in (-0.022, 0.022):
+            sc = cyl(0, 0, 0, 0.013, 0.075, S.m('emblem'), seg=6, name='scroll_roll')
+            sc.location = (rx + 0.015, ry + sy_off, sz)
+            sc.rotation_euler = (0, math.pi / 2, 0)
 
-    # Book return crate
-    S.crate(0.34, -0.14, s=0.08, rng=rng)
-    box(0.34, -0.14, 0.08, 0.06, 0.05, 0.02, S.m('accent'), 'return_book')
+    # Book-stack sign in front-left forecourt (pedestal + 3 oversized stacked books)
+    bx, by = 0.26, -0.18
+    box(bx, by, 0.0, 0.13, 0.13, 0.14, S.m('stone_light'), 'book_sign_ped', bevel=0.01)
+    box(bx, by, 0.14, 0.19, 0.15, 0.05, S.m('accent'), 'book_sign_1', bevel=0.005)
+    box(bx + 0.01, by + 0.01, 0.148, 0.17, 0.13, 0.034, S.m('emblem'), 'book_pages_1')
+    b2 = box(0, 0, 0, 0.17, 0.13, 0.048, S.m('cloth'), 'book_sign_2', bevel=0.005)
+    b2.location = (bx, by, 0.19)
+    b2.rotation_euler.z = 0.30
+    p2 = box(0, 0, 0, 0.15, 0.11, 0.032, S.m('emblem'), 'book_pages_2')
+    p2.location = (bx + 0.008, by + 0.008, 0.198)
+    p2.rotation_euler.z = 0.30
+    b3 = box(0, 0, 0, 0.15, 0.11, 0.045, S.m('accent2'), 'book_sign_3', bevel=0.005)
+    b3.location = (bx, by, 0.238)
+    b3.rotation_euler.z = -0.25
+    p3 = box(0, 0, 0, 0.13, 0.09, 0.030, S.m('emblem'), 'book_pages_3')
+    p3.location = (bx + 0.008, by - 0.006, 0.245)
+    p3.rotation_euler.z = -0.25
 
-    # Knowledge banner & street lamp
-    S.banner('x', x0 + sx / 2, y0 - 0.01, 0.28, w=0.10, h=0.20)
-    S.lamp(x0 - 0.28, 0.34)
-    S.barrel(0.36, -0.24)
+    # Reading bench in the front-right courtyard with open book & lamp
+    box(0.02, 0.32, 0.0, 0.22, 0.08, 0.06, S.m('wood'), 'reading_bench')
+    box(0.02, 0.35, 0.06, 0.22, 0.025, 0.07, S.m('wood_dark'), 'bench_back')
+    box(0.05, 0.32, 0.06, 0.07, 0.05, 0.018, S.m('emblem'), 'open_book')
+    S.lamp(-0.20, 0.34)
+
+    # Waving scholar banners on both visible faces
+    S.banner('x', x_face, -0.26, 0.28, w=0.08, h=0.20)
+    S.banner('y', -0.21, y_face, 0.28, w=0.08, h=0.20)
 
 
 def academy(S, rng):
@@ -163,57 +238,102 @@ def academy(S, rng):
 
 
 def clinic(S, rng):
-    # Small apothecary clinic with a fragrant herb garden and medical sign
-    x0, y0 = -0.12, -0.10
-    sx, sy = 0.46, 0.42
-    S.footing(x0, y0, sx, sy, 0.10, rng)
-    S.walls(x0, y0, 0.10, sx, sy, 0.34, rng, kind='main')
-    S.roof(x0, y0, 0.44, sx, sy, 0.30, rng, shape='gable', along='y')
+    # Sim height: 1.1. Low L-shaped building with covered porch on posts, herb garden beds (crop/crop2 bushes)
+    # in front, big swinging hanging cross-emblem sign, drying herbs on a rack, and flickering lamp. No chimney.
+    # Wing A (rear along X)
+    x1, y1 = -0.04, -0.20
+    sx1, sy1 = 0.64, 0.26
+    S.footing(x1, y1, sx1, sy1, 0.08, rng)
+    S.walls(x1, y1, 0.08, sx1, sy1, 0.26, rng, kind='main')
+    S.roof(x1, y1, 0.34, sx1, sy1, 0.18, rng, shape='hip', over=0.04)
 
-    # Front door on +X face leading out to herb garden
-    S.door('x', x0 + sx / 2, y0 - 0.08, 0.10, w=0.14, h=0.24)
-    box(x0 + sx / 2 + 0.03, y0 - 0.08, 0.0, 0.06, 0.16, 0.02, S.m('stone_light'), 'doorstep')
-    # Stepping stones toward garden
-    for i, (px, py) in enumerate(((x0 + sx / 2 + 0.08, y0 - 0.08), (x0 + sx / 2 + 0.14, y0 - 0.05))):
-        box(px, py, 0.0, 0.07, 0.09, 0.01, S.m('stone_light'), f'step_{i}')
+    # Wing B (left-rear along Y, forming an L opening toward (+X, +Y))
+    x2, y2 = -0.23, 0.06
+    sx2, sy2 = 0.26, 0.52
+    S.footing(x2, y2, sx2, sy2, 0.08, rng)
+    S.walls(x2, y2, 0.08, sx2, sy2, 0.26, rng, kind='main')
+    S.roof(x2, y2, 0.34, sx2, sy2, 0.18, rng, shape='hip', over=0.04)
 
-    S.window('x', x0 + sx / 2, y0 + 0.10, 0.22)
-    S.window('y', x0, y0 + sy / 2, 0.22)
+    # Doors and windows opening onto the inner L-courtyard
+    S.door('y', 0.08, -0.07, 0.08, w=0.13, h=0.21)
+    S.window('y', 0.21, -0.07, 0.15, w=0.08, h=0.11)
+    S.window('x', -0.10, 0.06, 0.15, w=0.09, h=0.11)
+    S.window('x', -0.10, 0.21, 0.15, w=0.09, h=0.11)
 
-    # Window flowerbox with medicinal herbs
-    box(x0 + sx / 2 + 0.02, y0 + 0.10, 0.18, 0.03, 0.12, 0.03, S.m('wood_dark'), 'wbox')
-    sphere(x0 + sx / 2 + 0.03, y0 + 0.10, 0.21, 0.025, S.m('accent2'), 'wherbs')
+    # Covered porch on posts wrapping the inner L-corner
+    box(0.07, 0.02, 0.0, 0.34, 0.18, 0.05, S.m('wood'), 'porch_deck_x')
+    box(-0.03, 0.14, 0.0, 0.14, 0.30, 0.05, S.m('wood'), 'porch_deck_y')
+    box(0.07, 0.03, 0.27, 0.36, 0.20, 0.028, S.m('roof'), 'porch_roof_x')
+    box(-0.02, 0.15, 0.27, 0.16, 0.32, 0.028, S.m('roof'), 'porch_roof_y')
+    for px, py in ((0.23, 0.11), (0.05, 0.11), (-0.08, 0.11), (-0.08, 0.28)):
+        box(px, py, 0.05, 0.024, 0.024, 0.22, S.m('trim'), 'porch_post')
 
-    # Healing signpost with emblem
-    spx, spy = 0.18, -0.16
-    box(spx, spy, 0.0, 0.02, 0.02, 0.32, S.m('trim'), 'signpost')
-    box(spx, spy, 0.20, 0.015, 0.12, 0.10, S.m('wood_light'), 'signboard')
-    box(spx + 0.01, spy, 0.24, 0.018, 0.08, 0.025, S.m('accent'), 'cross_h')
-    box(spx + 0.01, spy, 0.21, 0.018, 0.025, 0.08, S.m('accent'), 'cross_v')
+    # Herb garden beds in front with S.m('crop') and S.m('crop2') bushes
+    # Bed 1 (front-left of courtyard)
+    b1x, b1y = 0.22, 0.18
+    box(b1x, b1y, 0.0, 0.18, 0.22, 0.05, S.m('stone_light'), 'herb_bed1', bevel=0.008)
+    box(b1x, b1y, 0.035, 0.15, 0.19, 0.02, S.m('dirt'), 'herb_soil1')
+    for i, (dx, dy) in enumerate(((-0.04, -0.06), (0.04, -0.06), (-0.04, 0.0), (0.04, 0.0), (-0.04, 0.06), (0.04, 0.06))):
+        mat_h = S.m('crop' if i % 2 == 0 else 'crop2')
+        sphere(b1x + dx, b1y + dy, 0.075, 0.038, mat_h, f'herb_bush1_{i}', squash=0.75)
 
-    # Healing chimney (herbal distillations, always smoking)
-    S.chimney(x0 - 0.14, y0 - 0.12, 0.64, 0.28, rng, smoke='always')
+    # Bed 2 (front-right of courtyard)
+    b2x, b2y = 0.02, 0.33
+    box(b2x, b2y, 0.0, 0.20, 0.15, 0.05, S.m('stone_light'), 'herb_bed2', bevel=0.008)
+    box(b2x, b2y, 0.035, 0.17, 0.12, 0.02, S.m('dirt'), 'herb_soil2')
+    for i, (dx, dy) in enumerate(((-0.05, -0.03), (0.01, -0.03), (0.06, -0.03), (-0.03, 0.03), (0.04, 0.03))):
+        mat_h = S.m('crop2' if i % 2 == 0 else 'crop')
+        sphere(b2x + dx, b2y + dy, 0.075, 0.036, mat_h, f'herb_bush2_{i}', squash=0.75)
 
-    # Enclosed herb garden in front right quadrant
-    hbx, hby = 0.22, 0.16
-    box(hbx, hby, 0.0, 0.34, 0.28, 0.06, S.m('stone_light'), 'herb_bed', bevel=0.01)
-    box(hbx, hby, 0.04, 0.30, 0.24, 0.02, S.m('dirt'), 'herb_soil')
+    # Drying herbs on a wooden rack
+    rx, ry = -0.20, 0.36
+    ang_r = math.radians(45)
+    for dy_r in (-0.09, 0.09):
+        rp = box(0, dy_r, 0.0, 0.022, 0.022, 0.23, S.m('wood_dark'), 'rack_post')
+        rp.location = (rx, ry, 0.0)
+        rp.rotation_euler.z = ang_r
+    rbar = box(0, 0, 0.20, 0.020, 0.22, 0.020, S.m('wood_light'), 'rack_bar')
+    rbar.location = (rx, ry, 0.0)
+    rbar.rotation_euler.z = ang_r
+    for i, dy_h in enumerate((-0.06, -0.02, 0.02, 0.06)):
+        h_mat = S.m(('crop', 'crop2', 'foliage2', 'accent2')[i])
+        hb = box(0, dy_h, 0.11, 0.024, 0.028, 0.085, h_mat, f'drying_herb_{i}')
+        hb.location = (rx, ry, 0.0)
+        hb.rotation_euler.z = ang_r
 
-    # Varied herbal plants
-    cone(hbx - 0.08, hby - 0.06, 0.06, 0.04, 0.08, S.m('crop2'), seg=6, name='herb1')
-    cone(hbx + 0.08, hby - 0.05, 0.06, 0.035, 0.07, S.m('foliage'), seg=6, name='herb2')
-    cone(hbx - 0.04, hby + 0.06, 0.06, 0.045, 0.09, S.m('foliage2'), seg=6, name='herb3')
-    cone(hbx + 0.08, hby + 0.06, 0.06, 0.03, 0.06, S.m('accent2'), seg=6, name='herb_flower')
-    sphere(hbx + 0.02, hby, 0.09, 0.035, S.m('accent'), 'flower_cluster')
+    # Big hanging sign with a cross-like emblem shape (two crossed boxes, accent colour) that swings
+    spx, spy = 0.32, -0.06
+    ang_s = math.radians(45)
+    box(spx, spy, 0.0, 0.036, 0.036, 0.74, S.m('trim'), 'sign_mast')
+    arm = box(0, 0, 0, 0.030, 0.22, 0.030, S.m('trim'), 'sign_arm')
+    arm.location = (spx - 0.05, spy + 0.05, 0.70)
+    arm.rotation_euler.z = ang_s
 
-    # Apothecary bench with mortar & pestle
-    box(x0 + sx / 2 + 0.02, y0 + 0.14, 0.0, 0.06, 0.12, 0.07, S.m('wood_dark'), 'apoth_bench')
-    cyl(x0 + sx / 2 + 0.02, y0 + 0.14, 0.07, 0.018, 0.025, S.m('stone_light'), seg=6, name='mortar')
+    # Hanging signboard + two crossed boxes in accent colour, pivoted at top edge (z=0.69)
+    piv = (spx - 0.065, spy + 0.065, 0.69)
+    sign_board = box(0, 0, -0.20, 0.022, 0.20, 0.20, S.m('emblem'), 'sign_board', bevel=0.006)
+    sign_board.location = piv
+    cross_h = box(0, 0, -0.122, 0.032, 0.14, 0.044, S.m('accent'), 'cross_h')
+    cross_h.location = piv
+    cross_v = box(0, 0, -0.17, 0.032, 0.044, 0.14, S.m('accent'), 'cross_v')
+    cross_v.location = piv
 
-    # Water barrel for watering herbs & crate with remedies
-    S.barrel(0.36, -0.04, r=0.05, h=0.10)
-    S.crate(0.36, -0.14, s=0.07, rng=rng)
-    S.lamp(-0.36, 0.24)
+    # Flickering clinic lantern at front corner + swinging cross sign
+    lx, ly = 0.36, 0.08
+    box(lx, ly, 0.0, 0.016, 0.016, 0.20, S.m('trim'), 'clinic_lpost')
+    lamp_glow = box(0, 0, -0.03, 0.055, 0.055, 0.065, S.m('glow', emit=4.2), 'noink_clinic_lamp')
+    lamp_glow.location = (lx, ly, 0.23)
+    cone(lx, ly, 0.26, 0.048, 0.04, S.m('metal'), seg=4, name='clinic_lroof')
+
+    def anim_clinic(f, n):
+        sw = (-0.28, 0.30, -0.02)[f % 3]
+        for ob in (sign_board, cross_h, cross_v):
+            ob.rotation_euler = (0, sw, ang_s)
+        sc = (1.0, 1.28, 0.82)[f % 3]
+        lamp_glow.scale = (sc, sc, sc)
+
+    kit.anim(anim_clinic)
+    S.barrel(0.35, -0.20, r=0.048, h=0.095)
 
 
 def shrine(S, rng):
