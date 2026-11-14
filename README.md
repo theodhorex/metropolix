@@ -34,7 +34,7 @@ Metropolix is for **anyone who likes a city builder but is tired of a city that 
 > - One Rust contract on NEAR testnet, [`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet), holds every player's saved city, runs raids between them, issues the **$METRO** coin and mints treasure **NFTs**.
 > - Every save is bounded by the contract: layout and troops are validated, and the clock, gold and XP are clamped to what the city could have earned.
 > - A raid is a real battle: the contract runs it with on-chain randomness and moves gold out of the other player's saved treasury.
-> - **Don't take our word for it.** [`/verify`](https://metropolix-city.vercel.app/verify) reads raw views from a NEAR RPC node and recomputes every city's ChainPower and the coin's NAV in your browser. Today: 3 cities, 1 coin, 0 mismatches.
+> - **Don't take our word for it.** [`/verify`](https://metropolix-city.vercel.app/verify) reads raw views from a NEAR RPC node and recomputes every city's ChainPower and the coin's NAV in your browser. Today: 4 cities, 1 coin, 0 mismatches.
 
 <img src="docs/screenshots/city.jpg" width="1440" alt="An elven city in Metropolix: tree houses, fountains, farms and barracks on a pixel isometric map">
 
@@ -121,9 +121,9 @@ Metropolix splits the game along one line. Four pieces.
 |---|---|---|---|
 | Who holds your city | The studio's server | A contract state keyed by your NEAR account; read it from any RPC node | `get_city`, [`/verify`](https://metropolix-city.vercel.app/verify) |
 | A raid between players | A bot, or a server-side roll you cannot see | Run by the contract with on-chain randomness; 3 real battles recorded (two 3 star wins that took 7,000 and 2,177 gold, and a raid with no star that took nothing) | `get_battles`, [`/api/chain/battles`](https://metropolix-city.vercel.app/api/chain/battles) |
-| What backs the coin | A database row | Treasury plus the gold of every saved city; mNAV 1.18x on 15 Nov 2026, 4 swaps recorded | `get_coin`, `/verify` section 3 |
-| ChainPower ranking | "Trust us" | Computed by the contract and recomputed in your browser: **3 of 3 cities match, to the digit** | `/verify`, `packages/sim/tests/verify.test.ts` |
-| Client cheating | Whatever the client sends | Layout validated, troops and XP bounded, gold and clock clamped to what could have been earned | `commit_snapshot`, 34 contract tests |
+| What backs the coin | A database row | Treasury plus the gold of every saved city; mNAV 1.01x on 15 Nov 2026, 6 swaps recorded | `get_coin`, `/verify` section 3 |
+| ChainPower ranking | "Trust us" | Computed by the contract and recomputed in your browser: **4 of 4 cities match, to the digit** | `/verify`, `packages/sim/tests/verify.test.ts` |
+| Client cheating | Whatever the client sends | Layout validated, troops and XP bounded, gold and clock clamped to what could have been earned | `commit_snapshot`, 44 contract tests |
 | Contract review | Unknown | Three AI audit rounds, every finding fixed with a test; deployed code hash equals a fresh build | [Limits](#limits-stated-plainly), the terminal check above |
 
 ---
@@ -200,7 +200,7 @@ What NEAR makes possible here, concretely:
 
 | NEAR feature | How Metropolix uses it |
 |---|---|
-| **Smart contract (Rust, near-sdk 5)** | One contract keeps cities, battles, the coin and the relics; 34 unit tests |
+| **Smart contract (Rust, near-sdk 5)** | One contract keeps cities, battles, the coin and the relics; 44 unit tests |
 | **Function-call access keys** | Autosave adds one key limited to `commit_snapshot`, `attack`, `mint_relic` and `return_relic`, no deposits, 0.25 NEAR of gas. Anything that moves NEAR still goes through the wallet |
 | **On-chain randomness** | `env::random_seed()` decides the luck in every raid |
 | **NEP-141 fungible token** | $METRO, with a built-in x·y=k pool against NEAR and a treasury |
@@ -277,7 +277,7 @@ Chain value and recomputed value are shown side by side; any mismatch turns the 
 |---|---|---|
 | **The world** | Integer-only, seeded, deterministic simulation: the same seed and moves give the same city on every machine. 178 tests, property tests with fast-check among them. | [`packages/sim/`](packages/sim/) |
 | **The game** | Next.js 16, React 19, PixiJS 8 isometric renderer with HD and Lite modes. The landing page has four languages. | [`apps/web/`](apps/web/) |
-| **The chain** | Rust NEAR contract (near-sdk 5, near-contract-standards for NEP-141 and NEP-171), 34 unit tests; a test fails when its building tables drift from the simulation. | [`contracts/metropolix/`](contracts/metropolix/) |
+| **The chain** | Rust NEAR contract (near-sdk 5, near-contract-standards for NEP-141 and NEP-171), 44 unit tests; a test fails when its building tables drift from the simulation. | [`contracts/metropolix/`](contracts/metropolix/) |
 | **The indexer** | Next.js route handlers over the contract's views, Neon Postgres or memory. | [`apps/web/app/api/chain/`](apps/web/app/api/chain/) |
 | **The audit page** | Browser-side recomputation of ChainPower and NAV from raw RPC data. | [`apps/web/components/Verify.tsx`](apps/web/components/Verify.tsx), [`packages/sim/src/verify.ts`](packages/sim/src/verify.ts) |
 
@@ -296,7 +296,7 @@ On a production build the city paints in about half a second and holds around 56
 | `packages/sim/tests/contract-tables.test.ts` | `pnpm test` | Fails if the contract's generated rule tables differ from the game |
 | `packages/sim/tests/verify.test.ts` | `pnpm test` | Recomputed ChainPower and NAV equal the deployed contract's answers (saved chain data) |
 | `packages/sim/tests/audit.test.ts` | `pnpm test` | Hostile inputs (NaN, Infinity, fractions), invariant fuzzing, and a check that ordering and relisting cannot print gold |
-| `contracts/metropolix` unit tests (34) | `cargo test` | Layout validation, clamps, raids, protection, coin, relics |
+| `contracts/metropolix` unit tests (44) | `cargo test` | Layout validation, clamps, raids, protection, coin, relics |
 
 Total: **178 simulation tests and 44 contract tests, all passing.**
 
@@ -340,7 +340,7 @@ pnpm test        # 178 simulation tests, including the contract-table sync check
 pnpm typecheck
 
 cd contracts/metropolix
-cargo test       # 34 unit tests
+cargo test       # 44 unit tests
 ```
 
 ### Build the contract
