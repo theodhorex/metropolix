@@ -57,8 +57,8 @@ export default function TileTip({ s, tile, tool, preview }: { s: sim.GameState; 
         ) : (
           <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-sm font-bold tabular-nums">
             <Cost icon="coin" need={b.cost} have={s.gold} />
-            {b.woodCost ? <Cost icon="wood" need={b.woodCost} have={s.wood} /> : null}
-            {b.oreCost ? <Cost icon="ore" need={b.oreCost} have={s.ore} /> : null}
+            {sim.buildCost(s, tool).wood ? <Cost icon="wood" need={sim.buildCost(s, tool).wood} have={s.wood} /> : null}
+            {sim.buildCost(s, tool).ore ? <Cost icon="ore" need={sim.buildCost(s, tool).ore} have={s.ore} /> : null}
             {(Object.entries(b.goodsCost ?? {}) as [sim.GoodKind, number][]).map(([g, n]) => <Cost key={g} icon={g} need={n} have={s.goods[g]} />)}
           </div>
         )}

@@ -4,8 +4,8 @@
 // farms grow new kinds of food, mines and other treasure sites dig deeper.
 // Import note: index.ts imports this file, so nothing from index may be used at module top level here.
 import {
-  BUILDINGS, GRID, addXp, levelFromXp, MAX_LEVEL, pushLog, stats,
-  type BuildingKind, type GameState, type Result,
+  BUILDINGS, GRID, addXp, landCost, levelFromXp, MAX_LEVEL, pushLog, stats,
+  type ArcId, type BuildingKind, type GameState, type Result,
 } from './index';
 
 export const MAX_BLD_LEVEL = 3;
@@ -64,11 +64,13 @@ export function foodTypes(s: GameState): string[] {
 }
 
 /** What the next level costs and the player level it needs. */
-export function upgradeCost(k: BuildingKind, toLevel: number) {
+export function upgradeCost(k: BuildingKind, toLevel: number, city?: { arc: ArcId | null }) {
   const b = BUILDINGS[k];
   const f = toLevel === 2 ? 2 : 4;
+  // a people without forests pays the wood part in ore (see landCost)
+  const m = landCost(city ?? { arc: null }, (b.woodCost ?? 0) * f, (b.oreCost ?? 0) * f);
   return {
-    gold: b.cost * f, wood: (b.woodCost ?? 0) * f, ore: (b.oreCost ?? 0) * f,
+    gold: b.cost * f, wood: m.wood, ore: m.ore,
     needLevel: toLevel === 2 ? Math.min(MAX_LEVEL, Math.max(2, b.unlockLevel + 1)) : Math.min(MAX_LEVEL, b.unlockLevel + 3),
   };
 }
@@ -132,7 +134,7 @@ export function upgradeBlocker(s: GameState, x: number, y: number): string | nul
   if (!canUpgrade(k)) return 'Decorations cannot be upgraded';
   const lv = buildingLevel(s, x, y);
   if (lv >= MAX_BLD_LEVEL) return 'Already at the highest level';
-  const c = upgradeCost(k, lv + 1);
+  const c = upgradeCost(k, lv + 1, s);
   if (levelFromXp(s.xp) < c.needLevel) return `Reach level ${c.needLevel} to upgrade this`;
   if (s.gold < c.gold) return `Not enough gold (need ${c.gold})`;
   if (s.wood < c.wood) return `Not enough wood (need ${c.wood})`;
@@ -145,7 +147,7 @@ export function upgradeBuilding(s: GameState, x: number, y: number): Result {
   if (why) return { ok: false, msg: why };
   const k = s.grid[y]![x]!;
   const to = buildingLevel(s, x, y) + 1;
-  const c = upgradeCost(k, to);
+  const c = upgradeCost(k, to, s);
   s.gold -= c.gold; s.wood -= c.wood; s.ore -= c.ore;
   s.levels[levelKey(x, y)] = to;
   addXp(s, to === 2 ? 15 : 30);

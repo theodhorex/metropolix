@@ -187,7 +187,7 @@ const pm = (v: number, mod: number) => Math.floor((v * mod) / 1000);
 export const TROOP_COST = 40;
 export const TROOP_ATTACK = 5;
 export const TROOP_DEFENSE = 3;
-import { DEF_PLANS, SHIELD_TICKS, loseTroops, logRaid, trainRole, type Army, type DefPlan, type RaidReport } from './war';
+import { DEF_PLANS, SHIELD_TICKS, launchRaid, loseTroops, logRaid, trainRole, type Army, type DefPlan, type RaidPlan, type RaidReport } from './war';
 export const BASE_WAGE = 1;
 export const ATTACK_COOLDOWN = 60;
 
@@ -253,6 +253,7 @@ export interface GameState {
   levels: Record<string, number>;    // "x,y" -> building level 2..3 (missing = level 1)
   record: BattleRecord;              // lifetime battle tally for the profile
   world: World;                      // the other mayors: living cities that grow and raid
+  talk: { since: number; n: number }; // citizen talks that paid out in the current minute (see npc.ts)
 }
 /** Attacks you won and lost, raids on you that your walls held or that broke in. */
 export interface BattleRecord { won: number; lost: number; held: number; breached: number }
@@ -270,6 +271,10 @@ export interface Stats {
   troopCap: number; towerDef: number; attack: number; defense: number;
   econScore: number; chainPower: number; pollution: number;
   level: number; woodRate: number; oreRate: number; troopCost: number;
+  /** Most wood, ore or food the storehouse keeps from your own production (purchases may go past it). */
+  storeCap: number;
+  /** The treasury is empty and buildings still cost upkeep: workers go unpaid. */
+  unpaid: boolean;
   foodRate: number; foodUse: number; hungry: boolean; goodsRate: number;
   /** What adds up to happiness, in permille, before clamping to 0..1000. Zero terms are left out. */
   happyParts: { label: string; pm: number }[];
@@ -296,7 +301,7 @@ export function newState(seed = 1): GameState {
     army: { vanguard: 0, raider: 0, breaker: 0 }, spells: { rage: 0, heal: 0 }, siege: 0, heroes: {}, defPlan: 'balanced', trophies: 0, shieldUntil: 0, raidLog: [],
     vault: freshVault(), displayed: [], finds: 0, lastFind: null, seen: [],
     name: '', nameChanges: 0, record: { won: 0, lost: 0, held: 0, breached: 0 }, levels: {},
-    world: initWorld(seed),
+    world: initWorld(seed), talk: { since: 0, n: 0 },
   };
   for (let i = 0; i < 6; i++) addNpcListing(s);
   for (let i = 0; i < 4; i++) addNpcOrder(s);
@@ -330,6 +335,7 @@ export function stats(s: GameState): Stats {
   upkeep = Math.floor((upkeep * (1000 + rb.upkeep)) / 1000);
   const foodUse = Math.ceil(s.pop / 20);
   const hungry0 = (s.food ?? 0) <= 0 && food < foodUse; // judged on raw farm output, before productivity
+  const unpaid = s.gold <= 0 && upkeep > 0;
   const eduCoverPm = s.pop > 0 ? Math.min(1000, Math.floor((edu * 1000) / s.pop)) : edu > 0 ? 1000 : 0;
   const employed = Math.min(s.pop, jobs);
   const unemployed = s.pop - employed;
@@ -343,6 +349,7 @@ export function stats(s: GameState): Stats {
     { label: 'Hunger', pm: hungry0 ? -150 : 0 },
     { label: 'Varied food', pm: hungry0 ? 0 : Math.max(0, foodTypes(s).length - 1) * FOOD_VARIETY_PM },
     { label: 'Relics on display', pm: rb.happy },
+    { label: 'Unpaid upkeep', pm: unpaid ? -UNPAID_PM : 0 },
   ].filter((p) => p.pm !== 0);
   const happinessPm = clamp(happyParts.reduce((a, p) => a + p.pm, 0), 0, 1000);
   const productivityPm = Math.floor(
@@ -364,7 +371,7 @@ export function stats(s: GameState): Stats {
   const chainPower = econScore + attack + Math.floor((defense * 3) / 2);
   return { housing, jobs, edu, employed, unemployed, eduCoverPm, happinessPm, productivityPm,
     gross, income, upkeep, net, troopCap, towerDef, attack, defense, econScore, chainPower, pollution,
-    level: levelFromXp(s.xp), woodRate, oreRate, troopCost: pm(TROOP_COST, mod.troopCostPm),
+    level: levelFromXp(s.xp), woodRate, oreRate, troopCost: pm(TROOP_COST, mod.troopCostPm), storeCap: storeCap(s), unpaid,
     foodRate, foodUse, hungry, goodsRate, happyParts };
 }
 
@@ -375,6 +382,25 @@ export function addXp(s: GameState, n: number) {
   s.xp += n;
   const after = levelFromXp(s.xp);
   if (after > before) pushLog(s, `Level up! You are now level ${after}.`);
+}
+
+/** Happiness lost while the treasury is empty and buildings still cost upkeep. */
+export const UNPAID_PM = 200;
+
+/** The storehouse: what your own lumber camps, mines and farms can fill, growing with your level. */
+export const STORE_BASE = 400;
+export const STORE_PER_LEVEL = 250;
+export const storeCap = (s: GameState) => STORE_BASE + STORE_PER_LEVEL * (levelFromXp(s.xp) - 1);
+const fill = (have: number, add: number, cap: number) => (have >= cap ? have : Math.min(cap, have + add));
+
+/** A people without forests builds in stone: the wood part of any cost is paid in ore instead. */
+export function landCost(s: { arc: ArcId | null }, wood: number, ore: number): { wood: number; ore: number } {
+  return arcDef(s.arc)?.woodPm === 0 ? { wood: 0, ore: ore + wood } : { wood, ore };
+}
+/** What building `kind` costs this city in gold, wood and ore. */
+export function buildCost(s: { arc: ArcId | null }, kind: BuildingKind): { gold: number; wood: number; ore: number } {
+  const b = BUILDINGS[kind];
+  return { gold: b.cost, ...landCost(s, b.woodCost ?? 0, b.oreCost ?? 0) };
 }
 
 /** Why `kind` cannot go on (x, y) right now, or null when build() would succeed. Pure: never changes `s`. */
@@ -390,10 +416,10 @@ export function buildBlocker(s: GameState, x: number, y: number, kind: BuildingK
   if (b.arc && s.arc !== b.arc) return `Only the ${arcDef(b.arc)!.name} can build the ${b.name}`;
   if (b.limit && !((s.inventory[kind] ?? 0) > 0) && (counts(s)[kind] ?? 0) >= b.limit) return `Your city already has a ${b.name}`;
   if ((s.inventory[kind] ?? 0) > 0) return null;
-  const wc = b.woodCost ?? 0, oc = b.oreCost ?? 0;
-  if (s.gold < b.cost) return 'Not enough gold';
-  if (s.wood < wc) return `Not enough wood (need ${wc})`;
-  if (s.ore < oc) return `Not enough ore (need ${oc})`;
+  const c = buildCost(s, kind);
+  if (s.gold < c.gold) return 'Not enough gold';
+  if (s.wood < c.wood) return `Not enough wood (need ${c.wood})`;
+  if (s.ore < c.ore) return `Not enough ore (need ${c.ore})`;
   for (const [g, n] of Object.entries(b.goodsCost ?? {}) as [GoodKind, number][])
     if (s.goods[g] < n) return `Not enough ${RESOURCES[g].name} (need ${n}). Buy it on the market.`;
   return null;
@@ -405,15 +431,15 @@ export function build(s: GameState, x: number, y: number, kind: BuildingKind): R
   const b = BUILDINGS[kind];
   const stock = s.inventory[kind] ?? 0;
   if (stock > 0) {
-    s.inventory[kind] = stock - 1;
+    s.inventory[kind] = stock - 1; // placing from storage is a move, not new work: no XP
   } else {
-    const wc = b.woodCost ?? 0, oc = b.oreCost ?? 0;
-    s.gold -= b.cost; s.wood -= wc; s.ore -= oc;
+    const c = buildCost(s, kind);
+    s.gold -= c.gold; s.wood -= c.wood; s.ore -= c.ore;
     for (const [g, n] of Object.entries(b.goodsCost ?? {}) as [GoodKind, number][]) s.goods[g] -= n;
   }
   s.grid[y]![x] = kind;
   clearLevel(s, x, y);
-  addXp(s, Math.floor(b.cost / 10));
+  if (stock <= 0) addXp(s, Math.floor(b.cost / 10));
   return { ok: true };
 }
 
@@ -437,6 +463,8 @@ export function chooseArc(s: GameState, id: ArcId): Result {
   const a = arcDef(id);
   if (!a) return { ok: false, msg: 'Unknown arc' };
   s.arc = a.id;
+  // a people without forests builds in stone (see landCost): its starting wood comes as ore
+  if (a.woodPm === 0) { s.ore += s.wood; s.wood = 0; }
   ensurePortrait(s);
   pushLog(s, `You chose the ${a.name}. Welcome, mayor.`);
   return { ok: true };
@@ -448,34 +476,12 @@ export function pushLog(s: GameState, msg: string) {
   if (s.log.length > 30) s.log.length = 30;
 }
 
+/** The quick raid from the mayors list: the War Room battle with every troop and a plain plan, so both give the same result. */
+export const QUICK_RAID: RaidPlan = { commit: 100, focus: 'balanced', rage: false, heal: false, ram: false };
 export function attackRival(s: GameState, rivalId: string): Result {
-  const r = findRival(s, rivalId);
-  if (!r) return { ok: false, msg: 'Unknown city' };
-  if (s.troops <= 0) return { ok: false, msg: 'No troops. Build barracks and train troops.' };
-  const cd = s.cooldowns[r.id] ?? 0;
-  if (cd > s.tick) return { ok: false, msg: `${r.name} on cooldown, wait ${cd - s.tick}s` };
-  const mayor = findMayor(s, r.id);
-  if (mayor && mayor.shieldUntil > s.tick) return { ok: false, msg: `${r.name} is shielded for ${mayor.shieldUntil - s.tick}s` };
-  const force = Math.floor((pm(s.troops * TROOP_ATTACK, cityMods(s).attackPm) * (850 + rngInt(s, 300))) / 1000);
-  const win = force > r.defense;
-  s.cooldowns[r.id] = s.tick + ATTACK_COOLDOWN;
-  if (win) {
-    let loot = pm(rivalLoot(r), modsOf(s).lootPm);
-    if (mayor) loot = Math.min(loot, Math.floor((mayor.gold * MAX_LOOT_PCT) / 100));
-    const lost = Math.max(1, Math.floor((s.troops * 15) / 100));
-    s.gold += loot; loseTroops(s, lost);
-    if (mayor) { applyRaidToMayor(s, mayor, { loot, stars: 1, win: true }); pushNews(s, 'you', `You raided ${mayor.name} and took ${loot} gold.`); }
-    addXp(s, 25);
-    s.record.won++;
-    pushLog(s, `Victory over ${r.name} with ${arcDef(s.arc)?.attackStyle ?? 'a bold assault'}: +${loot} gold, lost ${lost} troops.`);
-    return { ok: true, win, loot, lost };
-  }
-  const lost = Math.max(1, Math.floor((s.troops * 40) / 100));
-  loseTroops(s, lost);
-  if (mayor) applyRaidToMayor(s, mayor, { loot: 0, stars: 0, win: false });
-  s.record.lost++;
-  pushLog(s, `Defeat at ${r.name}: lost ${lost} troops.`);
-  return { ok: true, win, lost };
+  const r = launchRaid(s, rivalId, QUICK_RAID);
+  if (!r.ok || !r.report) return r;
+  return { ok: true, win: r.report.win, loot: r.report.loot, lost: r.report.lost, report: r.report };
 }
 
 // ---------- marketplace (player-to-player listings; NPC sellers are simulated offline) ----------
@@ -501,6 +507,10 @@ export const isResource = (k: ItemKind): k is ResourceKind => k in RESOURCES;
 export const isGood = (k: ItemKind): k is GoodKind => (GOOD_KINDS as string[]).includes(k);
 export const isBuilding = (k: ItemKind): k is BuildingKind => k in BUILDINGS;
 export const MARKET_MAX_NPC = 16;
+export const MAX_OWN_LISTINGS = 8;
+/** The most simulated buyers pay for your listings, in percent of the fair price.
+ * Buildings sell second-hand (below their build cost, so building to sell never prints gold); raw goods sell a little above. */
+export function buyerCapPct(kind: ItemKind): number { return isRelic(kind) ? 125 : isBuilding(kind) ? 70 : 110; }
 
 export function fairPrice(kind: ItemKind): number { return isResource(kind) ? RESOURCES[kind].price : isRelic(kind) ? RELICS[kind].price : BUILDINGS[kind].cost; }
 export const itemName = (k: ItemKind) => (isResource(k) ? RESOURCES[k].name : isRelic(k) ? RELICS[k].name : BUILDINGS[k].name);
@@ -594,6 +604,7 @@ export function listForSale(s: GameState, kind: ItemKind, qty: number, price: nu
   if (!Number.isInteger(price) || price < 1 || price > fairPrice(kind) * 10) return { ok: false, msg: 'Invalid price' };
   if (isBuilding(kind) && BUILDINGS[kind].arc) return { ok: false, msg: 'Wonders cannot be sold' };
   if (stockOf(s, kind) < qty) return { ok: false, msg: 'Not enough in stock' };
+  if (s.market.filter((l) => l.seller === YOU).length >= MAX_OWN_LISTINGS) return { ok: false, msg: `You can have ${MAX_OWN_LISTINGS} listings at most` };
   addStock(s, kind, -qty);
   s.market.push({ id: s.nextListingId++, seller: YOU, kind, qty, price });
   pushLog(s, `Listed ${qty} x ${itemName(kind)} at ${price}g each.`);
@@ -637,7 +648,7 @@ function marketStep(s: GameState) {
   // simulated buyers take your listings when the price is fair
   for (const l of s.market.slice()) {
     if (l.seller !== YOU) continue;
-    if (l.price <= Math.floor((fairPrice(l.kind) * 125) / 100) && rngInt(s, 100) < (isRelic(l.kind) ? 1 : 3)) {
+    if (l.price <= Math.floor((fairPrice(l.kind) * buyerCapPct(l.kind)) / 100) && rngInt(s, 100) < (isRelic(l.kind) ? 1 : 3)) {
       const n = isResource(l.kind) ? Math.min(l.qty, 5) : 1;
       s.gold += n * l.price;
       l.qty -= n;
@@ -659,9 +670,11 @@ export function step(s: GameState): GameState {
   s.tick++;
   const st = stats(s);
   s.gold = Math.max(0, s.gold + st.net);
-  s.wood += st.woodRate;
-  s.ore += st.oreRate;
-  s.food = Math.max(0, s.food + st.foodRate - st.foodUse);
+  const cap = st.storeCap;
+  s.wood = fill(s.wood, st.woodRate, cap);
+  s.ore = fill(s.ore, st.oreRate, cap);
+  s.food = Math.max(0, fill(s.food, st.foodRate, cap) - st.foodUse);
+  if (s.gold === 0 && st.net < 0 && s.tick % 15 === 0) pushLog(s, 'The treasury is empty: workers go unpaid and the city grows unhappy. Raise taxes or demolish costly buildings.');
   const mine = arcDef(s.arc);
   if (mine && st.goodsRate > 0) s.goods[mine.good] += st.goodsRate;
   if (st.hungry && s.tick % 15 === 0) pushLog(s, 'Your citizens are hungry! Build farms or buy food.');

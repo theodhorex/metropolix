@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BUILDINGS, BUILDING_KINDS, CATEGORIES, counts, RESOURCES, arcDef, levelFromXp, type BuildingKind, type Category, type GameState, type GoodKind } from '@metropolix/sim';
+import { BUILDINGS, BUILDING_KINDS, CATEGORIES, buildCost, counts, RESOURCES, arcDef, levelFromXp, type BuildingKind, type Category, type GameState, type GoodKind } from '@metropolix/sim';
 import CubeIcon from './CubeIcon';
 import Icon, { type IconName } from './Icon';
 import { CloseX, SECTOR_COLOR } from './ui';
@@ -107,7 +107,8 @@ export default function Shop({ open, s, tool, onSelect, onClose, preview }: Prop
                   const stock = s.inventory[k] ?? 0;
                   const noLand = (!!b.wood && arc?.woodPm === 0) || (!!b.ore && arc?.orePm === 0);
                   const owned = !!b.limit && stock === 0 && (counts(s)[k] ?? 0) >= b.limit;
-                  const lackGold = s.gold < b.cost, lackWood = s.wood < (b.woodCost ?? 0), lackOre = s.ore < (b.oreCost ?? 0);
+                  const bc = buildCost(s, k); // a people without forests pays wood in ore
+                  const lackGold = s.gold < b.cost, lackWood = s.wood < bc.wood, lackOre = s.ore < bc.ore;
                   const blocked = locked || noLand || owned;
                   const img = open ? preview?.(k) : null;
                   const sel = tool === k;
@@ -141,8 +142,8 @@ export default function Shop({ open, s, tool, onSelect, onClose, preview }: Prop
                         ) : (
                           <span className="flex flex-wrap items-center gap-x-2 text-sm font-bold tabular-nums">
                             <span className={`flex items-center gap-0.5 ${lackGold ? 'text-[var(--bad)]' : 'text-[var(--gold)]'}`}><Icon name="coin" size={13} />{b.cost}</span>
-                            {b.woodCost ? <span className={`flex items-center gap-0.5 ${lackWood ? 'text-[var(--bad)]' : ''}`}><Icon name="wood" size={13} />{b.woodCost}</span> : null}
-                            {b.oreCost ? <span className={`flex items-center gap-0.5 ${lackOre ? 'text-[var(--bad)]' : ''}`}><Icon name="ore" size={13} />{b.oreCost}</span> : null}
+                            {bc.wood ? <span className={`flex items-center gap-0.5 ${lackWood ? 'text-[var(--bad)]' : ''}`}><Icon name="wood" size={13} />{bc.wood}</span> : null}
+                            {bc.ore ? <span className={`flex items-center gap-0.5 ${lackOre ? 'text-[var(--bad)]' : ''}`}><Icon name="ore" size={13} />{bc.ore}</span> : null}
                             {(Object.entries(b.goodsCost ?? {}) as [GoodKind, number][]).map(([g, n]) => (
                               <span key={g} className={`flex items-center gap-0.5 ${s.goods[g] < n ? 'text-[var(--bad)]' : ''}`} title={`${n} ${RESOURCES[g].name}`}><Icon name={g} size={13} />{n}</span>
                             ))}

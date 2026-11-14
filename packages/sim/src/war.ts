@@ -208,7 +208,8 @@ function compute(s: GameState, r: Rival, plan: RaidPlan, roll: number) {
   const focusLoot = plan.focus === 'loot' ? 1200 : plan.focus === 'trophy' ? 700 : 1000;
   const loot = n > 0 ? pm(pm(pm(Math.floor((sc.loot * destruction) / 100), focusLoot), n > 0 ? Math.floor(lootW / n) : 1000), pm(heroLoot, mods.lootPm)) : 0;
   const lossBase = 25 + Math.floor(((100 - destruction) * 3) / 10); // percent of sent
-  const lost = n > 0 ? Math.min(n, Math.max(1, Math.floor((n * lossBase * pm(pm(Math.floor(lossW / n), heroLoss), heal)) / 1_000_000))) : 0;
+  // lossBase is a percent and the role/hero/heal factor is permille: divide by 100 * 1000
+  const lost = n > 0 ? Math.min(n, Math.max(1, Math.floor((n * lossBase * pm(pm(Math.floor(lossW / n), heroLoss), heal)) / 100_000))) : 0;
   const trophies = stars === 0 ? -5 : Math.floor(stars * 8 * (plan.focus === 'trophy' ? 1.5 : 1));
   return { sent, n, sc, force, effDef, destruction, stars, loot, lost, trophies, ram, rageUsed: rage > 1000, healUsed: heal < 1000, bypass };
 }

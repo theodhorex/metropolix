@@ -48,7 +48,7 @@ export default function BuildingPanel({ s, x, y, act, onClose, onPack, onDemolis
   const lv = sim.buildingLevel(s, x, y);
   const up = sim.canUpgrade(k);
   const next = up && lv < sim.MAX_BLD_LEVEL ? lv + 1 : null;
-  const cost = next ? sim.upgradeCost(k, next) : null;
+  const cost = next ? sim.upgradeCost(k, next, s) : null;
   const why = next ? sim.upgradeBlocker(s, x, y) : null;
   const rows = ROWS.filter((r) => typeof b[r.key] === 'number' && (b[r.key] as number) > 0);
   const perks = sim.PERKS[k];

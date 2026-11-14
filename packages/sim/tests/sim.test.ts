@@ -326,11 +326,14 @@ describe('npc encounters', () => {
     expect(ea.options.length).toBeGreaterThanOrEqual(2);
   });
   it('actions change gold and resources as described', () => {
-    const s = rich(); sim.chooseArc(s, 'dragon');
+    const s = rich(); sim.chooseArc(s, 'goblin');
     const g = s.gold; sim.npcAct(s, 'tip');
     expect(s.gold).toBeLessThanOrEqual(g + 30);
     const w = s.wood; sim.npcAct(s, 'buy');
-    expect(s.wood).toBe(w + 12); // dragons have no forest, so they buy wood
+    expect(s.wood).toBe(w + 12); // goblins are short of wood, so they buy wood
+    const d = rich(); sim.chooseArc(d, 'dragon');
+    const o = d.ore; sim.npcAct(d, 'buy');
+    expect(d.ore).toBe(o + 7); // dragons build in stone, so they buy ore
   });
   it('cannot spend gold you do not have', () => {
     const s = sim.newState(); s.gold = 0;

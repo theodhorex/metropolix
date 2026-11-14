@@ -1,6 +1,22 @@
 // Random encounters with citizens: a line of dialogue plus 1-3 actions with small, real effects.
 // Randomness comes from the state's PRNG so a replay with the same seed gives the same people.
-import { RIVALS, addXp, arcDef, rivalLoot, rngInt, stats, pushLog, type GameState } from './index';
+import { RIVALS, addXp, arcDef, mayorRival, rivalLoot, rngInt, stats, pushLog, type GameState } from './index';
+
+/** Citizens share gifts and favours a few times a minute, not without end: talks past this limit are only talk. */
+export const TALK_REWARDS_PER_MIN = 4;
+/** Use one of this minute's rewarded talks; false when they are used up. */
+function rewardTalk(s: GameState): boolean {
+  if (!s.talk || s.tick - s.talk.since >= 60) s.talk = { since: s.tick, n: 0 };
+  if (s.talk.n >= TALK_REWARDS_PER_MIN) return false;
+  s.talk.n++;
+  return true;
+}
+/** Seconds until talks pay out again (0 when they do now). */
+export function talkCooldown(s: GameState): number {
+  if (!s.talk || s.tick - s.talk.since >= 60 || s.talk.n < TALK_REWARDS_PER_MIN) return 0;
+  return 60 - (s.tick - s.talk.since);
+}
+const BUSY = (s: GameState) => `They have work to do. Talk again in ${talkCooldown(s)}s.`;
 import { trainRole } from './war';
 
 export type NpcAction = 'chat' | 'tip' | 'buy' | 'rumor' | 'recruit';
@@ -50,27 +66,35 @@ export function npcEncounter(s: GameState, role: number): Encounter {
 export function npcAct(s: GameState, action: NpcAction): string {
   switch (action) {
     case 'chat': {
+      if (!rewardTalk(s)) return BUSY(s);
       addXp(s, 2);
       if (rngInt(s, 100) < 25) { const g = 5 + rngInt(s, 16); s.gold += g; return `They press ${g} gold into your hand for good luck.`; }
       return CHAT_REPLIES[rngInt(s, CHAT_REPLIES.length)]!;
     }
     case 'tip': {
       if (s.gold < 15) return 'You cannot afford that right now.';
+      if (!rewardTalk(s)) return BUSY(s);
       s.gold -= 15;
-      if (rngInt(s, 100) < 50) { const g = 25 + rngInt(s, 21); s.gold += g; addXp(s, 10); return `They are grateful and slip you ${g} gold back from a lucky find.`; }
+      // a tip buys goodwill (XP); the gold that comes back is luck and on average less than you gave
+      if (rngInt(s, 100) < 40) { const g = 20 + rngInt(s, 16); s.gold += g; addXp(s, 10); return `They are grateful and slip you ${g} gold back from a lucky find.`; }
       addXp(s, 5);
       return 'They thank you warmly. Word of your kindness will spread.';
     }
     case 'buy': {
       if (s.gold < 40) return 'You cannot afford that right now.';
+      if (!rewardTalk(s)) return BUSY(s);
       const a = arcDef(s.arc);
-      const wood = a ? a.woodPm <= a.orePm : true; // buy what your land lacks
+      // buy what your land lacks; a people without forests builds in stone and wants ore
+      const wood = a ? a.woodPm > 0 && a.woodPm <= a.orePm : true;
       s.gold -= 40;
+      // close to the fair price (wood 4, ore 6), so reselling never pays
       if (wood) { s.wood += 12; return 'You buy a bundle of 12 wood.'; }
-      s.ore += 12; return 'You buy a sack of 12 ore.';
+      s.ore += 7; return 'You buy a sack of 7 ore.';
     }
     case 'rumor': {
-      const r = RIVALS[rngInt(s, RIVALS.length)]!;
+      // news is about the mayors of this world (old saves without one fall back to the first rivals)
+      const pool = s.world?.mayors.length ? s.world.mayors.map(mayorRival) : RIVALS;
+      const r = pool[rngInt(s, pool.length)]!;
       const msg = `${r.name} guards itself with ${r.defense} defense and keeps about ${rivalLoot(r)} gold in the vaults.`;
       pushLog(s, `Rumor: ${msg}`);
       return msg;
