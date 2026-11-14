@@ -89,7 +89,7 @@ pub struct City {
     pub trophies: u32,
     pub record: Record,
     pub shield_until_ns: u64,
-    /// Gold other players took since the last snapshot; the next snapshot subtracts it.
+    /// Gold other players took that the city has not paid yet; each snapshot subtracts what its gold covers.
     pub gold_lost_unsynced: u64,
     /// Gold won in raids since the last snapshot; the next snapshot's bound allows it.
     pub loot_unsynced: u64,
@@ -339,7 +339,9 @@ impl Metropolix {
         city.tick = tick;
         city.committed_ns = now;
         city.commits += 1;
-        city.gold_lost_unsynced = 0;
+        // a loss bigger than the purse (the gold was spent before the game heard of the raid) stays as a debt that the
+        // next saves pay off, so spending fast cannot dodge a raid
+        city.gold_lost_unsynced -= lost_applied;
         city.loot_unsynced = 0;
         let new_index = isqrt(u128::from(city.gold));
         self.pool.city_index = self.pool.city_index - old_index + new_index;
@@ -780,6 +782,29 @@ mod tests {
         c.commit_snapshot(g, l, [0; 3], U128(10_000), U128(5_000), U128(10));
         ctx("alice.testnet", 100, 0);
         c.attack(acc("mallory.testnet"), None, None);
+    }
+
+    #[test]
+    fn a_raid_loss_cannot_be_dodged_by_spending_first() {
+        let mut c = two_cities();
+        ctx("alice.testnet", 100, 0);
+        let b = c.attack(acc("bob.testnet"), None, Some(1));
+        assert!(b.loot > 100);
+        // bob spent nearly everything before his game heard of the raid
+        let (g, l) = layout(&[("house", 20), ("shop", 10), ("barracks", 1)]);
+        ctx("bob.testnet", 101, 0);
+        let r = c.commit_snapshot(g.clone(), l.clone(), [5, 0, 0], U128(100), U128(2_000), U128(15));
+        assert_eq!((r.gold, r.lost_applied), (0, 100));
+        let v = c.get_city(acc("bob.testnet"), Some(false)).unwrap();
+        assert_eq!(v.gold_lost_unsynced, b.loot - 100, "the rest stays as a debt");
+        // the next save pays the debt off from new gold
+        ctx("bob.testnet", 400, 0);
+        let r = c.commit_snapshot(g, l, [5, 0, 0], U128(1_000_000), U128(2_000), U128(300));
+        assert_eq!(r.lost_applied, b.loot - 100);
+        assert_eq!(c.get_city(acc("bob.testnet"), Some(false)).unwrap().gold_lost_unsynced, 0);
+        // and the gold index still equals the sum over the cities
+        let sum: u128 = ["alice.testnet", "bob.testnet"].iter().map(|a| isqrt(u128::from(c.get_city(acc(a), Some(false)).unwrap().gold))).sum();
+        assert_eq!(c.pool.city_index, sum);
     }
 
     fn two_cities() -> Metropolix {

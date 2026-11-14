@@ -268,10 +268,10 @@ export default function OnChain() {
         {/* what backs these claims, all checkable in the repository or the browser */}
         <p className="road-lead mx-auto mt-10 max-w-prose text-center text-sm sm:text-base" data-reveal>
           <T
-            en={<>Checked, not just claimed: 178 simulation tests, 43 contract tests and three AI audit rounds of the contract. The <a className="road-link" href="/verify">verify page</a> recomputes every saved city and the $METRO backing from raw chain data, in your browser.</>}
-            id={<>Diperiksa, bukan sekadar diklaim: 178 tes simulasi, 43 tes kontrak, dan tiga ronde audit AI atas kontrak. <a className="road-link" href="/verify">Halaman verifikasi</a> menghitung ulang setiap kota tersimpan dan jaminan $METRO dari data mentah chain, langsung di browsermu.</>}
-            ko={<>주장만이 아니라 검증했습니다: 시뮬레이션 테스트 178개, 컨트랙트 테스트 43개, 컨트랙트에 대한 AI 감사 3회. <a className="road-link" href="/verify">검증 페이지</a>는 저장된 모든 도시와 $METRO 담보를 체인 원본 데이터로 브라우저에서 다시 계산합니다.</>}
-            zh={<>不只是声称，而是经过检验：178 项模拟测试、43 项合约测试，以及三轮针对合约的 AI 审计。<a className="road-link" href="/verify">验证页面</a>会在你的浏览器中，用链上原始数据重新计算每座已保存的城市和 $METRO 的储备。</>}
+            en={<>Checked, not just claimed: 178 simulation tests, 44 contract tests and three AI audit rounds of the contract. The <a className="road-link" href="/verify">verify page</a> recomputes every saved city and the $METRO backing from raw chain data, in your browser.</>}
+            id={<>Diperiksa, bukan sekadar diklaim: 178 tes simulasi, 44 tes kontrak, dan tiga ronde audit AI atas kontrak. <a className="road-link" href="/verify">Halaman verifikasi</a> menghitung ulang setiap kota tersimpan dan jaminan $METRO dari data mentah chain, langsung di browsermu.</>}
+            ko={<>주장만이 아니라 검증했습니다: 시뮬레이션 테스트 178개, 컨트랙트 테스트 44개, 컨트랙트에 대한 AI 감사 3회. <a className="road-link" href="/verify">검증 페이지</a>는 저장된 모든 도시와 $METRO 담보를 체인 원본 데이터로 브라우저에서 다시 계산합니다.</>}
+            zh={<>不只是声称，而是经过检验：178 项模拟测试、44 项合约测试，以及三轮针对合约的 AI 审计。<a className="road-link" href="/verify">验证页面</a>会在你的浏览器中，用链上原始数据重新计算每座已保存的城市和 $METRO 的储备。</>}
           />
         </p>
       </div>

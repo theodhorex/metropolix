@@ -55,7 +55,7 @@ Every step is "do X, see Y". Steps 1 to 6 need no wallet and no account.
 | 9 | **Players on chain → Raid** a saved city | A battle run by the contract: loot moved on chain, a 5 minute shield for the loser, the result in your log |
 | 10 | **$METRO market** | Buy or sell against testnet NEAR; the price sits next to the coin's NAV, and raids move the NAV |
 | 11 | Clone and run `pnpm test` (Node 22+) | 178 simulation tests pass, including the one that checks the contract's rule tables against the game |
-| 12 | `cd contracts/metropolix && cargo test` | 43 contract tests pass |
+| 12 | `cd contracts/metropolix && cargo test` | 44 contract tests pass |
 
 The claims-to-evidence matrix for every number in this README is in **[JUDGES.md](JUDGES.md)**. A longer walkthrough is in [docs/TRY_IT.md](docs/TRY_IT.md).
 
@@ -67,7 +67,7 @@ Three reads straight from NEAR testnet. Expected output: step 1 prints the code 
 
 ```bash
 RPC=https://test.rpc.fastnear.com
-# 1. The code hash of the deployed contract (HE7aKmdeP...Qw9p at the time of writing)
+# 1. The code hash of the deployed contract (3cwNuQcwu...P9Ue at the time of writing)
 curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_account","finality":"final","account_id":"metropolix.testnet"}}' | grep -o '"code_hash":"[^"]*"'
 # 2. The $METRO coin: supply, pool reserves, treasury, city index, NAV and mNAV (permille)
 curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"call_function","finality":"final","account_id":"metropolix.testnet","method_name":"get_coin","args_base64":"e30="}}' | python3 -c "import sys,json;print(bytes(json.load(sys.stdin)['result']['result']).decode())"
@@ -298,7 +298,7 @@ On a production build the city paints in about half a second and holds around 56
 | `packages/sim/tests/audit.test.ts` | `pnpm test` | Hostile inputs (NaN, Infinity, fractions), invariant fuzzing, and a check that ordering and relisting cannot print gold |
 | `contracts/metropolix` unit tests (34) | `cargo test` | Layout validation, clamps, raids, protection, coin, relics |
 
-Total: **178 simulation tests and 43 contract tests, all passing.**
+Total: **178 simulation tests and 44 contract tests, all passing.**
 
 ---
 
@@ -377,7 +377,7 @@ docs/                   logo and README screenshots
 - Heroes, spells and rams are left out of on-chain battles.
 
 **Not proven:**
-- The contract went through three AI audit rounds before the deadline (storage refunds, first-save bounds, stacked grace on quick saves, unpaid buildings, buyback size, alt-account shields and trophies, double-counted loot, overflow; then unpaid troops, relic mints draining the storage reserve, welcome-grant arbitrage and raids on fresh alt cities); every finding is fixed and has a test. There was no external commercial audit and no formal proof.
+- The contract went through three AI audit rounds before the deadline (storage refunds, first-save bounds, stacked grace on quick saves, unpaid buildings, buyback size, alt-account shields and trophies, double-counted loot, overflow; then unpaid troops, relic mints draining the storage reserve, welcome-grant arbitrage, raids on fresh alt cities and raid losses dodged by spending first); every finding is fixed and has a test. There was no external commercial audit and no formal proof.
 - A city's gold backs $METRO, and game gold is cheap to make: a new account (0.05 NEAR) with an hour of claimed play can add a large city to the backing and lift NAV. It cannot take NEAR out (buybacks never spend more than a trade's fee), and the owner can retune the weight of gold with `set_nav_k`, but NAV is a game signal, not a price floor.
 - Testnet only: $METRO and the NFTs have no real value, and only three test players have fought on chain so far.
 - Built for desktop: it runs in a mobile browser and you can tap to build, but the map and side panels are cramped on a phone.
