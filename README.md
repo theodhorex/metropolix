@@ -6,7 +6,7 @@
 
 <p align="center">
   <img alt="NEAR testnet" src="https://img.shields.io/badge/NEAR-LIVE%20ON%20TESTNET-000000?style=flat-square&labelColor=555555">
-  <img alt="Tests" src="https://img.shields.io/badge/TESTS-125%20SIM%20%2B%2034%20CONTRACT-16A34A?style=flat-square&labelColor=555555">
+  <img alt="Tests" src="https://img.shields.io/badge/TESTS-130%20SIM%20%2B%2034%20CONTRACT-16A34A?style=flat-square&labelColor=555555">
   <img alt="Next.js" src="https://img.shields.io/badge/NEXT.JS-16-000000?style=flat-square&labelColor=555555">
   <img alt="PixiJS" src="https://img.shields.io/badge/PIXIJS-8-8B5CF6?style=flat-square&labelColor=555555">
   <img alt="License" src="https://img.shields.io/badge/LICENSE-MIT-F4B728?style=flat-square&labelColor=555555">
@@ -122,11 +122,26 @@ coin history and NFTs from there and your own city straight from the RPC.
 The wallet layer is `@hot-labs/near-connect`, loaded only when the browser is
 idle or you press Connect, so the city is playable first.
 
+## Don't trust it, recompute it
+
+Open **[`/verify`](https://metropolix-city.vercel.app/verify)**. The page reads raw views
+(`get_cities`, `get_coin`, the contract's code hash) straight from a NEAR testnet RPC node, with no indexer and no
+server of ours in the loop, and recomputes in your browser:
+
+- every saved city's level, buildings, economy, attack, defense and **ChainPower** from its stored grid, and
+- the **$METRO backing**: city index (sum of the square root of every saved city's gold), NAV, pool price and mNAV.
+
+Chain value and recomputed value are shown side by side; any mismatch turns the row red. The recomputation
+(`packages/sim/src/verify.ts`) uses the same rule tables the contract was generated from, and
+`verify.test.ts` replays it against saved chain data. It matched the deployed Rust contract digit for digit on 15 Nov 2026.
+The page also lists, rule by rule, what the chain rejects, clamps or computes and what stays in the browser, so the
+trust model is on the table rather than in the fine print.
+
 ## How it is built
 
 | Part | What | Where |
 |---|---|---|
-| **The world** | Integer-only, seeded, deterministic simulation: the same seed and moves give the same city on every machine, so the contract can replay it later. 125 tests, property tests with fast-check among them. | [`packages/sim/`](packages/sim/) |
+| **The world** | Integer-only, seeded, deterministic simulation: the same seed and moves give the same city on every machine, so the contract can replay it later. 130 tests, property tests with fast-check among them. | [`packages/sim/`](packages/sim/) |
 | **The indexer** | Next.js route handlers over the contract's views, Neon Postgres or memory. | [`apps/web/app/api/chain/`](apps/web/app/api/chain/) |
 | **The game** | Next.js 16, React 19, PixiJS 8 isometric renderer with HD and Lite modes. Every sprite, tile, icon and portrait is pixel art drawn in code; no third-party art. | [`apps/web/`](apps/web/) |
 | **The chain** | Rust NEAR contract (near-sdk 5, near-contract-standards for NEP-141 and NEP-171), 34 unit tests; a test fails when its building tables drift from the simulation. | [`contracts/metropolix/`](contracts/metropolix/) |
@@ -149,7 +164,7 @@ for the hackathon, starting 10 November 2026, with no starter template.
 ## Limits, stated plainly
 
 - Testnet only. $METRO and the NFTs have no real value.
-- The contract bounds what a client may claim (layout, troops, clock, gold, XP) but does not replay the simulation. Gold from trades and AI raids beyond that bound is saved at the bound, and the panel says so.
+- The contract bounds what a client may claim (layout, troops, clock, gold, XP) but does not replay the simulation. What it computes from those bounded facts (ChainPower, raids, NAV) can be audited on `/verify`. Gold from trades and AI raids beyond that bound is saved at the bound, and the panel says so.
 - Treasure finds are not proven on chain: the vault lives in the browser. Minting is rate-limited and gated by saved level.
 - The contract went through two AI audit rounds before the deadline (storage refunds, first-save bounds, stacked grace on quick saves, unpaid buildings, buyback size, alt-account shields and trophies, double-counted loot, overflow); every finding is fixed and has a test.
 - Rival AI mayors are simulated in the browser; only players who founded a city on chain can be raided on chain.
@@ -159,7 +174,7 @@ for the hackathon, starting 10 November 2026, with no starter template.
 ## Commands
 
 ```bash
-pnpm test        # 125 simulation tests, including the contract-table sync check
+pnpm test        # 130 simulation tests, including the contract-table sync check
 pnpm typecheck
 pnpm build && pnpm --filter @metropolix/web exec next start
 

@@ -94,7 +94,15 @@ const STEPS = [
       ko: '자체 풀을 가진 NEP-141 코인으로, 저장된 모든 도시의 골드가 담보가 되어 약탈이 가격을 움직입니다. 금고의 보물은 NEP-171 NFT로 발행됩니다. 실제 가치가 없는 testnet 토큰입니다.',
       zh: '一枚拥有独立资金池的 NEP-141 代币，以所有已保存城市的金币为储备，因此突袭会影响其价格。金库中的宝藏可铸造为 NEP-171 NFT。均为测试网代币，没有真实价值。',
     },
-    link: null,
+    link: {
+      href: '/verify',
+      label: {
+        en: 'Audit it in your browser',
+        id: 'Audit di browsermu',
+        ko: '브라우저에서 직접 검증',
+        zh: '在浏览器中自行审计',
+      },
+    },
   },
 ];
 
