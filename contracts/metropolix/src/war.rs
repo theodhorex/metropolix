@@ -51,6 +51,20 @@ pub fn attack_bonus_pm(grid: &[u8], levels: &[u8]) -> u64 {
     build + drill.min(DRILL_CAP_PM)
 }
 
+/// What the buildings on the grid cost to put up (sim upgradeCost: level 2 costs 2x, level 3 another 4x).
+pub fn grid_value(grid: &[u8], levels: &[u8]) -> u64 {
+    let mut sum = 0u64;
+    for i in 0..grid.len() {
+        let c = grid[i];
+        if c == 0 {
+            continue;
+        }
+        let paid = match level_at(grid, levels, i) { 3 => 7, 2 => 3, _ => 1 };
+        sum = sum.saturating_add(COST[usize::from(c - 1)] * paid);
+    }
+    sum
+}
+
 /// Most gold a city can earn per second: every job filled, full productivity, the highest tax.
 pub fn max_income(grid: &[u8], levels: &[u8]) -> u64 {
     let gross = weighted(grid, levels, &OUTPUT) + weighted(grid, levels, &JOBS) * BASE_WAGE;
@@ -160,7 +174,8 @@ pub fn fight(atk: &Side, def: &Side, commit: u8, focus: u8, roll: u64) -> Fight 
     let focus_loot: u64 = match focus { 1 => 1200, 2 => 700, _ => 1000 };
     // in u128: a treasury near u64::MAX must not make the city impossible to raid
     let cap = u128::from(def.gold) * u128::from(MAX_LOOT_PCT) / 100;
-    let loot = if n > 0 {
+    // a failed raid (no star) takes nothing from another player's treasury
+    let loot = if n > 0 && stars > 0 {
         let base = cap * u128::from(destruction) / 100;
         let l = base * u128::from(focus_loot) / 1000 * u128::from(loot_w / n) / 1000 * u128::from(ARC_LOOT_PM[usize::from(atk.arc)]) / 1000;
         u64::try_from(l.min(cap)).unwrap_or(u64::MAX)

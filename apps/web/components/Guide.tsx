@@ -16,7 +16,7 @@ const STEPS: Step[] = [
   { text: () => 'Nice! Citizens need food. Build a Farm.', target: 'shop', done: (_, n) => n('farm') >= 1 },
   { text: () => 'Happy people pay better taxes. Add a Park.', target: 'shop', done: (_, n) => n('park') >= 1 },
   { text: () => 'Tax rate is a trade: more gold, less happiness. Try the slider on the left.', target: 'tax', next: true },
-  { text: () => 'Open the Social panel: market, chat, ranks and other players.', target: 'social', done: (c) => c.socialOpen },
+  { text: () => 'Open the Social panel: chat, news, ranks and other players. Goods are traded under Market.', target: 'social', done: (c) => c.socialOpen },
   { text: () => 'You are ready! Grow, trade, train troops and climb the leaderboard.', target: null, next: true },
 ];
 
@@ -47,7 +47,7 @@ export default function Guide(props: Props) {
   if (!active || !cur) return null;
   const arc = arcDef(s.arc)!;
   return (
-    <div className="pointer-events-none fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-end gap-3 px-3" role="status">
+    <div className={`pointer-events-none fixed left-1/2 z-30 flex -translate-x-1/2 items-end gap-3 px-3 ${props.shopOpen ? 'top-20' : 'bottom-4'}`} role="status">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {s.arc && <CitizenImg arc={s.arc} v={0} width={64} height={96} className="shrink-0" style={{ filter: 'drop-shadow(0 3px 0 #12151d)' }} />}
       <div className="pointer-events-auto relative max-w-sm border-2 border-[var(--ink)] bg-[var(--paper)] p-3 text-sm text-[#1b1b1b] shadow-[0_3px_0_var(--ink)]">

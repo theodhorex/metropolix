@@ -3,7 +3,7 @@ import { ARCS, GRID, SHIELD_TICKS, WORLD_MAYORS } from '@metropolix/sim';
 import T from './prefs/T';
 import './faq.css';
 
-// Every answer here must stay true to the code: no claim the game is on chain yet, no money promises.
+// Every answer here must stay true to the code: on chain means NEAR testnet, no money promises.
 const REPO = 'https://github.com/theodhorex/metropolix';
 const ext = { target: '_blank', rel: 'noopener noreferrer' } as const;
 const SHIELD_MIN = Math.round(SHIELD_TICKS / 60);
@@ -37,10 +37,10 @@ const QA: {
       zh: '我需要注册、下载或付费吗？',
     },
     a: {
-      en: <>No. Press <Link href="/play">Play now</Link> and the game runs in your browser. There is no account, no download and nothing to buy.</>,
-      id: <>Tidak. Tekan <Link href="/play">Play now</Link> dan game langsung berjalan di browser. Tanpa akun, tanpa unduhan, dan tidak ada yang perlu dibeli.</>,
-      ko: <>아닙니다. <Link href="/play">지금 플레이</Link>를 누르면 브라우저에서 바로 실행됩니다. 계정도, 다운로드도, 구매할 아이템도 없습니다.</>,
-      zh: <>完全不需要。点击<Link href="/play">立即开玩</Link>即可在浏览器中直接畅玩。无须注册账号，无须下载安装，也没有任何内购商品。</>,
+      en: <>No. Press <Link href="/play">Play now</Link> and the game runs in your browser, with no account and no download. A NEAR testnet wallet is optional: it adds the on-chain features, with free testnet NEAR.</>,
+      id: <>Tidak. Tekan <Link href="/play">Play now</Link> dan game langsung berjalan di browser, tanpa akun dan tanpa unduhan. Dompet NEAR testnet itu opsional: untuk fitur on-chain, dengan NEAR testnet yang gratis.</>,
+      ko: <>아닙니다. <Link href="/play">지금 플레이</Link>를 누르면 계정이나 다운로드 없이 브라우저에서 바로 실행됩니다. NEAR testnet 지갑은 선택 사항이며, 무료 testnet NEAR로 온체인 기능을 쓸 수 있습니다.</>,
+      zh: <>不需要。点击<Link href="/play">立即开玩</Link>即可在浏览器中直接畅玩，无须账号、无须下载。NEAR testnet 钱包为可选项，用免费的 testnet NEAR 即可解锁链上功能。</>,
     },
   },
   {
@@ -52,10 +52,10 @@ const QA: {
       zh: '游戏目前已经在区块链上了吗？',
     },
     a: {
-      en: <>Not yet. The NEAR smart contract that will hold your city, its ChainPower and your battle results is written in Rust and tested (see <a href={`${REPO}/tree/HEAD/contracts/metropolix`} {...ext}>contracts/metropolix</a>). The next step is deploying it to NEAR testnet and signing in with a NEAR wallet. Until then everything runs in your browser.</>,
-      id: <>Belum. Smart contract NEAR yang nanti menyimpan kotamu, ChainPower-nya, dan hasil pertempuranmu sudah ditulis dalam Rust dan diuji (lihat <a href={`${REPO}/tree/HEAD/contracts/metropolix`} {...ext}>contracts/metropolix</a>). Langkah berikutnya adalah memasangnya di NEAR testnet dan masuk dengan dompet NEAR. Sampai saat itu, semuanya berjalan di browsermu.</>,
-      ko: <>아직 아닙니다. 도시와 ChainPower, 전투 결과를 기록할 NEAR 스마트 컨트랙트는 Rust로 작성되어 테스트를 마쳤습니다(<a href={`${REPO}/tree/HEAD/contracts/metropolix`} {...ext}>contracts/metropolix</a> 참조). 다음 단계는 NEAR testnet에 배포하고 NEAR 지갑으로 로그인하는 것입니다. 그전까지는 모든 것이 브라우저에서 실행됩니다.</>,
-      zh: <>暂未上线。用于储存你的城市、ChainPower 以及战斗结果的 NEAR 智能合约已使用 Rust 编写并完成测试（参见 <a href={`${REPO}/tree/HEAD/contracts/metropolix`} {...ext}>contracts/metropolix</a>）。下一步是将其部署至 NEAR testnet 并支持 NEAR 钱包登录。在此之前，一切都在你的浏览器本地运行。</>,
+      en: <>Yes, on NEAR testnet. Connect a NEAR wallet in the game and your city is saved to the contract <a href="https://testnet.nearblocks.io/address/metropolix.testnet" {...ext}>metropolix.testnet</a> every five minutes, other players can raid it, and you can trade $METRO and mint treasures as NFTs. The code is in <a href={`${REPO}/tree/HEAD/contracts/metropolix`} {...ext}>contracts/metropolix</a>.</>,
+      id: <>Ya, di NEAR testnet. Hubungkan dompet NEAR di dalam game dan kotamu disimpan ke kontrak <a href="https://testnet.nearblocks.io/address/metropolix.testnet" {...ext}>metropolix.testnet</a> tiap lima menit, pemain lain bisa menyerbunya, dan kamu bisa memperdagangkan $METRO serta mencetak harta karun sebagai NFT. Kodenya ada di <a href={`${REPO}/tree/HEAD/contracts/metropolix`} {...ext}>contracts/metropolix</a>.</>,
+      ko: <>네, NEAR testnet에 있습니다. 게임에서 NEAR 지갑을 연결하면 도시가 5분마다 <a href="https://testnet.nearblocks.io/address/metropolix.testnet" {...ext}>metropolix.testnet</a> 컨트랙트에 저장되고, 다른 플레이어가 약탈할 수 있으며, $METRO를 거래하고 보물을 NFT로 발행할 수 있습니다. 코드는 <a href={`${REPO}/tree/HEAD/contracts/metropolix`} {...ext}>contracts/metropolix</a>에 있습니다.</>,
+      zh: <>是的，已上线 NEAR testnet。在游戏中连接 NEAR 钱包后，你的城市每五分钟保存到合约 <a href="https://testnet.nearblocks.io/address/metropolix.testnet" {...ext}>metropolix.testnet</a>，其他玩家可以突袭它，你还可以交易 $METRO 并将宝藏铸造为 NFT。代码见 <a href={`${REPO}/tree/HEAD/contracts/metropolix`} {...ext}>contracts/metropolix</a>。</>,
     },
   },
   {
@@ -67,10 +67,10 @@ const QA: {
       zh: '我的城市进度保存在哪里？',
     },
     a: {
-      en: <>On this device, in your browser. Clearing this site&apos;s data deletes the city, and a different browser or device starts fresh.</>,
-      id: <>Di perangkat ini, di dalam browsermu. Menghapus data situs ini akan menghapus kotamu, dan browser atau perangkat lain mulai dari awal.</>,
-      ko: <>이 기기의 브라우저에 저장됩니다. 사이트 데이터를 삭제하면 도시가 사라지며, 다른 브라우저나 기기에서는 처음부터 새로 시작됩니다.</>,
-      zh: <>保存在当前设备的浏览器中。清理本站点的缓存数据会删除城市进度，而在不同的浏览器或设备上打开则会重新开始。</>,
+      en: <>In your browser, and on NEAR testnet once you connect a wallet and turn on autosave. On a new browser or device, connect the same wallet and load your city back from the chain.</>,
+      id: <>Di browsermu, dan di NEAR testnet setelah kamu menghubungkan dompet dan menyalakan simpan otomatis. Di browser atau perangkat baru, hubungkan dompet yang sama lalu muat kembali kotamu dari chain.</>,
+      ko: <>브라우저에 저장되며, 지갑을 연결하고 자동 저장을 켜면 NEAR testnet에도 저장됩니다. 새 브라우저나 기기에서는 같은 지갑을 연결해 체인에서 도시를 불러오세요.</>,
+      zh: <>保存在你的浏览器中；连接钱包并开启自动保存后，也会保存到 NEAR testnet。换用新的浏览器或设备时，连接同一个钱包即可从链上读回你的城市。</>,
     },
   },
   {
@@ -97,10 +97,10 @@ const QA: {
       zh: '其他城主是真实玩家吗？',
     },
     a: {
-      en: <>Not yet. The {WORLD_MAYORS} rival mayors are simulated: they grow, level up and raid each other and you, and every raid takes gold out of a real treasury in the simulation. They are built to be replaced by real players once the game is on chain.</>,
-      id: <>Belum. Ke-{WORLD_MAYORS} mayor rival itu simulasi: mereka tumbuh, naik level, dan saling menyerbu termasuk menyerbumu, dan setiap serbuan mengambil emas dari kas sungguhan di dalam simulasi. Mereka dirancang untuk digantikan pemain sungguhan setelah game ada di blockchain.</>,
-      ko: <>아직 아닙니다. {WORLD_MAYORS}명의 라이벌 시장은 시뮬레이션입니다. 스스로 성장하고 레벨을 올리며 서로를, 그리고 당신을 약탈합니다. 모든 약탈은 시뮬레이션 속 실제 금고에서 골드를 빼앗아 갑니다. 향후 게임이 온체인에 올라가면 실제 플레이어로 대체되도록 설계되었습니다.</>,
-      zh: <>暂时不是。这 {WORLD_MAYORS} 位对手城主皆为模拟生成：它们会自主发展、升级并互相发起突袭（包括突袭你的城市），每次突袭都会从模拟系统中的真实国库扣除金币。它们旨在当游戏正式上链后由真实玩家替换。</>,
+      en: <>Both. The {WORLD_MAYORS} nearby rival mayors are simulated in your browser: they grow, level up and raid each other and you. Real players who saved their city on chain are listed under Players on chain, and raiding them takes gold out of their on-chain treasury.</>,
+      id: <>Keduanya. Ke-{WORLD_MAYORS} mayor rival di sekitarmu disimulasikan di browser: mereka tumbuh, naik level, dan saling menyerbu termasuk menyerbumu. Pemain sungguhan yang menyimpan kotanya di chain muncul di Players on chain, dan menyerbu mereka mengambil emas dari kas on-chain mereka.</>,
+      ko: <>둘 다입니다. 주변의 라이벌 시장 {WORLD_MAYORS}명은 브라우저에서 시뮬레이션되며 스스로 성장하고 서로를, 그리고 당신을 약탈합니다. 체인에 도시를 저장한 실제 플레이어는 Players on chain 목록에 나타나며, 그들을 약탈하면 온체인 금고에서 골드를 가져옵니다.</>,
+      zh: <>两者都有。附近的 {WORLD_MAYORS} 位对手城主在你的浏览器中模拟运行，会自主发展、升级并互相突袭（包括你）。已将城市保存到链上的真实玩家会出现在 Players on chain 列表中，突袭他们会从其链上国库中夺取金币。</>,
     },
   },
   {
@@ -127,10 +127,10 @@ const QA: {
       zh: '玩这款游戏能赚钱吗？',
     },
     a: {
-      en: <>No, not today. A city coin backed by your city&apos;s treasury is planned for after the move to NEAR. Nothing can be bought, sold or withdrawn right now, and this page will say so plainly when that changes.</>,
-      id: <>Tidak, untuk saat ini. Koin kota yang didukung kas kotamu direncanakan setelah game pindah ke NEAR. Sekarang tidak ada yang bisa dibeli, dijual, atau ditarik, dan halaman ini akan mengatakannya dengan jelas bila hal itu berubah.</>,
-      ko: <>아닙니다, 현재는 불가능합니다. NEAR로 이전한 이후 도시 금고를 담보로 하는 도시 코인이 계획되어 있습니다. 지금은 어떤 자산도 구매, 판매, 출금할 수 없으며, 변경 사항이 생기면 이 페이지에서 명확하게 안내해 드릴 것입니다.</>,
-      zh: <>目前不能。我们计划在迁移至 NEAR 之后推出以城市国库为支撑的城市代币。目前不支持任何购买、出售或提现操作，若后续有变动，本页面将清楚说明。</>,
+      en: <>No. Everything on chain runs on NEAR testnet: $METRO, its pool and the treasure NFTs are testnet tokens with no real value, and nothing can be cashed out.</>,
+      id: <>Tidak. Semua yang on-chain berjalan di NEAR testnet: $METRO, pool-nya, dan NFT harta karun adalah token testnet tanpa nilai nyata, dan tidak ada yang bisa dicairkan.</>,
+      ko: <>아닙니다. 온체인의 모든 것은 NEAR testnet에서 동작합니다. $METRO와 그 풀, 보물 NFT는 실제 가치가 없는 testnet 토큰이며 현금화할 수 없습니다.</>,
+      zh: <>不能。所有链上内容都运行在 NEAR testnet：$METRO、其资金池和宝藏 NFT 都是没有真实价值的测试网代币，无法兑现。</>,
     },
   },
   {

@@ -11,7 +11,7 @@ const n = (v: number) => v.toLocaleString('en-US');
 export function hudInfo(s: sim.GameState, st: sim.Stats): Record<HudKey, TipInfo> {
   const arc = sim.arcDef(s.arc);
   const c = sim.counts(s);
-  const foodNet = st.foodRate - st.foodUse;
+  const foodNet = sim.unitsPerSec(st.foodMilli - st.foodUse * 1000);
   const drag = [...st.happyParts].filter((p) => p.pm < 0).sort((a, b) => a.pm - b.pm)[0];
 
   return {
@@ -72,11 +72,11 @@ export function hudInfo(s: sim.GameState, st: sim.Stats): Record<HudKey, TipInfo
       rows: [
         { k: 'In store', v: `${n(s.wood)} / ${n(st.storeCap)}`, tone: s.wood >= st.storeCap ? 'bad' : undefined },
         { k: 'Lumber mills', v: n(c.lumber ?? 0) },
-        { k: 'Made per second', v: perSec(st.woodRate), tone: st.woodRate > 0 ? 'good' : undefined },
+        { k: 'Made per second', v: perSec(sim.unitsPerSec(st.woodMilli)), tone: st.woodMilli > 0 ? 'good' : undefined },
       ],
       note: arc && arc.woodPm === 0 ? { text: `The ${arc.name} have no forests: they build in stone, paying ore where others pay wood.`, tone: 'info' }
         : s.wood >= st.storeCap ? { text: 'Storehouse full: new wood is lost. Spend it, sell it, or level up for more room.', tone: 'bad' }
-        : st.woodRate === 0 ? { text: 'Build a lumber mill to make wood.', tone: 'info' } : undefined,
+        : st.woodMilli === 0 ? { text: 'Build a lumber mill to make wood.', tone: 'info' } : undefined,
     },
     ore: {
       title: 'Ore',
@@ -84,18 +84,18 @@ export function hudInfo(s: sim.GameState, st: sim.Stats): Record<HudKey, TipInfo
       rows: [
         { k: 'In store', v: `${n(s.ore)} / ${n(st.storeCap)}`, tone: s.ore >= st.storeCap ? 'bad' : undefined },
         { k: 'Mines', v: n(c.mine ?? 0) },
-        { k: 'Made per second', v: perSec(st.oreRate), tone: st.oreRate > 0 ? 'good' : undefined },
+        { k: 'Made per second', v: perSec(sim.unitsPerSec(st.oreMilli)), tone: st.oreMilli > 0 ? 'good' : undefined },
       ],
       note: arc && arc.orePm === 0 ? { text: `The ${arc.name} have no ore. Buy it at the Market.`, tone: 'bad' }
         : s.ore >= st.storeCap ? { text: 'Storehouse full: new ore is lost. Spend it, sell it, or level up for more room.', tone: 'bad' }
-        : st.oreRate === 0 ? { text: 'Build a mine to make ore.', tone: 'info' } : undefined,
+        : st.oreMilli === 0 ? { text: 'Build a mine to make ore.', tone: 'info' } : undefined,
     },
     food: {
       title: 'Food',
       desc: 'Every 20 citizens eat 1 food per second. Farms grow it.',
       rows: [
         { k: 'In store', v: `${n(s.food)} / ${n(st.storeCap)}`, tone: s.food >= st.storeCap ? 'bad' : undefined },
-        { k: 'Farms grow', v: perSec(st.foodRate), tone: 'good' },
+        { k: 'Farms grow', v: perSec(sim.unitsPerSec(st.foodMilli)), tone: 'good' },
         ...(sim.foodTypes(s).length > 0 ? [{ k: 'Kinds of food', v: sim.foodTypes(s).join(', ') }] : []),
         { k: 'Citizens eat', v: perSec(-st.foodUse), tone: 'bad' },
         { k: 'Net per second', v: perSec(foodNet), tone: foodNet >= 0 ? 'good' : 'bad' },

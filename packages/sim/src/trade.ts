@@ -52,6 +52,7 @@ export function placeOrder(s: GameState, k: ItemKind, qty: number, price: number
   if (!whole(qty) || !whole(price)) return { ok: false, msg: 'Invalid order' };
   if (price > fairPrice(k) * 10) return { ok: false, msg: 'Price is too high' };
   if (isBuilding(k) && BUILDINGS[k].arc) return { ok: false, msg: 'Wonders cannot be bought' };
+  if (isRelic(k) && RELIC_FILL_PER10K[RELICS[k].rarity] === 0) return { ok: false, msg: `No city ever sells a ${itemName(k)}: find one yourself` };
   if (s.orders.filter((o) => o.buyer === YOU).length >= 8) return { ok: false, msg: 'You can have 8 open orders at most' };
   const escrow = qty * price;
   if (s.gold < escrow) return { ok: false, msg: `Not enough gold to back this order (need ${escrow})` };

@@ -155,7 +155,7 @@ export const ARCS: ArcDef[] = [
     attackStyle: 'a thundering club charge', accent: '#d9a066', mods: { attackPm: 1100, defensePm: 900, econPm: 900, troopCostPm: 700, lootPm: 1000 } },
   { id: 'dragon', good: 'emberstone', index: 3, name: 'Dragonkin', tagline: 'Volcanic lords: endless ore, not a single forest.', woodPm: 0, orePm: 2000, troop: 'Drake',
     strengths: ['Huge ore output', 'Devastating attack (+25%)', 'Good loot (+10%)'], unique: 'Roaring firestorm',
-    weaknesses: ['NO forests: wood must be bought on the market', 'Expensive soldiers (+30%)', 'Weak economy (-15%)'],
+    weaknesses: ['NO forests: every build is paid in ore instead of wood', 'Expensive soldiers (+30%)', 'Weak economy (-15%)'],
     attackStyle: 'a roaring firestorm', accent: '#ef6a4f', mods: { attackPm: 1250, defensePm: 1000, econPm: 850, troopCostPm: 1300, lootPm: 1100 } },
   { id: 'goblin', good: 'gears', index: 4, name: 'Goblins', tagline: 'Scrap scavengers: rich mines, fragile walls.', woodPm: 600, orePm: 1500, troop: 'Grunt',
     strengths: ['Best loot (+30%)', 'Rich ore', 'Cheap soldiers (-20%)'], unique: 'Swarm of sneak-thieves',
@@ -227,6 +227,8 @@ export interface GameState {
   wood: number;
   ore: number;
   food: number;
+  /** thousandths of wood, ore and food made but not yet a whole unit */
+  frac?: { wood: number; ore: number; food: number };
   goods: Record<GoodKind, number>;
   xp: number;
   inventory: Partial<Record<BuildingKind, number>>; // bought on the market, placed for free
@@ -271,6 +273,8 @@ export interface Stats {
   troopCap: number; towerDef: number; attack: number; defense: number;
   econScore: number; chainPower: number; pollution: number;
   level: number; woodRate: number; oreRate: number; troopCost: number;
+  /** the same rates in thousandths per second: a slow camp still adds up (see GameState.frac) */
+  woodMilli: number; oreMilli: number; foodMilli: number;
   /** Most wood, ore or food the storehouse keeps from your own production (purchases may go past it). */
   storeCap: number;
   /** The treasury is empty and buildings still cost upkeep: workers go unpaid. */
@@ -359,9 +363,11 @@ export function stats(s: GameState): Stats {
   const income = Math.floor((gross * s.taxRate) / 10);
   const net = income - upkeep;
   const abundance = arcDef(s.arc);
-  const woodRate = Math.floor((Math.floor((wood * (abundance?.woodPm ?? 1000) * productivityPm) / 1_000_000) * (1000 + rb.wood)) / 1000);
-  const oreRate = Math.floor((Math.floor((ore * (abundance?.orePm ?? 1000) * productivityPm) / 1_000_000) * (1000 + rb.ore)) / 1000);
-  const foodRate = Math.floor((Math.floor((food * productivityPm) / 1000) * (1000 + rb.food)) / 1000);
+  // in thousandths per second, so one camp on poor land still yields something instead of rounding to zero
+  const woodMilli = Math.floor((Math.floor((wood * (abundance?.woodPm ?? 1000) * productivityPm) / 1000) * (1000 + rb.wood)) / 1000);
+  const oreMilli = Math.floor((Math.floor((ore * (abundance?.orePm ?? 1000) * productivityPm) / 1000) * (1000 + rb.ore)) / 1000);
+  const foodMilli = Math.floor((food * productivityPm * (1000 + rb.food)) / 1000);
+  const woodRate = Math.floor(woodMilli / 1000), oreRate = Math.floor(oreMilli / 1000), foodRate = Math.floor(foodMilli / 1000);
   const goodsRate = Math.floor((goods * productivityPm) / 1000);
   const hungry = (s.food ?? 0) <= 0 && foodRate < foodUse;
   const mod = cityMods(s);
@@ -371,7 +377,7 @@ export function stats(s: GameState): Stats {
   const chainPower = econScore + attack + Math.floor((defense * 3) / 2);
   return { housing, jobs, edu, employed, unemployed, eduCoverPm, happinessPm, productivityPm,
     gross, income, upkeep, net, troopCap, towerDef, attack, defense, econScore, chainPower, pollution,
-    level: levelFromXp(s.xp), woodRate, oreRate, troopCost: pm(TROOP_COST, mod.troopCostPm), storeCap: storeCap(s), unpaid,
+    level: levelFromXp(s.xp), woodRate, oreRate, woodMilli, oreMilli, foodMilli, troopCost: pm(TROOP_COST, mod.troopCostPm), storeCap: storeCap(s), unpaid,
     foodRate, foodUse, hungry, goodsRate, happyParts };
 }
 
@@ -411,7 +417,7 @@ export function buildBlocker(s: GameState, x: number, y: number, kind: BuildingK
   if (s.grid[y]![x]) return 'Tile occupied';
   if (levelFromXp(s.xp) < b.unlockLevel) return `${b.name} unlocks at level ${b.unlockLevel}`;
   const arc = arcDef(s.arc);
-  if (b.wood && arc && arc.woodPm === 0) return `The ${arc.name} have no forests: buy wood on the market`;
+  if (b.wood && arc && arc.woodPm === 0) return `The ${arc.name} have no forests to cut: they build in stone`;
   if (b.ore && arc && arc.orePm === 0) return `The ${arc.name} have no ore`;
   if (b.arc && s.arc !== b.arc) return `Only the ${arcDef(b.arc)!.name} can build the ${b.name}`;
   if (b.limit && !((s.inventory[kind] ?? 0) > 0) && (counts(s)[kind] ?? 0) >= b.limit) return `Your city already has a ${b.name}`;
@@ -565,7 +571,9 @@ export function addNpcListing(s: GameState) {
   const relic = rngInt(s, 1000) < 15; // 1.5% of offers are a relic, priced well above its worth
   const kind: ItemKind = relic ? npcRelic(s) : npcOffer(s, arcDef(city.arc)!);
   const resource = isResource(kind);
-  const price = Math.max(1, Math.floor((fairPrice(kind) * (relic ? 130 + rngInt(s, 71) : 75 + rngInt(s, 56))) / 100));
+  // never at or below what another city already bids for the same thing, so buying here to sell there never pays
+  const bid = Math.max(0, ...s.orders.filter((o) => o.buyer !== YOU && o.kind === kind).map((o) => o.price));
+  const price = Math.max(1, bid + 1, Math.floor((fairPrice(kind) * (relic ? 130 + rngInt(s, 71) : 75 + rngInt(s, 56))) / 100));
   const qty = relic ? 1 : !resource ? 1 + rngInt(s, 3) : isGood(kind) ? 4 + rngInt(s, 12) : 10 + rngInt(s, 31);
   s.market.push({ id: s.nextListingId++, seller: city.name, kind, qty, price, arc: city.arc });
   const npc = s.market.filter((l) => l.seller !== YOU);
@@ -579,8 +587,12 @@ export function addNpcOrder(s: GameState) {
   const city = NPC_CITIES[rngInt(s, NPC_CITIES.length)]!;
   const relic = rngInt(s, 1000) < 20; // 2% of requests are collectors hunting a relic
   const kind: ItemKind = relic ? npcRelic(s) : npcNeed(s, arcDef(city.arc)!);
-  const price = Math.max(1, Math.floor((fairPrice(kind) * (relic ? 110 + rngInt(s, 51) : 90 + rngInt(s, 51))) / 100));
+  const want = Math.max(1, Math.floor((fairPrice(kind) * (relic ? 110 + rngInt(s, 51) : 90 + rngInt(s, 51))) / 100));
   const qty = !isResource(kind) ? 1 : isGood(kind) ? 3 + rngInt(s, 8) : 10 + rngInt(s, 21);
+  // always below the cheapest offer of the same thing on the market (see addNpcListing)
+  const ask = Math.min(Infinity, ...s.market.filter((l) => l.seller !== YOU && l.kind === kind).map((l) => l.price));
+  const price = Math.min(want, ask - 1);
+  if (price < 1) return;
   s.orders.push({ id: s.nextListingId++, buyer: city.name, kind, qty, price, arc: city.arc });
   const npc = s.orders.filter((o) => o.buyer !== YOU);
   if (npc.length > 10) { const drop = npc[0]!.id; s.orders = s.orders.filter((o) => o.id !== drop); }
@@ -666,14 +678,20 @@ export function raidThreats(s: GameState): Rival[] {
   return RIVALS.filter((r) => rivalPower(r) <= Math.floor((cp * 16) / 10) + 60);
 }
 
+/** A rate in thousandths per second as units per second, to one decimal (rounded down), for display. */
+export const unitsPerSec = (milli: number) => Math.floor(milli / 100) / 10;
+
 export function step(s: GameState): GameState {
   s.tick++;
   const st = stats(s);
   s.gold = Math.max(0, s.gold + st.net);
   const cap = st.storeCap;
-  s.wood = fill(s.wood, st.woodRate, cap);
-  s.ore = fill(s.ore, st.oreRate, cap);
-  s.food = Math.max(0, fill(s.food, st.foodRate, cap) - st.foodUse);
+  // whole units this second, the remainder carried to the next one
+  const fr = (s.frac ??= { wood: 0, ore: 0, food: 0 });
+  const take = (k: 'wood' | 'ore' | 'food', milli: number) => { const v = fr[k] + milli; fr[k] = v % 1000; return Math.floor(v / 1000); };
+  s.wood = fill(s.wood, take('wood', st.woodMilli), cap);
+  s.ore = fill(s.ore, take('ore', st.oreMilli), cap);
+  s.food = Math.max(0, fill(s.food, take('food', st.foodMilli), cap) - st.foodUse);
   if (s.gold === 0 && st.net < 0 && s.tick % 15 === 0) pushLog(s, 'The treasury is empty: workers go unpaid and the city grows unhappy. Raise taxes or demolish costly buildings.');
   const mine = arcDef(s.arc);
   if (mine && st.goodsRate > 0) s.goods[mine.good] += st.goodsRate;

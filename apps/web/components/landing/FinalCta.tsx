@@ -74,10 +74,10 @@ export default function FinalCta() {
         </h2>
         <p className="night-line mx-auto mt-4 max-w-md text-base sm:text-lg">
           <T
-            en="Free, in your browser. Your city is saved on this device."
-            id="Gratis, langsung di browser. Kotamu disimpan di perangkat ini."
-            ko="무료로 브라우저에서 바로 즐기세요. 도시는 이 기기에 저장됩니다."
-            zh="免费畅玩，直接在浏览器中运行。城市数据保存在当前设备。"
+            en="Free, in your browser. Connect a NEAR testnet wallet to keep your city on chain."
+            id="Gratis, langsung di browser. Hubungkan dompet NEAR testnet untuk menyimpan kotamu on-chain."
+            ko="무료로 브라우저에서 바로 즐기세요. NEAR testnet 지갑을 연결하면 도시를 온체인에 보관할 수 있습니다."
+            zh="免费畅玩，直接在浏览器中运行。连接 NEAR testnet 钱包即可将城市保存到链上。"
           />
         </p>
         <div className="mt-8 flex justify-center">

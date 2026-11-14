@@ -17,7 +17,7 @@ export function talkCooldown(s: GameState): number {
   return 60 - (s.tick - s.talk.since);
 }
 const BUSY = (s: GameState) => `They have work to do. Talk again in ${talkCooldown(s)}s.`;
-import { trainRole } from './war';
+import { roleCost, trainRole } from './war';
 
 export type NpcAction = 'chat' | 'tip' | 'buy' | 'rumor' | 'recruit';
 export interface NpcOption { id: NpcAction; label: string; hint?: string }
@@ -57,7 +57,8 @@ export function npcEncounter(s: GameState, role: number): Encounter {
   if (s.gold >= 15) extra.push({ id: 'tip', label: 'Give a tip', hint: '15 gold' });
   if (s.gold >= 40 && s.arc) extra.push({ id: 'buy', label: 'Buy supplies', hint: '40 gold' });
   extra.push({ id: 'rumor', label: 'Ask for news' });
-  if ((r === 0 || r === 5) && s.gold >= 60 && s.ore >= 3 && st.troopCap > s.troops) extra.push({ id: 'recruit', label: 'Recruit', hint: '60 gold, 3 ore' });
+  const rc = roleCost(s, 'vanguard');
+  if ((r === 0 || r === 5) && s.gold >= rc.gold && s.ore >= rc.ore && st.troopCap > s.troops) extra.push({ id: 'recruit', label: 'Recruit', hint: `${rc.gold} gold, ${rc.ore} ore` });
   for (let i = 0; i < 2 && extra.length; i++) options.push(extra.splice(rngInt(s, extra.length), 1)[0]!);
   return { line, options };
 }
@@ -93,9 +94,12 @@ export function npcAct(s: GameState, action: NpcAction): string {
     }
     case 'rumor': {
       // news is about the mayors of this world (old saves without one fall back to the first rivals)
-      const pool = s.world?.mayors.length ? s.world.mayors.map(mayorRival) : RIVALS;
-      const r = pool[rngInt(s, pool.length)]!;
-      const msg = `${r.name} guards itself with ${r.defense} defense and keeps about ${rivalLoot(r)} gold in the vaults.`;
+      const mayors = s.world?.mayors ?? [];
+      const m = mayors.length ? mayors[rngInt(s, mayors.length)]! : null;
+      const r = m ? mayorRival(m) : RIVALS[rngInt(s, RIVALS.length)]!;
+      // a real mayor's treasury is known; the old fixed rivals only have their loot estimate
+      const kept = m ? Math.floor(m.gold / 100) * 100 : rivalLoot(r);
+      const msg = `${r.name} guards itself with ${r.defense} defense and keeps about ${kept} gold in the vaults.`;
       pushLog(s, `Rumor: ${msg}`);
       return msg;
     }

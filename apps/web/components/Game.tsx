@@ -240,9 +240,9 @@ export default function Game() {
             <Chip icon="people" info={info.citizens} value={`${s.pop}/${st.housing}`} />
             <Chip icon="smile" info={info.happiness} value={`${Math.round(st.happinessPm / 10)}%`} bad={st.happinessPm < 250} />
             <Chip icon="book" info={info.education} value={`${Math.round(st.eduCoverPm / 10)}%`} />
-            <Chip icon="wood" info={info.wood} value={s.wood} n={s.wood} rate={st.woodRate} extra={st.woodRate ? `+${st.woodRate}/s` : undefined} />
-            <Chip icon="ore" info={info.ore} value={s.ore} n={s.ore} rate={st.oreRate} extra={st.oreRate ? `+${st.oreRate}/s` : undefined} />
-            <Chip icon="food" info={info.food} value={s.food} n={s.food} rate={st.foodRate - st.foodUse} extra={`${st.foodRate - st.foodUse >= 0 ? '+' : ''}${st.foodRate - st.foodUse}/s`} bad={st.foodRate < st.foodUse} />
+            <Chip icon="wood" info={info.wood} value={s.wood} n={s.wood} rate={sim.unitsPerSec(st.woodMilli)} extra={st.woodMilli ? `+${sim.unitsPerSec(st.woodMilli)}/s` : undefined} />
+            <Chip icon="ore" info={info.ore} value={s.ore} n={s.ore} rate={sim.unitsPerSec(st.oreMilli)} extra={st.oreMilli ? `+${sim.unitsPerSec(st.oreMilli)}/s` : undefined} />
+            <Chip icon="food" info={info.food} value={s.food} n={s.food} rate={sim.unitsPerSec(st.foodMilli - st.foodUse * 1000)} extra={`${st.foodMilli >= st.foodUse * 1000 ? '+' : ''}${sim.unitsPerSec(st.foodMilli - st.foodUse * 1000)}/s`} bad={st.foodMilli < st.foodUse * 1000} />
             <Chip icon="crown" info={info.chainPower} value={st.chainPower} n={st.chainPower} accent />
             </>); })()}
           </div>
@@ -390,6 +390,7 @@ export default function Game() {
                 onChange={() => act(undefined)}
                 onLog={(m) => { sim.pushLog(s, m); redraw(); }}
                 onOpenCoin={() => setCoinOpen(true)}
+                onReplace={() => { seenSeq.current = null; findsSeen.current = null; act(undefined); }}
               />
 
               <section className="panel mt-2.5 p-2.5">

@@ -103,7 +103,7 @@ export default function ArcPicker({ onChoose }: { onChoose: (id: ArcId) => void 
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto transition-[background] duration-500" style={{ background: BACKDROP[arc.id], ['--accent' as string]: arc.accent, ['--accent-ink' as string]: INK[arc.id] }}
@@ -112,6 +112,7 @@ export default function ArcPicker({ onChoose }: { onChoose: (id: ArcId) => void 
         <header>
           <h2 className="font-display text-3xl font-bold text-[var(--paper)] sm:text-4xl">Choose your people</h2>
           <p className="mt-1 text-sm text-[var(--paper-dim)]">You get one city, and this choice cannot be changed.</p>
+          <p className="mt-1 text-xs text-[var(--paper-dim)]">Saved a city on NEAR testnet before? Pick any people here, then press <b>Load my city from chain</b> in the NEAR panel: your saved city and its people replace this one.</p>
         </header>
 
         <div className="mt-4 grid flex-1 grid-cols-1 gap-5 md:grid-cols-[minmax(260px,380px)_1fr]">
@@ -132,7 +133,7 @@ export default function ArcPicker({ onChoose }: { onChoose: (id: ArcId) => void 
                 <Pips icon="wood" pm={arc.woodPm} label="Forests" />
                 <Pips icon="ore" pm={arc.orePm} label="Mines" />
               </div>
-              {arc.woodPm === 0 && <p className="mt-2 text-sm text-[var(--bad)]">There are no forests. Every plank has to be bought from other players.</p>}
+              {arc.woodPm === 0 && <p className="mt-2 text-sm text-[var(--bad)]">There are no forests: you build in stone, paying ore where others pay wood.</p>}
               <p className="mt-1.5 text-xs text-[var(--paper-dim)]">Each icon is 20% of a standard land. More icons mean faster wood and ore.</p>
             </section>
 

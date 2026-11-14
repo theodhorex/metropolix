@@ -137,7 +137,8 @@ impl Metropolix {
                 FtMint { owner_id: &me, amount: U128(m), memo: Some("mNAV above 2x: new METRO into the pool") }.emit();
             }
         } else if mnav < BUYBACK_BELOW_PM && self.pool.treasury > 0 {
-            let spend = mul_div(self.pool.treasury / 10, size_pm, 1000);
+            // never more than the trade's own fee, so round trips cannot pull the treasury into the pool
+            let spend = mul_div(self.pool.treasury / 10, size_pm, 1000).min(near_moved * FEE_BPS / 10_000);
             let out = mul_div(self.metro_reserve(), spend, self.pool.near_reserve + spend);
             if out > 0 {
                 self.pool.treasury -= spend;
@@ -390,6 +391,20 @@ mod tests {
         c.pool.city_index = 10_000_000; // rich cities: the coin looks cheap
         ctx("bob.testnet", 6, NEAR / 100);
         c.buy_metro(None);
+        assert!(c.pool.burned > 0);
+    }
+
+    #[test]
+    fn a_buyback_spends_no_more_than_the_trades_fee() {
+        let mut c = seeded();
+        c.pool.treasury = NEAR; // a rich treasury next to a 2 NEAR pool
+        c.pool.city_index = 10_000_000; // the coin looks cheap: buybacks are on
+        ctx("alice.testnet", 5, NEAR / 50); // 1% of the pool: full strength
+        let before = c.pool.treasury;
+        c.buy_metro(None);
+        let fee = NEAR / 50 / 100;
+        // the treasury got the fee and spent at most that much again
+        assert!(before + fee - c.pool.treasury <= fee, "spent {}", before + fee - c.pool.treasury);
         assert!(c.pool.burned > 0);
     }
 }

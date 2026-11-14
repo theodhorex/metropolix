@@ -136,7 +136,14 @@ export async function sessionCall<T>(account: string, method: string, args: Reco
   const k = storedKey(account);
   if (k && SESSION_METHODS.includes(method)) {
     const acc = new Account(account, provider, k);
-    return (await acc.callFunction({ contractId: CONTRACT_ID, methodName: method, args, gas: BigInt(GAS) })) as unknown as T;
+    try {
+      return (await acc.callFunction({ contractId: CONTRACT_ID, methodName: method, args, gas: BigInt(GAS) })) as unknown as T;
+    } catch (e) {
+      // the key ran out of its gas allowance or was removed in the wallet: forget it and ask the wallet instead
+      const m = e instanceof Error ? e.message : String(e);
+      if (!/allowance|AccessKeyDoesNotExist|access key|InvalidAccessKey|does not exist while viewing/i.test(m)) throw e;
+      try { localStorage.removeItem(keyName(account)); } catch { /* ignore */ }
+    }
   }
   return returnValue<T>(await call(method, args));
 }

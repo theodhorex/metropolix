@@ -5,7 +5,7 @@ import Icon, { type IconName } from './Icon';
 import { ItemThumb, type Preview } from './ItemThumb';
 import { Modal, SubHead } from './ui';
 
-type Row = { icon: IconName; label: string; key: keyof sim.BuildingDef; unit?: string; upkeep?: boolean };
+type Row = { icon: IconName; label: string; key: keyof sim.BuildingDef; unit?: string; upkeep?: boolean; fixed?: boolean; div?: number };
 /** What a building does, in the order a player cares about. Values scale with the level. */
 const ROWS: Row[] = [
   { icon: 'people', label: 'Homes', key: 'housing' },
@@ -19,10 +19,15 @@ const ROWS: Row[] = [
   { icon: 'smile', label: 'Happiness', key: 'happy' },
   { icon: 'swords', label: 'Troop room', key: 'troopCap' },
   { icon: 'shield', label: 'Defense', key: 'defense' },
+  { icon: 'swords', label: 'City attack', key: 'atkPm', unit: '%', div: 10 },
+  { icon: 'heart', label: 'Smoke cleaned', key: 'clean' },
+  { icon: 'flame', label: 'Smoke', key: 'pollution', upkeep: true, fixed: true },
   { icon: 'coin', label: 'Upkeep', key: 'upkeep', unit: '/s', upkeep: true },
 ];
 
 const at = (v: number, lv: number, upkeep = false) => Math.floor((v * (upkeep ? sim.UPKEEP_PM : sim.LEVEL_PM)[lv]!) / 1000);
+/** A row's value at a level: smoke does not grow with upgrades, the attack bonus is shown in percent. */
+const rowAt = (r: Row, v: number, lv: number) => (r.fixed ? v : at(v, lv, r.upkeep && r.key === 'upkeep')) / (r.div ?? 1);
 
 function Pips({ level }: { level: number }) {
   return (
@@ -64,7 +69,7 @@ export default function BuildingPanel({ s, x, y, act, onClose, onPack, onDemolis
           <p>{sim.describeBuilding(k, lv)}.</p>
           {k === 'farm' && <p className="mt-1 text-[var(--paper-dim)]">Your city grows: {sim.foodTypes(s).join(', ') || 'nothing yet'}.</p>}
           {k === 'barracks' && <p className="mt-1 text-[var(--paper-dim)]">Drill bonus from upgraded barracks: +{sim.drillPm(s) / 10}% attack (most {sim.DRILL_CAP_PM / 10}%).</p>}
-          {!up && <p className="mt-1 text-[var(--paper-dim)]">Decorations stay as they are; build more of them for more cheer.</p>}
+          {!up && <p className="mt-1 text-[var(--paper-dim)]">{b.arc ? 'A wonder stands as it is: one per city, and it cannot be upgraded.' : 'Decorations stay as they are; build more of them for more cheer.'}</p>}
         </div>
       </div>
 
@@ -74,7 +79,7 @@ export default function BuildingPanel({ s, x, y, act, onClose, onPack, onDemolis
           <table className="w-full text-sm">
             <tbody>
               {rows.map((r) => {
-                const now = at(b[r.key] as number, lv, r.upkeep), then = next ? at(b[r.key] as number, next, r.upkeep) : null;
+                const now = rowAt(r, b[r.key] as number, lv), then = next ? rowAt(r, b[r.key] as number, next) : null;
                 return (
                   <tr key={r.key} className="border-b border-[var(--slab-hi)] last:border-0">
                     <td className="py-1"><span className="flex items-center gap-1.5 text-[var(--paper-dim)]"><Icon name={r.icon} size={14} />{r.label}</span></td>

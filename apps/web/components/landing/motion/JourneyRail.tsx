@@ -20,7 +20,7 @@ const STOPS: readonly StopDef[] = [
   { id: 'peoples', label: { en: 'Peoples', id: 'Bangsa', ko: '종족', zh: '种族' } },
   { id: 'how', label: { en: 'A reign', id: 'Masa kuasa', ko: '통치', zh: '统治时代' } },
   { id: 'world', label: { en: 'The world', id: 'Dunia', ko: '세계', zh: '世界' } },
-  { id: 'chain', label: { en: 'Roadmap', id: 'Peta jalan', ko: '로드맵', zh: '路线图' } },
+  { id: 'chain', label: { en: 'On chain', id: 'On-chain', ko: '온체인', zh: '链上' } },
   { id: 'faq', label: { en: 'Questions', id: 'Tanya jawab', ko: '자주 묻는 질문', zh: '常见问题' } },
 ];
 

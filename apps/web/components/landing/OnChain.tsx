@@ -9,30 +9,60 @@ import './closing.css';
 
 /**
  * The roadmap as a road through the realm. A pixel road draws itself as you scroll and a little caravan
- * travels along it; each milestone sign flips up when the caravan reaches it. Honest statuses only.
+ * travels along it; each milestone sign flips up when the caravan reaches it. Honest statuses only: all three run on NEAR testnet.
  */
 const REPO = 'https://github.com/theodhorex/metropolix';
 
 const STEPS = [
   {
-    key: 'done', state: 'done',
+    key: 'contract', state: 'done',
     chip: {
-      en: 'Written and tested',
-      id: 'Sudah ditulis dan diuji',
-      ko: '작성 및 테스트 완료',
-      zh: '已完成编写与测试',
+      en: 'Live on testnet',
+      id: 'Aktif di testnet',
+      ko: 'testnet 가동 중',
+      zh: '已上线 testnet',
     },
     title: {
-      en: 'A NEAR smart contract in Rust',
-      id: 'Smart contract NEAR dalam Rust',
-      ko: 'Rust로 작성된 NEAR 스마트 컨트랙트',
-      zh: '基于 Rust 的 NEAR 智能合约',
+      en: 'Your city on NEAR',
+      id: 'Kotamu di NEAR',
+      ko: 'NEAR 위의 당신의 도시',
+      zh: '你的城市上链 NEAR',
     },
     text: {
-      en: 'It will hold your city, its ChainPower and your battle results.',
-      id: 'Nanti menyimpan kotamu, ChainPower-nya, dan hasil pertempuranmu.',
-      ko: '앞으로 당신의 도시와 ChainPower, 전투 결과를 담게 됩니다.',
-      zh: '它将记录你的城市、ChainPower 以及战斗战果。',
+      en: 'Connect a wallet and the Rust contract keeps your city, level and gold, saved every five minutes without a pop-up. Load it back on any device.',
+      id: 'Hubungkan dompet dan kontrak Rust menyimpan kota, level, dan emasmu tiap lima menit tanpa pop-up. Muat kembali di perangkat mana pun.',
+      ko: '지갑을 연결하면 Rust 컨트랙트가 도시와 레벨, 골드를 팝업 없이 5분마다 저장합니다. 어느 기기에서든 다시 불러올 수 있습니다.',
+      zh: '连接钱包后，Rust 合约每五分钟自动保存你的城市、等级和金币，无须弹窗确认。在任何设备上都能读回。',
+    },
+    link: {
+      href: 'https://testnet.nearblocks.io/address/metropolix.testnet',
+      label: {
+        en: 'See metropolix.testnet',
+        id: 'Lihat metropolix.testnet',
+        ko: 'metropolix.testnet 보기',
+        zh: '查看 metropolix.testnet',
+      },
+    },
+  },
+  {
+    key: 'raids', state: 'done',
+    chip: {
+      en: 'Live on testnet',
+      id: 'Aktif di testnet',
+      ko: 'testnet 가동 중',
+      zh: '已上线 testnet',
+    },
+    title: {
+      en: 'Raids between real players',
+      id: 'Serbuan antar pemain sungguhan',
+      ko: '실제 플레이어 간 약탈',
+      zh: '真实玩家之间的突袭',
+    },
+    text: {
+      en: 'The contract runs the battle with on-chain randomness and moves the loot out of the other mayor\'s saved treasury, then shields their city for a while.',
+      id: 'Kontrak menjalankan pertempuran dengan keacakan on-chain dan memindahkan jarahan dari kas tersimpan mayor lain, lalu melindungi kotanya sementara.',
+      ko: '컨트랙트가 온체인 난수로 전투를 진행하고 상대 시장의 저장된 금고에서 전리품을 옮긴 뒤, 그 도시에 잠시 보호막을 씌웁니다.',
+      zh: '合约使用链上随机数进行战斗，从对方城主已保存的国库中转走战利品，随后为其城市开启一段时间的护盾。',
     },
     link: {
       href: `${REPO}/tree/HEAD/contracts/metropolix`,
@@ -45,46 +75,24 @@ const STEPS = [
     },
   },
   {
-    key: 'next', state: 'next',
+    key: 'coin', state: 'done',
     chip: {
-      en: 'Next',
-      id: 'Berikutnya',
-      ko: '다음 단계',
-      zh: '下一步',
+      en: 'Live on testnet',
+      id: 'Aktif di testnet',
+      ko: 'testnet 가동 중',
+      zh: '已上线 testnet',
     },
     title: {
-      en: 'Deploy to NEAR testnet',
-      id: 'Pasang di NEAR testnet',
-      ko: 'NEAR testnet 배포',
-      zh: '部署至 NEAR testnet',
+      en: '$METRO and treasure NFTs',
+      id: '$METRO dan NFT harta karun',
+      ko: '$METRO와 보물 NFT',
+      zh: '$METRO 与宝藏 NFT',
     },
     text: {
-      en: 'Then sign in with a NEAR wallet and keep your city on the network instead of this device.',
-      id: 'Lalu masuk dengan dompet NEAR dan simpan kotamu di jaringan, bukan lagi di perangkat ini.',
-      ko: '이후 NEAR 지갑으로 로그인하여 로컬 기기 대신 네트워크에 도시를 저장합니다.',
-      zh: '届时可使用 NEAR 钱包登录，将城市保存在网络上而非局限于当前设备。',
-    },
-    link: null,
-  },
-  {
-    key: 'plan', state: 'plan',
-    chip: {
-      en: 'Planned',
-      id: 'Direncanakan',
-      ko: '예정',
-      zh: '计划中',
-    },
-    title: {
-      en: 'A city coin backed by its treasury',
-      id: 'Koin kota yang didukung kasnya',
-      ko: '국고 기반의 도시 코인',
-      zh: '以城市国库为储备的代币',
-    },
-    text: {
-      en: "The coin's value follows the gold in the city's vault, so a successful raid on a city lowers what its coin is backed by.",
-      id: 'Nilai koin mengikuti emas di kas kota, jadi serbuan yang berhasil ke sebuah kota menurunkan jaminan koinnya.',
-      ko: '코인의 가치는 도시 금고의 골드에 연동되므로, 약탈당하면 코인의 담보 가치도 함께 하락합니다.',
-      zh: '代币价值与城市金库中的金币挂钩，因此城市被成功突袭后，其代币背后的储备也会随之减少。',
+      en: 'A NEP-141 coin with its own pool, backed by the gold in every saved city, so raids move its price. Treasures from your vault mint as NEP-171 NFTs. Testnet tokens, no real value.',
+      id: 'Koin NEP-141 dengan pool sendiri, dijamin emas di semua kota tersimpan, jadi serbuan menggerakkan harganya. Harta dari vault bisa dicetak jadi NFT NEP-171. Token testnet, tanpa nilai nyata.',
+      ko: '자체 풀을 가진 NEP-141 코인으로, 저장된 모든 도시의 골드가 담보가 되어 약탈이 가격을 움직입니다. 금고의 보물은 NEP-171 NFT로 발행됩니다. 실제 가치가 없는 testnet 토큰입니다.',
+      zh: '一枚拥有独立资金池的 NEP-141 代币，以所有已保存城市的金币为储备，因此突袭会影响其价格。金库中的宝藏可铸造为 NEP-171 NFT。均为测试网代币，没有真实价值。',
     },
     link: null,
   },
@@ -205,14 +213,14 @@ export default function OnChain() {
       <div className="pixel-divider -mx-4 -mt-20 mb-16" aria-hidden="true" />
       <div className="mx-auto max-w-6xl">
         <div className="text-center" data-reveal>
-          <div className="mb-3"><span className="landing-pill"><T en="Roadmap" id="Peta jalan" ko="로드맵" zh="路线图" /></span></div>
-          <h2 id="chain-h" data-reveal-words className="landing-h2"><T split en="Headed for NEAR" id="Menuju NEAR" ko="NEAR를 향한 여정" zh="迈向 NEAR" /></h2>
+          <div className="mb-3"><span className="landing-pill"><T en="On chain" id="On-chain" ko="온체인" zh="链上" /></span></div>
+          <h2 id="chain-h" data-reveal-words className="landing-h2"><T split en="Live on NEAR testnet" id="Aktif di NEAR testnet" ko="NEAR testnet에서 가동 중" zh="已在 NEAR testnet 上线" /></h2>
           <p className="road-lead mx-auto mt-4 max-w-prose text-base sm:text-lg">
             <T
-              en="Until then, the whole game runs in your browser and your city is saved on this device."
-              id="Sampai saat itu, seluruh game berjalan di browsermu dan kotamu disimpan di perangkat ini."
-              ko="그전까지는 게임 전체가 브라우저에서 실행되며 도시는 이 기기에 저장됩니다."
-              zh="在此之前，整款游戏都在你的浏览器中运行，城市数据也保存在当前设备上。"
+              en="The game runs in your browser with no account. Connect a NEAR testnet wallet when you want your city on chain; it costs only free testnet NEAR."
+              id="Game berjalan di browser tanpa akun. Hubungkan dompet NEAR testnet kapan pun kamu ingin kotamu on-chain; biayanya hanya NEAR testnet yang gratis."
+              ko="게임은 계정 없이 브라우저에서 실행됩니다. 도시를 온체인에 올리고 싶을 때 NEAR testnet 지갑을 연결하세요. 비용은 무료 testnet NEAR뿐입니다."
+              zh="游戏无需账号即可在浏览器中运行。想让城市上链时，连接 NEAR testnet 钱包即可，只需免费的 testnet NEAR。"
             />
           </p>
         </div>

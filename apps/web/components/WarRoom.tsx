@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import * as sim from '@metropolix/sim';
 import { arcDef, type GameState } from '@metropolix/sim';
 import Icon, { type IconName } from './Icon';
@@ -56,6 +56,7 @@ function Gold({ n }: { n: number }) {
 export default function WarRoom({ open, s, act, onClose }: Props) {
   const [tab, setTab] = useState<TabId>('army');
   const [target, setTarget] = useState('');
+  const pinned = useRef(''); // the default target, kept while the list order moves
   const [tq, setTq] = useState<{ search: string; sort: 'gold' | 'power' | 'level' }>({ search: '', sort: 'gold' });
   const [plan, setPlan] = useState<sim.RaidPlan>({ commit: 100, focus: 'balanced', rage: false, heal: false, ram: false });
   const [report, setReport] = useState<sim.BattleReport | null>(null);
@@ -72,8 +73,9 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
   const listed = [...s.world.mayors]
     .filter((m) => !needle || m.name.toLowerCase().includes(needle))
     .sort((a, b) => (tq.sort === 'gold' ? b.gold - a.gold : tq.sort === 'level' ? b.level - a.level : sim.mayorPower(b) - sim.mayorPower(a)) || a.name.localeCompare(b.name));
-  // until you pick someone, the top of the list is the target
-  const mayor = sim.findMayor(s, target) ?? listed[0] ?? s.world.mayors[0];
+  // until you pick someone, the top of the list is the target, pinned so a world tick cannot swap it under you
+  if (!target && (!pinned.current || !sim.findMayor(s, pinned.current))) pinned.current = listed[0]?.id ?? '';
+  const mayor = sim.findMayor(s, target || pinned.current) ?? listed[0] ?? s.world.mayors[0];
   const rival = mayor ? sim.mayorRival(mayor) : sim.findRival(s, target) ?? sim.RIVALS[0]!;
   const target_ = rival.id;
   const shieldT = mayor ? sim.shieldLeft(s, mayor) : 0;
@@ -120,7 +122,7 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
           <div className="min-w-0 flex-1">
             <SubHead right={`${s.troops} of ${st.troopCap} beds`}>{troopName} troops</SubHead>
             <div className="flex flex-wrap items-start gap-3 pt-2">
-              {sim.ROLES.map((r) => <Slot key={r} icon={ROLE_ICON[r]} count={army[r]} label={sim.ROLE_DEFS[r].name} cost={<Gold n={sim.roleCost(s, r).gold} />} onClick={() => run(sim.trainRole(s, r, 1))} />)}
+              {sim.ROLES.map((r) => <Slot key={r} icon={ROLE_ICON[r]} count={army[r]} label={sim.ROLE_DEFS[r].name} cost={<><Gold n={sim.roleCost(s, r).gold} /> <span className="text-[var(--paper-dim)]">+{sim.roleCost(s, r).ore} ore</span></>} onClick={() => run(sim.trainRole(s, r, 1))} />)}
               <dl className="min-w-[14rem] flex-1 space-y-1 text-sm">
                 {sim.ROLES.map((r) => <div key={r}><dt className="inline font-bold">{sim.ROLE_DEFS[r].name}. </dt><dd className="inline text-[var(--paper-dim)]">{sim.ROLE_DEFS[r].desc}</dd></div>)}
               </dl>
@@ -194,11 +196,11 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
                         className={`target flex w-full items-center gap-2 px-2.5 py-1.5 text-left ${sel ? 'target-on' : ''}`}>
                         <Portrait id={sim.mayorPortrait(m)} className="h-9 w-8 shrink-0 border border-[var(--ink)]" title="" />
                         <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline justify-between gap-2"><b className="truncate">{m.name}</b><span className="text-xs text-[var(--paper-dim)]">Lv {m.level}</span></span>
-                        <span className="flex justify-between text-xs text-[var(--paper-dim)] tabular-nums">
+                        <span className="flex items-baseline justify-between gap-2"><b className="min-w-0 truncate">{m.name}</b><span className="shrink-0 whitespace-nowrap text-xs text-[var(--paper-dim)]">Lv {m.level}</span></span>
+                        <span className="flex justify-between gap-1.5 whitespace-nowrap text-xs text-[var(--paper-dim)] tabular-nums">
                           <span className="flex items-center gap-0.5 text-[var(--gold)]"><Icon name="coin" size={10} />{m.gold}</span>
                           <span>Pow {sim.mayorPower(m)}</span>
-                          <span className={sh > 0 ? 'text-[var(--bad)]' : c > 0 ? '' : 'text-[var(--good)]'}>{sh > 0 ? `shield ${sh}s` : c > 0 ? `${c}s` : 'ready'}</span>
+                          <span className={`flex items-center gap-0.5 ${sh > 0 ? 'text-[var(--bad)]' : c > 0 ? '' : 'text-[var(--good)]'}`} title={sh > 0 ? 'Shielded after a raid' : c > 0 ? 'Your troops are resting' : 'Ready to raid'}>{sh > 0 ? <><Icon name="shield" size={10} />{sh}s</> : c > 0 ? `${c}s` : 'ready'}</span>
                         </span>
                         </span>
                       </button>
@@ -258,7 +260,7 @@ export default function WarRoom({ open, s, act, onClose }: Props) {
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-[var(--paper-dim)]">Bring</span>
                   {([['rage', 'flame', 'Rage', s.spells.rage], ['heal', 'heart', 'Heal', s.spells.heal], ['ram', 'ram', 'Ram', s.siege]] as const).map(([k, icon, name, have]) => (
-                    <button key={k} aria-pressed={plan[k]} disabled={!have} onClick={() => setPlan({ ...plan, [k]: !plan[k] })}
+                    <button key={k} aria-pressed={plan[k] && have > 0} disabled={!have} onClick={() => setPlan({ ...plan, [k]: !plan[k] })}
                       className="btn btn-quiet !px-2 !py-1 text-xs" title={have ? `${name}: ${have} ready` : `No ${name} ready`}>
                       <Icon name={icon} size={16} /> {name} <span className="tabular-nums opacity-80">{have}</span>
                     </button>

@@ -189,26 +189,15 @@ export default function CoinPanel({ open, account, onClose, onLog }: Props) {
   const [err, setErr] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    try {
-      const idx = await indexer<{ coin: CoinView | null; history: CoinTick[] }>('coin');
-      if (idx && idx.coin) {
-        setCoin(idx.coin);
-        setHistory(idx.history ?? []);
-      } else {
-        const chain = await loadChain();
-        const direct = await chain.view<CoinView>('get_coin');
-        setCoin(direct ?? null);
-        setHistory([]);
-      }
-    } catch {
-      try {
-        const chain = await loadChain();
-        const direct = await chain.view<CoinView>('get_coin');
-        setCoin(direct ?? null);
-      } catch {
-        /* ignore RPC error */
-      }
-    }
+    // the pool itself from the chain (so a trade shows at once), its history from the indexer
+    const [direct, idx] = await Promise.all([
+      loadChain().then((chain) => chain.view<CoinView>('get_coin')).catch(() => undefined),
+      indexer<{ coin: CoinView | null; history: CoinTick[] }>('coin'),
+    ]);
+    const c = direct ?? idx?.coin ?? null;
+    setCoin(c);
+    setHistory(idx?.history ?? []);
+    if (!c && direct === undefined && !idx) setErr(`Cannot reach ${CONTRACT_ID} right now. Try again in a moment.`);
 
     if (account) {
       try {

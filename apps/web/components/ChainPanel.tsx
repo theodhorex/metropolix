@@ -15,6 +15,8 @@ interface Props {
   onChange: () => void;
   onLog: (msg: string) => void;
   onOpenCoin: () => void;
+  /** the whole local game was replaced (loaded from chain) */
+  onReplace?: () => void;
 }
 
 export function useAccount() {
@@ -62,7 +64,7 @@ function safeArgs(chain: Chain, s: sim.GameState, city: CityView | null) {
   return a;
 }
 
-export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Props) {
+export default function ChainPanel({ getState, onChange, onLog, onOpenCoin, onReplace }: Props) {
   const account = useAccount();
   const [city, setCity] = useState<CityView | null | undefined>(undefined);
   const [players, setPlayers] = useState<CityView[]>([]);
@@ -76,7 +78,7 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
   cityRef.current = city ?? null;
   // this browser holds an older city than the chain (a new device, cleared storage): offer to load it, never overwrite it
   const local = getState();
-  const behind = !!city && city.commits > 0 && (!local?.arc || sim.arcDef(local.arc)?.index !== city.arc || local.xp < city.xp);
+  const behind = !!city && city.commits > 0 && (!local?.arc || sim.arcDef(local.arc)?.index !== city.arc || local.xp < city.xp || local.tick < city.tick);
 
   const refresh = useCallback(async () => {
     try {
@@ -89,7 +91,9 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
       setErr(`Cannot reach ${CONTRACT_ID}: ${errText(e)}`);
     }
     const [lb, bt] = await Promise.all([indexer<CityView[]>('leaderboard?limit=20'), account ? indexer<Battle[]>(`battles?account=${account}&limit=5`) : Promise.resolve([])]);
-    setPlayers(lb ?? []);
+    // the indexer is down or empty: read the board from the contract itself
+    const board = lb ?? (await loadChain().then((chain) => chain.view<CityView[]>('get_leaderboard', { limit: 20 })).catch(() => undefined));
+    setPlayers(board ?? []);
     setFights(bt ?? []);
   }, [account]);
   useEffect(() => { void refresh(); }, [refresh]);
@@ -146,7 +150,7 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
     if (b.win) s.record.won++; else s.record.lost++;
     sim.pushLog(s, b.win
       ? `On-chain raid on ${target.name}: ${b.stars}★, +${b.loot} gold, lost ${b.lost} troops.`
-      : `On-chain raid on ${target.name} was thrown back: lost ${b.lost} troops.`);
+      : `On-chain raid on ${target.name} was thrown back: no star, so no gold, and ${b.lost} troops lost.`);
     onChange();
   });
 
@@ -156,7 +160,7 @@ export default function ChainPanel({ getState, onChange, onLog, onOpenCoin }: Pr
     const r = full && cityFromChain(full, s.rng);
     if (!r) throw new Error('No saved city to load');
     Object.assign(s, r);
-    onChange();
+    (onReplace ?? onChange)();
   });
 
   const btn = 'btn btn-quiet w-full text-sm';

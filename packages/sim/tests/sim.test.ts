@@ -731,6 +731,8 @@ describe('third wave buildings', () => {
     expect(sim.buildBlocker(s, 1, 0, 'moontree')).toBeNull(); // the stored one can go back down
     expect(sim.listForSale(s, 'moontree', 1, 100).ok).toBe(false);
     expect(sim.placeOrder(s, 'stones', 1, 100).ok).toBe(false);
+    const mythic = sim.RELIC_KINDS.find((k) => sim.RELICS[k].rarity === 'mythic')!;
+    expect(sim.placeOrder(s, mythic, 1, sim.fairPrice(mythic)).ok).toBe(false); // never filled, so never escrowed
     expect(sim.canUpgrade('moontree')).toBe(false);
     for (let i = 0; i < 400; i++) { sim.addNpcListing(s); sim.addNpcOrder(s); }
     expect([...s.market, ...s.orders].some((l) => sim.isBuilding(l.kind) && sim.BUILDINGS[l.kind].arc)).toBe(false);
@@ -766,3 +768,35 @@ describe('market fits the land', () => {
     expect(woodKinds).toContain('lumber');
   });
 });
+
+describe('audit fixes (15 Nov)', () => {
+  it('another city never bids more than another city asks for the same thing', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const s = sim.newState(seed); sim.chooseArc(s, 'elf'); s.xp = 7000;
+      for (let t = 0; t < 2000; t++) {
+        sim.step(s);
+        for (const o of s.orders) {
+          if (o.buyer === sim.YOU) continue;
+          expect(s.market.some((l) => l.seller !== sim.YOU && l.kind === o.kind && l.price <= o.price)).toBe(false);
+        }
+      }
+    }
+  });
+  it('one lumber camp on poor land still makes wood over time', () => {
+    const s = sim.newState(3); sim.chooseArc(s, 'goblin');
+    s.gold = 5000; s.wood = 0; s.ore = 200;
+    const spot = (): [number, number] => { for (let y = 0; y < sim.GRID; y++) for (let x = 0; x < sim.GRID; x++) if (!s.grid[y]![x]) return [x, y]; throw new Error('full'); };
+    for (const k of ['house', 'house', 'lumber'] as const) { const [x, y] = spot(); s.wood = 200; expect(sim.build(s, x, y, k).ok).toBe(true); }
+    s.wood = 0;
+    expect(sim.stats(s).woodMilli).toBeGreaterThan(0);
+    for (let i = 0; i < 60; i++) sim.step(s);
+    expect(s.wood).toBeGreaterThan(10);
+  });
+  it('a never-sold treasure cannot be ordered, so no gold is locked forever', () => {
+    const s = sim.newState(1); sim.chooseArc(s, 'elf'); s.gold = 1e7;
+    const mythic = sim.RELIC_KINDS.find((k) => sim.RELICS[k].rarity === 'mythic')!;
+    expect(sim.placeOrder(s, mythic, 1, sim.fairPrice(mythic)).ok).toBe(false);
+    expect(s.gold).toBe(1e7);
+  });
+});
+

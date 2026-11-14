@@ -1,6 +1,6 @@
 // City overview data for the dashboard: sector split, demand, wealth tiers, advice, milestones.
 // Pure and integer-only like the rest of the simulation.
-import { BUILDINGS, counts, stats, type BuildingKind, type Category, type GameState } from './index';
+import { BUILDINGS, arcDef, counts, stats, type BuildingKind, type Category, type GameState } from './index';
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -57,7 +57,7 @@ export function advice(s: GameState): string[] {
   if (st.troopCap === 0) out.push('Raise Barracks to train troops and attack rivals.');
   else if (st.defense < 40) out.push('Your defense is weak: train troops or raise a Tower.');
   if (st.net < 0) out.push('You are losing gold each second: raise tax or add productive buildings.');
-  if (s.wood < 20) out.push('Wood is low: build Lumber Camps or buy wood on the market.');
+  if (s.wood < 20 && arcDef(s.arc)?.woodPm !== 0) out.push('Wood is low: build Lumber Camps or buy wood on the market.');
   if (s.ore < 20) out.push('Ore is low: build Mines or buy ore on the market.');
   if (out.length === 0) out.push('Your city is balanced. Expand, trade and climb the ranks.');
   return out;

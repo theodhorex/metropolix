@@ -60,10 +60,10 @@ export default function Hero() {
         </h1>
         <p data-hero-rest className="mt-4 max-w-[34rem] text-base leading-relaxed text-pretty text-[var(--l-muted)]">
           <T
-            en="Pick a people, raise a city, raid forty rival mayors. In your browser, no sign-up."
-            id="Pilih bangsa, bangun kota, serbu empat puluh wali kota rival. Langsung di browser, tanpa daftar."
-            ko="종족을 고르고, 도시를 세우며, 40명의 라이벌 시장을 약탈하세요. 브라우저에서 가입 없이 바로."
-            zh="选择种族，建立城市，突袭40位竞争城主。无需注册，浏览器即点即玩。"
+            en="Pick a people, raise a city, raid forty rival mayors and real players on NEAR testnet. In your browser, no sign-up."
+            id="Pilih bangsa, bangun kota, serbu empat puluh wali kota rival dan pemain sungguhan di NEAR testnet. Langsung di browser, tanpa daftar."
+            ko="종족을 고르고, 도시를 세우며, 40명의 라이벌 시장과 NEAR testnet의 실제 플레이어를 약탈하세요. 브라우저에서 가입 없이 바로."
+            zh="选择种族，建立城市，突袭40位竞争城主和 NEAR testnet 上的真实玩家。无需注册，浏览器即点即玩。"
           />
         </p>
 

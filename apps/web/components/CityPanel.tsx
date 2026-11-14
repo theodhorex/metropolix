@@ -131,9 +131,10 @@ export default function CityPanel({ open, s, act, onClose, onWar }: Props) {
             <SubHead right={pct(st.happinessPm)}>Happiness</SubHead>
             <Meter label="Happiness" value={st.happinessPm} tone="var(--gold)" />
             <SubHead>What moves it</SubHead>
-            <StatRow k="Tax" v={s.taxRate > 10 ? <span className="text-[var(--bad)]">-{(s.taxRate - 10) * 2.5}%</span> : <span className="text-[var(--good)]">+{(10 - s.taxRate) * 0.8}%</span>} />
+            {st.happyParts.map((p) => (
+              <StatRow key={p.label} k={p.label} v={<span className={p.pm < 0 ? 'text-[var(--bad)]' : p.label === 'Base mood' ? '' : 'text-[var(--good)]'}>{p.pm > 0 && p.label !== 'Base mood' ? '+' : ''}{p.pm / 10}%</span>} />
+            ))}
             <StatRow k="Citizens without a job" v={st.unemployed} />
-            <StatRow k="Pollution" v={st.pollution} />
             <Note>Parks, fountains, statues and schools lift spirits. High tax, idle hands and factory smoke drag them down.</Note>
           </>
         )}
@@ -178,15 +179,18 @@ export default function CityPanel({ open, s, act, onClose, onWar }: Props) {
           <>
             <SubHead>Stockpile</SubHead>
             <StatRow k="Gold" v={s.gold} />
-            <StatRow k="Wood" v={<>{s.wood} <span className="font-normal text-[var(--paper-dim)]">+{st.woodRate}/s</span></>} />
-            <StatRow k="Ore" v={<>{s.ore} <span className="font-normal text-[var(--paper-dim)]">+{st.oreRate}/s</span></>} />
+            <StatRow k="Wood" v={<>{s.wood} <span className="font-normal text-[var(--paper-dim)]">+{sim.unitsPerSec(st.woodMilli)}/s</span></>} />
+            <StatRow k="Ore" v={<>{s.ore} <span className="font-normal text-[var(--paper-dim)]">+{sim.unitsPerSec(st.oreMilli)}/s</span></>} />
+            <StatRow k="Food" v={<>{s.food} <span className={`font-normal ${st.foodMilli < st.foodUse * 1000 ? 'text-[var(--bad)]' : 'text-[var(--paper-dim)]'}`}>+{sim.unitsPerSec(st.foodMilli)}/s, eats {st.foodUse}/s</span></>} />
+            {arc && <StatRow k={sim.itemName(arc.good)} v={<>{s.goods[arc.good] ?? 0} <span className="font-normal text-[var(--paper-dim)]">+{st.goodsRate}/s</span></>} />}
+            <StatRow k="Storehouse room" v={`${st.storeCap} each of wood, ore and food`} />
             {arc && (
               <>
                 <SubHead right={arc.woodPm === 0 ? 'none' : `${arc.woodPm / 10}% of normal`}>Forests on your land</SubHead>
                 <Meter label="Forest richness" value={arc.woodPm} max={2000} tone="#57a653" />
                 <SubHead right={arc.orePm === 0 ? 'none' : `${arc.orePm / 10}% of normal`}>Mines on your land</SubHead>
                 <Meter label="Mine richness" value={arc.orePm} max={2000} tone="#8a93a6" />
-                <Note>Short on wood or ore? Other mayors sell it in Social, under Market.</Note>
+                <Note>Short on wood or ore? Other mayors sell it on the Market.</Note>
               </>
             )}
           </>
@@ -194,7 +198,7 @@ export default function CityPanel({ open, s, act, onClose, onWar }: Props) {
 
         {tab === 'progress' && (
           <>
-            <SubHead right={nextXp ? `${s.xp} of ${nextXp} XP` : 'Top level'}>Level {st.level}</SubHead>
+            <SubHead right={nextXp ? `${s.xp - prevXp} of ${nextXp - prevXp} XP to level ${st.level + 1}` : 'Top level'}>Level {st.level}</SubHead>
             <Meter label="Progress to next level" value={nextXp ? s.xp - prevXp : 1} max={nextXp ? nextXp - prevXp : 1} tone="var(--gold)" />
             <SubHead right={`${sim.milestones(s).filter((m) => m.done).length} of ${sim.milestones(s).length} done`}>Milestones</SubHead>
             <ul className="space-y-1.5">

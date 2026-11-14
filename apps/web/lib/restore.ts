@@ -26,6 +26,8 @@ export function cityFromChain(c: CityView, seed: number): sim.GameState | null {
   // schedules count from tick 0 in a new game: move them to the saved clock
   r.nextRaidTick = c.tick + 120; r.nextMarketTick = c.tick + 30;
   if (r.world) r.world.nextTick += c.tick;
+  // the chain keeps no head count: the homes fill up again at once instead of growing from zero
+  r.pop = sim.stats(r).housing;
   r.log = [`Your city ${c.name} was loaded from NEAR testnet.`];
   return r;
 }

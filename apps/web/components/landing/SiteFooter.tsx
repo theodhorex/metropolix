@@ -158,10 +158,10 @@ export default function SiteFooter() {
               </span>
               <p className="footer-muted text-xs">
                 <T
-                  en="A pixel fantasy realm, headed for NEAR"
-                  id="Negeri fantasi pixel, menuju NEAR"
-                  ko="NEAR를 향한 픽셀 판타지 왕국"
-                  zh="像素风奇幻国度，迈向 NEAR"
+                  en="A pixel fantasy realm on NEAR testnet"
+                  id="Negeri fantasi pixel di NEAR testnet"
+                  ko="NEAR testnet 위의 픽셀 판타지 왕국"
+                  zh="NEAR testnet 上的像素风奇幻国度"
                 />
               </p>
             </div>
@@ -190,7 +190,7 @@ export default function SiteFooter() {
               </li>
               <li>
                 <a href="#chain" className="footer-link">
-                  <T en="Roadmap" id="Peta jalan" ko="로드맵" zh="路线图" />
+                  <T en="On chain" id="On-chain" ko="온체인" zh="链上" />
                 </a>
               </li>
               <li>

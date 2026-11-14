@@ -195,7 +195,10 @@ function Wanted({ s, run, filter, setFilter, preview }: { s: sim.GameState; run:
 /* ---------- Your listings and buy orders ---------- */
 function Mine({ s, run, preview, onPackUp }: { s: sim.GameState; run: (r: sim.Result) => void; preview?: Preview; onPackUp: () => void }) {
   const stock = [...sim.RESOURCE_KINDS, ...sim.BUILDING_KINDS, ...sim.RELIC_KINDS].filter((k) => sim.stockOf(s, k) > 0);
-  const all: sim.ItemKind[] = [...sim.GOOD_KINDS, ...MATERIALS, ...sim.BUILDING_KINDS, ...(s.seen ?? [])]; // only treasures you have held, so the list never gives away how many exist
+  // what other cities can actually deliver: no wonders, no buildings your land cannot run, and only treasures you
+  // have held (so the list never gives away how many exist) that are not too rare to ever be sold
+  const all: sim.ItemKind[] = [...sim.GOOD_KINDS, ...MATERIALS, ...sim.tradeKindsFor(s),
+    ...(s.seen ?? []).filter((k) => sim.isRelic(k) && sim.RELIC_FILL_PER10K[sim.RELICS[k].rarity] > 0)];
   const [sellK, setSellK] = useState<sim.ItemKind | ''>('');
   const [sellQ, setSellQ] = useState(1);
   const [sellP, setSellP] = useState(0);
@@ -203,7 +206,8 @@ function Mine({ s, run, preview, onPackUp }: { s: sim.GameState; run: (r: sim.Re
   const [buyQ, setBuyQ] = useState(5);
   const [buyP, setBuyP] = useState(sim.fairPrice('spice'));
   const sk = (sellK || stock[0]) as sim.ItemKind | undefined;
-  const sp = sellP || (sk ? sim.fairPrice(sk) : 0);
+  // default ask: the most a buyer pays (fair price, but only 70% for a used building)
+  const sp = sellP || (sk ? Math.floor((sim.fairPrice(sk) * Math.min(100, sim.buyerCapPct(sk))) / 100) : 0);
   const myList = s.market.filter((l) => l.seller === sim.YOU);
   const myOrders = s.orders.filter((o) => o.buyer === sim.YOU);
   const opt = (k: sim.ItemKind) => <option key={k} value={k}>{sim.itemName(k)}{sim.isBuilding(k) ? ' (building)' : sim.isRelic(k) ? ` (${sim.RARITY[sim.RELICS[k].rarity].name} treasure)` : ''}</option>;

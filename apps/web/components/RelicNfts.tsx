@@ -38,9 +38,7 @@ export default function RelicNfts({ s, account, act, refreshKey, onMsg }: Props)
 
   const load = useCallback(async () => {
     if (!account) { setTokens(null); return; }
-    // the indexer first; the RPC when it is behind or down
-    const fromDb = await indexer<RelicToken[]>(`relics?owner=${encodeURIComponent(account)}`);
-    if (fromDb && fromDb.length) { setTokens(fromDb); return; }
+    // the chain first, so a mint or a burn shows at once; the indexer when the RPC is down
     try {
       const chain = await loadChain();
       const raw = (await chain.view<{ token_id: string; owner_id: string; metadata?: { title?: string; extra?: string } }[]>('nft_tokens_for_owner', { account_id: account, limit: 50 })) ?? [];
@@ -49,7 +47,9 @@ export default function RelicNfts({ s, account, act, refreshKey, onMsg }: Props)
         try { x = JSON.parse(t.metadata?.extra ?? '{}'); } catch { /* keep empty */ }
         return { token_id: t.token_id, owner_id: t.owner_id, kind: x.kind ?? '', rarity: x.rarity ?? '', title: t.metadata?.title ?? '' };
       }));
-    } catch { setTokens(fromDb ?? []); }
+    } catch {
+      setTokens((await indexer<RelicToken[]>(`relics?owner=${encodeURIComponent(account)}`)) ?? []);
+    }
   }, [account]);
   useEffect(() => { void load(); }, [load, refreshKey]);
 

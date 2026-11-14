@@ -19,7 +19,7 @@ import '@/components/landing/landing.css';
 
 export const metadata: Metadata = {
   title: 'Metropolix · Ten minutes to rule a fantasy realm',
-  description: 'A pixel fantasy city builder headed for NEAR. Pick a people, raise a city and raid rival mayors, right in your browser.',
+  description: 'A pixel fantasy city builder on NEAR testnet. Pick a people, raise a city and raid rival mayors and real players, right in your browser.',
 };
 
 // The front gate of the realm. The game itself lives at /play.

@@ -130,10 +130,10 @@ const GALLERY = [
   {
     title: { en: 'Market', id: 'Pasar', ko: '시장', zh: '集市' },
     text: {
-      en: 'Each people makes one good the others need. No forests? Buy every plank.',
-      id: 'Tiap bangsa membuat satu barang yang dibutuhkan bangsa lain. Tak punya hutan? Beli setiap papan.',
-      ko: '종족마다 다른 종족에게 필요한 특산품이 하나씩 있습니다. 숲이 없다면? 판자 하나까지 사야 합니다.',
-      zh: '每个种族都产出一种别人需要的特产。没有森林？每块木板都得买。',
+      en: 'Each people makes one good the others need. No forests? Build in stone.',
+      id: 'Tiap bangsa membuat satu barang yang dibutuhkan bangsa lain. Tak punya hutan? Bangun dari batu.',
+      ko: '종족마다 다른 종족에게 필요한 특산품이 하나씩 있습니다. 숲이 없다면? 돌로 짓습니다.',
+      zh: '每个种族都产出一种别人需要的特产。没有森林？那就用石头建造。',
     },
     src: '/landing/market.png',
     w: 1024,
